@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% block title %}{{ b.firma }} — BewerbungsKI{% endblock %}
+{% block page_title %}{{ b.firma or 'Bewerbung' }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/bewerbung/{{ b.id }}/pdf" class="btn btn-secondary btn-sm">
+    <svg style="width:14px;height:14px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>PDF
+  </a>
+  <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteBewerbung()">Löschen</button>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;font-size:13px;">
+  <a href="{{ url_for('index') }}" style="color:var(--ink-500);text-decoration:none;">Dashboard</a>
+  <span style="color:var(--ink-400);">›</span>
+  <span style="color:var(--ink-700);font-weight:600;">{{ b.firma }}</span>
+  <span style="color:var(--ink-400);">›</span>
+  <span style="color:var(--ink-500);">{{ b.stelle }}</span>
+</div>
+
+<!-- 3-Column Layout -->
+<div style="display:grid;grid-template-columns:260px minmax(0,1fr) 300px;gap:18px;align-items:start;max-width:1500px;">
+
+  <!-- ── LEFT: Info + Status + Notizen ── -->
+  <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(var(--topbar-h,60px) + 16px);">
+
+    <!-- Meta Card -->
+    <div class="card" style="padding:20px;">
+      <div style="font-size:17px;font-weight:700;color:var(--ink-900);margin-bottom:4px;">{{ b.firma }}</div>
+      <div style="font-size:14px;color:var(--ink-500);margin-bottom:16px;">{{ b.stelle }}</div>
+
+      <!-- Status Dropdown -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Status</label>
+        <select id="status-select" class="form-input" onchange="quickSaveStatus(this.value)">
+          {% for opt in status_options %}
+          <option value="{{ opt }}" {% if b.status == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Datum beworben -->
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Beworben am</label>
+        <input type="date" id="datum_gesendet" class="form-input" value="{{ b.datum_gesendet or '' }}">
+      </div>
+
+      <!-- URL -->
+      {% if b.url %}
+      <div style="margin-top:8px;">
+        <a href="{{ b.url }}" target="_blank" rel="noopener"
+           style="font-size:13px;color:var(--accent-600);text-decoration:none;display:flex;align-items:center;gap:4px;">
+          <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 1 0h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>Stellenanzeige öffnen
+        </a>
+      </div>
+      {% endif %}
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+      <div style="font-size:12px;color:var(--ink-400);">Erstellt: {{ b.datum_erstellt or '–' }}</div>
+    </div>
+
+    <!-- Notizen Card -->
+    <div class="card" style="padding:20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink-700);margin-bottom:10px;">Notizen</div>
+      <textarea id="notizen" rows="5" class="form-input"
+        style="resize:vertical;font-size:13px;"
+        placeholder="Kontaktperson, nächste Schritte, Anmerkungen...">{{ b.notizen or '' }}</textarea>
+    </div>
+
+    <!-- Save Button -->
+    <button class="btn btn-primary" style="width:100%;" onclick="saveAll(this)">
+      Änderungen speichern
+    </button>
+    <div id="save-status" style="text-align:center;font-size:13px;min-height:20px;"></div>
+  </div>
+
+  <!-- ── MIDDLE: Anschreiben Editor ── -->
+  <div class="card" style="display:flex;flex-direction:column;min-height:600px;padding:0;overflow:hidden;">
+    <!-- Editor Toolbar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg style="width:16px;height:16px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span style="font-size:14px;font-weight:600;color:var(--ink-700);">Anschreiben</span>
+        <span id="word-count" style="font-size:12px;color:var(--ink-400);"></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Kopieren">
+          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="regenerate()">Neu generieren</button>
+      </div>
+    </div>
+
+    <!-- Textarea -->
+    <textarea id="anschreiben"
+      style="flex:1;padding:28px 32px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;"
+      placeholder="Anschreiben hier bearbeiten..."
+      oninput="updateWordCount()">{{ b.anschreiben or '' }}</textarea>
+
+    <!-- Footer -->
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:12px;color:var(--ink-400);" id="auto-save-hint"></span>
+      <a href="/bewerbung/{{ b.id }}/pdf" class="btn btn-secondary btn-sm">
+        PDF herunterladen
+      </a>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: AI Chat ── -->
+  <div class="card" style="display:flex;flex-direction:column;height:600px;padding:0;overflow:hidden;position:sticky;top:calc(var(--topbar-h,60px) + 16px);">
+    <!-- Chat Header -->
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy-700),var(--accent-600));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg style="width:14px;height:14px;color:#fff;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--ink-900);">KI-Assistent</div>
+        <div style="font-size:11px;color:var(--success);display:flex;align-items:center;gap:4px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;"></span>Online
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
+      <!-- Greeting -->
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:220px;line-height:1.5;">
+          Ich kann dein Anschreiben verbessern. Sag mir einfach was geändert werden soll!
+        </div>
+      </div>
+
+      {% for msg in chat %}
+      {% if msg.rolle == 'user' %}
+      <div style="display:flex;justify-content:flex-end;">
+        <div style="background:var(--navy-700);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;max-width:220px;line-height:1.5;">
+          {{ msg.inhalt }}
+        </div>
+      </div>
+      {% else %}
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:220px;line-height:1.5;">
+          {{ msg.inhalt }}
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Quick Chips -->
+    <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;">
+      {% for chip in ['Kürzer', 'Formeller', 'Persönlicher', 'Ersten Absatz überarbeiten'] %}
+      <button class="chip" onclick="sendChip('{{ chip }}')" style="font-size:11px;padding:4px 10px;">{{ chip }}</button>
+      {% endfor %}
+    </div>
+
+    <!-- Chat Input -->
+    <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="chat-input" rows="2"
+        style="flex:1;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;font-family:var(--font);resize:none;outline:none;line-height:1.5;"
+        placeholder="Sag der KI was geändert werden soll..."
+        onkeydown="handleChatKey(event)"></textarea>
+      <button id="chat-send-btn" onclick="sendChat()"
+        style="width:34px;height:34px;border-radius:50%;background:var(--navy-700);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg style="width:14px;height:14px;color:#fff;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div><!-- end 3-col -->
+
+<style>
+@media (max-width: 1180px) {
+  #detail-grid { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 880px) {
+  #detail-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+
+<script>
+// Alle Seitendaten als sicheres JSON — kein JS-Injection-Risiko durch Backticks etc.
+const PAGE = {{ {
+  'bid': b.id,
+  'firma': b.firma or '',
+  'stelle': b.stelle or '',
+  'url': b.url or '',
+  'stellenanzeige': b.stellenanzeige or ''
+} | tojson }};
+const BID = PAGE.bid;
+
+// Init
+updateWordCount();
+scrollChatToBottom();
+
+function updateWordCount() {
+  const t = document.getElementById('anschreiben').value;
+  const w = t.trim() ? t.trim().split(/\s+/).length : 0;
+  document.getElementById('word-count').textContent = `${w} Wörter`;
+}
+
+async function saveAll(btn) {
+  if (!btn) btn = document.querySelector('[onclick^="saveAll"]');
+  btn.disabled = true;
+  btn.textContent = 'Speichert…';
+
+  const payload = {
+    firma:          PAGE.firma,
+    stelle:         PAGE.stelle,
+    url:            PAGE.url,
+    stellenanzeige: PAGE.stellenanzeige,
+    anschreiben:    document.getElementById('anschreiben').value,
+    status:         document.getElementById('status-select').value,
+    datum_gesendet: document.getElementById('datum_gesendet').value || null,
+    notizen:        document.getElementById('notizen').value,
+  };
+
+  try {
+    const res  = await fetch(`/api/update/${BID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    const el   = document.getElementById('save-status');
+    if (data.success) {
+      el.innerHTML = '<span style="color:var(--success)">✓ Gespeichert</span>';
+      setTimeout(() => el.innerHTML = '', 3000);
+    } else {
+      el.innerHTML = `<span style="color:var(--danger)">Fehler: ${data.error || 'unbekannt'}</span>`;
+    }
+  } catch (err) {
+    document.getElementById('save-status').innerHTML = '<span style="color:var(--danger)">Netzwerkfehler</span>';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Änderungen speichern';
+}
+
+async function quickSaveStatus(status) {
+  const select = document.getElementById('status-select');
+  try {
+    const res  = await fetch(`/api/update-status/${BID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({status}),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Status gespeichert ✓');
+    } else {
+      showToast('Fehler beim Speichern');
+      console.error('Status update failed:', data);
+    }
+  } catch (err) {
+    showToast('Netzwerkfehler');
+    console.error('quickSaveStatus error:', err);
+  }
+}
+
+async function regenerate() {
+  const stellenanzeige = `{{ b.stellenanzeige|e }}`;
+  if (!stellenanzeige) { alert('Keine Stellenanzeige gespeichert.'); return; }
+  if (!confirm('Anschreiben neu generieren? Der aktuelle Text wird überschrieben.')) return;
+
+  const ta = document.getElementById('anschreiben');
+  ta.disabled = true;
+  ta.value = 'KI schreibt dein Anschreiben…';
+
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ firma: '{{ b.firma|e }}', stelle: '{{ b.stelle|e }}', stellenanzeige }),
+  });
+  const data = await res.json();
+  ta.disabled = false;
+
+  if (data.error) {
+    ta.value = '{{ b.anschreiben|e }}';
+    alert('Fehler: ' + data.error);
+  } else {
+    ta.value = data.anschreiben;
+    updateWordCount();
+    showToast('Anschreiben neu generiert');
+  }
+}
+
+function copyAnschreiben() {
+  navigator.clipboard.writeText(document.getElementById('anschreiben').value);
+  showToast('In Zwischenablage kopiert');
+}
+
+async function deleteBewerbung() {
+  if (!confirm('Bewerbung bei "{{ b.firma|e }}" wirklich löschen?')) return;
+  await fetch(`/api/delete/${BID}`, {method: 'POST'});
+  window.location.href = '/';
+}
+
+// ── AI Chat ──────────────────────────────────────────────────────
+
+function scrollChatToBottom() {
+  const el = document.getElementById('chat-messages');
+  el.scrollTop = el.scrollHeight;
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+}
+
+function sendChip(text) {
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  input.value = '';
+  const btn = document.getElementById('chat-send-btn');
+  btn.disabled = true;
+
+  appendMessage('user', message);
+
+  const typing = appendTyping();
+
+  try {
+    const res = await fetch(`/api/chat/${BID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message}),
+    });
+    const data = await res.json();
+    typing.remove();
+
+    if (data.error) {
+      appendMessage('assistant', 'Fehler: ' + data.error);
+    } else {
+      appendMessage('assistant', data.message);
+      if (data.updated_anschreiben) {
+        document.getElementById('anschreiben').value = data.updated_anschreiben;
+        updateWordCount();
+        document.getElementById('auto-save-hint').textContent = 'Anschreiben aktualisiert ✓';
+        setTimeout(() => document.getElementById('auto-save-hint').textContent = '', 3000);
+      }
+    }
+  } catch (e) {
+    typing.remove();
+    appendMessage('assistant', 'Verbindungsfehler. Bitte versuche es erneut.');
+  }
+
+  btn.disabled = false;
+  scrollChatToBottom();
+}
+
+function appendMessage(role, text) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+
+  if (role === 'user') {
+    div.style.cssText = 'display:flex;justify-content:flex-end;';
+    div.innerHTML = `<div style="background:var(--navy-700);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;max-width:220px;line-height:1.5;">${escHtml(text)}</div>`;
+  } else {
+    div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+    div.innerHTML = `
+      <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+      </div>
+      <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:220px;line-height:1.5;">${escHtml(text)}</div>`;
+  }
+  container.appendChild(div);
+  scrollChatToBottom();
+  return div;
+}
+
+function appendTyping() {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+  div.innerHTML = `
+    <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>
+    </div>
+    <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;display:flex;gap:5px;align-items:center;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite;"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite 0.2s;"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite 0.4s;"></span>
+    </div>`;
+  container.appendChild(div);
+  scrollChatToBottom();
+  return div;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy-800);color:#fff;padding:10px 20px;border-radius:var(--r-full);font-size:13px;z-index:9999;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+</script>
+{% endblock %}

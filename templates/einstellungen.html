@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Einstellungen — BewerbungsKI{% endblock %}
+
+{% block page_title %}Einstellungen{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm">← Zurück</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 720px; margin: 0 auto;">
+  <div style="margin-bottom: 32px;">
+    <h1 class="h1">Einstellungen</h1>
+    <p class="text-muted" style="margin-top: 8px;">Konfiguriere deine API-Keys und persönlichen Daten.</p>
+  </div>
+
+  <!-- API Key Section -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+      <h2 class="h3" style="margin: 0;">Anthropic API-Key</h2>
+    </div>
+
+    <form method="POST" style="display: flex; flex-direction: column; gap: 16px;">
+      <div>
+        <p style="font-size: 14px; color: var(--ink-500); margin-bottom: 12px;">
+          Benötigt für KI-Generierung. Kostengünstig (~€0.02 pro Anschreiben). 
+          <a href="https://console.anthropic.com" target="_blank" style="color: var(--primary); text-decoration: underline;">Keys hier erstellen</a>.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="api_key">API-Key</label>
+        <div class="input-with-icon">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="api_key" name="api_key" value="{{ s.get('api_key', '') }}" placeholder="sk-ant-..." style="padding-left: 42px;">
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        {% if s.get('api_key') %}
+          <div class="badge badge-accepted">
+            <span class="badge-dot" style="background: var(--success);"></span>
+            API-Key hinterlegt
+          </div>
+        {% else %}
+          <div class="badge badge-draft">
+            <span class="badge-dot"></span>
+            Kein Key konfiguriert
+          </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Personal Data Section -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+      <h2 class="h3" style="margin: 0;">Persönliche Daten</h2>
+    </div>
+
+    <form method="POST" style="display: flex; flex-direction: column; gap: 16px;">
+      <p style="font-size: 14px; color: var(--ink-500);">Werden als Absenderadresse im PDF-Anschreiben verwendet.</p>
+
+      <!-- Name + Email (Row) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <div class="input-with-icon">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input type="text" id="name" name="name" value="{{ s.get('name', '') }}" placeholder="Max Müller" style="padding-left: 42px;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-Mail</label>
+          <div class="input-with-icon">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>
+            </svg>
+            <input type="email" id="email" name="email" value="{{ s.get('email', '') }}" placeholder="max@example.com" style="padding-left: 42px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone + City (Row) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label for="telefon">Telefon</label>
+          <div class="input-with-icon">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <input type="tel" id="telefon" name="telefon" value="{{ s.get('telefon', '') }}" placeholder="+49 ..." style="padding-left: 42px;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ort">Stadt</label>
+          <div class="input-with-icon">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <input type="text" id="ort" name="ort" value="{{ s.get('ort', '') }}" placeholder="Berlin" style="padding-left: 42px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Street -->
+      <div class="form-group">
+        <label for="strasse">Straße & Hausnummer</label>
+        <div class="input-with-icon">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <input type="text" id="strasse" name="strasse" value="{{ s.get('strasse', '') }}" placeholder="Hauptstraße 123" style="padding-left: 42px;">
+        </div>
+      </div>
+
+      <!-- PLZ + Ort (Row) -->
+      <div style="display: grid; grid-template-columns: 140px 1fr; gap: 16px;">
+        <div class="form-group">
+          <label for="plz_ort">PLZ & Ort</label>
+          <input type="text" id="plz_ort" name="plz_ort" value="{{ s.get('plz_ort', '') }}" placeholder="10115 Berlin">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Speichern</button>
+    </form>
+  </div>
+
+  <!-- CV Upload Section -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="h3" style="margin: 0;">Lebenslauf</h2>
+    </div>
+
+    <p style="font-size: 14px; color: var(--ink-500); margin-bottom: 16px;">
+      Wird für KI-Generierung verwendet. Text wird einmalig extrahiert und gespeichert.
+    </p>
+
+    {% if s.get('cv_filename') %}
+      <div style="padding: 12px; background: var(--status-accepted-bg); border: 1px solid var(--status-accepted-dot); border-radius: var(--r); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+        <svg style="width: 20px; height: 20px; color: var(--success); flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+        </svg>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; color: var(--status-accepted-fg); font-size: 14px;">{{ s.get('cv_filename') }}</div>
+          {% if s.get('cv_text') %}<div style="font-size: 12px; color: var(--status-accepted-fg); opacity: 0.8;">{{ s.get('cv_text')|length }} Zeichen extrahiert</div>{% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label for="cvFile">PDF-Datei hochladen</label>
+      <input type="file" id="cvFile" accept=".pdf,.docx" style="height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r); font-size: 14px;">
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button type="button" class="btn btn-primary btn-sm" onclick="uploadCV()">Hochladen</button>
+      <span id="cvStatus" style="display: flex; align-items: center; font-size: 13px;"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+async function uploadCV() {
+  const file = document.getElementById('cvFile').files[0];
+  if (!file) { alert('Bitte eine Datei auswählen.'); return; }
+
+  const formData = new FormData();
+  formData.append('cv', file);
+
+  document.getElementById('cvStatus').textContent = 'Wird hochgeladen...';
+
+  const res = await fetch('{{ url_for("upload_cv") }}', { method: 'POST', body: formData });
+  const data = await res.json();
+
+  const el = document.getElementById('cvStatus');
+  if (data.success) {
+    el.innerHTML = '<span style="color: var(--success);">✓ Erfolgreich hochgeladen!</span>';
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    el.innerHTML = '<span style="color: var(--danger);">✗ Fehler: ' + data.error + '</span>';
+  }
+}
+</script>
+{% endblock %}

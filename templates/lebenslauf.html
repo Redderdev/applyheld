@@ -1,0 +1,920 @@
+{% extends "base.html" %}
+
+{% block title %}Lebenslauf — BewerbungsKI{% endblock %}
+{% block page_title %}Lebenslauf{% endblock %}
+
+{% block topbar_actions %}
+  <button class="btn btn-ghost btn-sm" onclick="saveCV()">Speichern</button>
+  <button class="btn btn-primary btn-sm" onclick="switchTab('vorlage')" style="gap:6px;">
+    <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    PDF exportieren
+  </button>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:1080px;margin:0 auto;">
+
+  <!-- ── Upload / Status Bar ────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    {% if cv_text %}
+      <svg style="width:36px;height:36px;color:var(--danger);flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+      </svg>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:15px;color:var(--ink-700);">{{ cv_filename or 'Lebenslauf' }}</div>
+        <div style="font-size:13px;color:var(--ink-400);">{{ cv_text|length }} Zeichen extrahiert</div>
+      </div>
+      <div id="parse-section" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        {% if cv_json %}
+          <span class="badge badge-accepted" style="font-size:12px;">
+            <span class="badge-dot" style="background:var(--success);"></span>KI-Analyse vorhanden
+          </span>
+        {% endif %}
+        <button class="btn btn-primary btn-sm" id="parseBtn" onclick="parseCV()">
+          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/>
+          </svg>
+          {% if cv_json %}Neu analysieren{% else %}KI Analyse starten{% endif %}
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('cv-upload').click()">Ersetzen</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteCV()">Löschen</button>
+      </div>
+    {% else %}
+      <svg style="width:36px;height:36px;color:var(--accent-500);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:15px;color:var(--ink-700);">Kein Lebenslauf hochgeladen</div>
+        <div style="font-size:13px;color:var(--ink-400);">Lade zuerst deinen Lebenslauf hoch, dann kann die KI ihn analysieren.</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('cv-upload').click()">
+        Lebenslauf hochladen
+      </button>
+    {% endif %}
+  </div>
+
+  <!-- ── Tab Bar ──────────────────────────────────────────────────────────── -->
+  <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
+    <button class="cv-tab active" id="tab-btn-inhalt" onclick="switchTab('inhalt')" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;border-bottom:2px solid var(--primary);margin-bottom:-2px;font-family:inherit;">
+      Inhalt bearbeiten
+    </button>
+    <button class="cv-tab" id="tab-btn-vorlage" onclick="switchTab('vorlage')" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;color:var(--ink-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">
+      Vorlage &amp; Export
+    </button>
+  </div>
+
+  <!-- ── Tab: Inhalt ──────────────────────────────────────────────────────── -->
+  <div id="tab-inhalt">
+
+    <!-- Personal -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Persönliche Daten</h3>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>Vor- und Nachname</label>
+          <input type="text" id="p-name" placeholder="Max Mustermann">
+        </div>
+        <div class="form-group">
+          <label>E-Mail</label>
+          <input type="email" id="p-email" placeholder="max@beispiel.de">
+        </div>
+        <div class="form-group">
+          <label>Telefon</label>
+          <input type="text" id="p-phone" placeholder="+49 123 456789">
+        </div>
+        <div class="form-group">
+          <label>Stadt / PLZ</label>
+          <input type="text" id="p-city" placeholder="10115 Berlin">
+        </div>
+        <div class="form-group">
+          <label>Straße &amp; Hausnummer</label>
+          <input type="text" id="p-address" placeholder="Musterstraße 1">
+        </div>
+        <div class="form-group">
+          <label>LinkedIn (optional)</label>
+          <input type="text" id="p-linkedin" placeholder="linkedin.com/in/max">
+        </div>
+        <div class="form-group">
+          <label>Website (optional)</label>
+          <input type="text" id="p-website" placeholder="www.max-mustermann.de">
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Profil / Zusammenfassung</h3>
+        <span style="font-size:12px;color:var(--ink-400);">Optional</span>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <textarea id="cv-summary" rows="4" placeholder="Kurzes Profil (2–4 Sätze über deine Stärken und Ziele)..." style="resize:vertical;min-height:100px;"></textarea>
+      </div>
+    </div>
+
+    <!-- Experience -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Berufserfahrung</h3>
+        <button class="btn btn-secondary btn-sm" onclick="addExperience()">+ Hinzufügen</button>
+      </div>
+      <div id="experience-list">
+        <div style="text-align:center;padding:24px;color:var(--ink-400);font-size:14px;" id="exp-empty">
+          Noch keine Einträge. Klicke auf "+ Hinzufügen" oder starte die KI-Analyse.
+        </div>
+      </div>
+    </div>
+
+    <!-- Education -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Ausbildung</h3>
+        <button class="btn btn-secondary btn-sm" onclick="addEducation()">+ Hinzufügen</button>
+      </div>
+      <div id="education-list">
+        <div style="text-align:center;padding:24px;color:var(--ink-400);font-size:14px;" id="edu-empty">
+          Noch keine Einträge.
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Kenntnisse &amp; Fähigkeiten</h3>
+        <span style="font-size:12px;color:var(--ink-400);">Kommagetrennt eingeben</span>
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <textarea id="skills-input" rows="3" placeholder="Python, SQL, Projektmanagement, MS Office, Scrum, Adobe Photoshop..." style="resize:vertical;"></textarea>
+      </div>
+      <div id="skills-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
+    </div>
+
+    <!-- Languages -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Sprachen</h3>
+        <button class="btn btn-secondary btn-sm" onclick="addLanguage()">+ Sprache</button>
+      </div>
+      <div id="languages-list">
+        <div style="text-align:center;padding:16px;color:var(--ink-400);font-size:14px;" id="lang-empty">Noch keine Sprachen eingetragen.</div>
+      </div>
+    </div>
+
+    <!-- Certifications -->
+    <div class="card" style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Zertifikate &amp; Kurse</h3>
+        <button class="btn btn-secondary btn-sm" onclick="addCertification()">+ Hinzufügen</button>
+      </div>
+      <div id="certifications-list">
+        <div style="text-align:center;padding:16px;color:var(--ink-400);font-size:14px;" id="cert-empty">Optional — z.B. AWS, Google Analytics, SCRUM Master.</div>
+      </div>
+    </div>
+
+    <!-- Save Bar -->
+    <div style="position:sticky;bottom:calc(var(--bottomnav-h, 0px) + 12px);z-index:10;display:flex;gap:12px;justify-content:flex-end;background:linear-gradient(to top,var(--bg) 70%,transparent);padding-top:12px;">
+      <button class="btn btn-primary" onclick="saveCV()" style="min-width:160px;">
+        <svg style="width:15px;height:15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Speichern
+      </button>
+    </div>
+
+  </div><!-- /tab-inhalt -->
+
+  <!-- ── Tab: Vorlage ──────────────────────────────────────────────────────── -->
+  <div id="tab-vorlage" style="display:none;">
+
+    <p style="font-size:14px;color:var(--ink-500);margin-bottom:20px;">
+      Wähle eine Designvorlage für deinen Lebenslauf. Bitte erst Inhalt speichern, dann exportieren.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+
+      <!-- Klassisch -->
+      <div class="template-card" id="tpl-klassisch" onclick="selectTemplate('klassisch')"
+           style="border:2px solid var(--border);border-radius:var(--r-lg);padding:0;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden;">
+        <div style="background:#fff;border-bottom:1px solid var(--border);padding:20px 16px;aspect-ratio:0.71;">
+          <!-- Preview: Klassisch -->
+          <div style="text-align:center;margin-bottom:10px;">
+            <div style="height:12px;background:#1e3a5f;border-radius:2px;width:60%;margin:0 auto 4px;"></div>
+            <div style="height:7px;background:#94a3b8;border-radius:2px;width:80%;margin:0 auto;"></div>
+          </div>
+          <div style="height:1px;background:#1e3a5f;margin:8px 0;"></div>
+          <div style="height:6px;background:#1e3a5f;border-radius:1px;width:40%;margin-bottom:6px;"></div>
+          <div style="height:1px;background:#1e3a5f;margin-bottom:8px;"></div>
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:4px;margin-bottom:4px;">
+            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-top:2px;"></div>
+            <div>
+              <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:3px;width:70%;"></div>
+              <div style="height:5px;background:#94a3b8;border-radius:1px;width:50%;"></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:4px;margin-bottom:8px;">
+            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-top:2px;"></div>
+            <div>
+              <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:3px;width:80%;"></div>
+              <div style="height:5px;background:#94a3b8;border-radius:1px;width:60%;"></div>
+            </div>
+          </div>
+          <div style="height:6px;background:#1e3a5f;border-radius:1px;width:30%;margin-bottom:4px;"></div>
+          <div style="height:1px;background:#1e3a5f;margin-bottom:6px;"></div>
+          <div style="height:5px;background:#334155;border-radius:1px;margin-bottom:3px;width:90%;"></div>
+          <div style="height:5px;background:#94a3b8;border-radius:1px;width:70%;"></div>
+        </div>
+        <div style="padding:12px 16px;background:var(--bg-soft);">
+          <div style="font-weight:700;font-size:14px;color:var(--ink-700);">Klassisch</div>
+          <div style="font-size:12px;color:var(--ink-400);">Traditionell, professionell, Schwarz/Weiß</div>
+        </div>
+      </div>
+
+      <!-- Modern -->
+      <div class="template-card" id="tpl-modern" onclick="selectTemplate('modern')"
+           style="border:2px solid var(--border);border-radius:var(--r-lg);padding:0;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden;">
+        <div style="background:#fff;border-bottom:1px solid var(--border);padding:0;aspect-ratio:0.71;display:flex;flex-direction:column;">
+          <!-- Navy Header -->
+          <div style="background:#1e3a5f;padding:14px 16px 12px;">
+            <div style="height:10px;background:rgba(255,255,255,0.9);border-radius:2px;width:55%;margin-bottom:4px;"></div>
+            <div style="height:6px;background:rgba(148,163,184,0.8);border-radius:1px;width:75%;"></div>
+          </div>
+          <div style="padding:12px 16px;flex:1;">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+              <div style="width:3px;height:12px;background:#06b6d4;border-radius:1px;flex-shrink:0;"></div>
+              <div style="height:6px;background:#1e3a5f;border-radius:1px;width:45%;"></div>
+            </div>
+            <div style="height:1px;background:#e2e8f0;margin-bottom:8px;"></div>
+            <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:3px;width:70%;"></div>
+            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-bottom:8px;width:50%;"></div>
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+              <div style="width:3px;height:12px;background:#06b6d4;border-radius:1px;flex-shrink:0;"></div>
+              <div style="height:6px;background:#1e3a5f;border-radius:1px;width:35%;"></div>
+            </div>
+            <div style="height:1px;background:#e2e8f0;margin-bottom:8px;"></div>
+            <div style="height:5px;background:#334155;border-radius:1px;margin-bottom:3px;width:85%;"></div>
+            <div style="height:5px;background:#94a3b8;border-radius:1px;width:60%;"></div>
+          </div>
+        </div>
+        <div style="padding:12px 16px;background:var(--bg-soft);">
+          <div style="font-weight:700;font-size:14px;color:var(--ink-700);">Modern</div>
+          <div style="font-size:12px;color:var(--ink-400);">Navy-Header, Cyan-Akzente, zeitgemäß</div>
+        </div>
+      </div>
+
+      <!-- Minimal -->
+      <div class="template-card" id="tpl-minimal" onclick="selectTemplate('minimal')"
+           style="border:2px solid var(--border);border-radius:var(--r-lg);padding:0;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden;">
+        <div style="background:#fff;border-bottom:1px solid var(--border);padding:16px;aspect-ratio:0.71;">
+          <div style="height:3px;background:#06b6d4;border-radius:2px;margin-bottom:14px;"></div>
+          <div style="height:14px;background:#0f172a;border-radius:2px;width:65%;margin-bottom:6px;"></div>
+          <div style="height:6px;background:#94a3b8;border-radius:1px;width:85%;margin-bottom:16px;"></div>
+          <div style="height:1px;background:#e2e8f0;margin-bottom:12px;"></div>
+          <div style="height:7px;background:#1e3a5f;border-radius:1px;width:40%;margin-bottom:10px;"></div>
+          <div style="display:grid;grid-template-columns:32px 1fr;gap:6px;margin-bottom:6px;">
+            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-top:2px;"></div>
+            <div>
+              <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:4px;width:75%;"></div>
+              <div style="height:5px;background:#cbd5e1;border-radius:1px;width:55%;"></div>
+            </div>
+          </div>
+          <div style="height:7px;background:#1e3a5f;border-radius:1px;width:35%;margin-top:10px;margin-bottom:10px;"></div>
+          <div style="height:5px;background:#334155;border-radius:1px;margin-bottom:4px;width:80%;"></div>
+        </div>
+        <div style="padding:12px 16px;background:var(--bg-soft);">
+          <div style="font-weight:700;font-size:14px;color:var(--ink-700);">Minimal</div>
+          <div style="font-size:12px;color:var(--ink-400);">Clean, viel Weißraum, elegant</div>
+        </div>
+      </div>
+
+    </div><!-- /template grid -->
+
+    <!-- Export Card -->
+    <div class="card" style="text-align:center;padding:32px;">
+      <svg style="width:40px;height:40px;color:var(--accent-500);margin-bottom:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      <h3 style="margin:0 0 8px;font-size:17px;font-weight:700;color:var(--ink-700);">Als PDF herunterladen</h3>
+      <p style="color:var(--ink-500);font-size:14px;margin:0 0 20px;max-width:360px;margin-left:auto;margin-right:auto;">
+        Vorlage: <strong id="selected-template-name">Klassisch</strong> — Bitte zuerst Inhalt speichern, dann exportieren.
+      </p>
+      <button class="btn btn-primary" onclick="exportPDF()" style="min-width:200px;font-size:15px;padding:10px 24px;">
+        <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        PDF herunterladen
+      </button>
+    </div>
+
+  </div><!-- /tab-vorlage -->
+
+</div><!-- /max-width wrapper -->
+
+<!-- Toast -->
+<div id="cv-toast" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-900);color:#fff;padding:10px 20px;border-radius:var(--r-full);font-size:13px;font-weight:600;z-index:9999;transition:transform .25s ease;pointer-events:none;">
+  Gespeichert
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="cv-upload" style="display:none;" accept=".pdf,.docx" onchange="uploadCV(event)">
+
+<style>
+.template-card.selected {
+  border-color: var(--accent-500) !important;
+  box-shadow: 0 0 0 3px rgba(6,182,212,.18);
+}
+.template-card:hover:not(.selected) {
+  border-color: var(--primary) !important;
+}
+.cv-tab:focus { outline: none; }
+@media (max-width: 700px) {
+  div[style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: 1fr !important;
+  }
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+
+const CV_EMPTY = {
+  personal: {name:'',email:'',phone:'',address:'',city:'',linkedin:'',website:''},
+  summary: '',
+  experience: [],
+  education: [],
+  skills: [],
+  languages: [],
+  certifications: []
+};
+
+let CV = JSON.parse(JSON.stringify(CV_EMPTY));
+let TEMPLATE = 'klassisch';
+let EXP_COUNTER = 0;
+let EDU_COUNTER = 0;
+let LANG_COUNTER = 0;
+let CERT_COUNTER = 0;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+(function init() {
+  const serverData = {{ cv_json | tojson if cv_json else '{}' }};
+  const serverTemplate = '{{ cv_template or "klassisch" }}';
+
+  if (serverData && Object.keys(serverData).length > 0) {
+    CV = Object.assign(JSON.parse(JSON.stringify(CV_EMPTY)), serverData);
+  }
+  TEMPLATE = serverTemplate;
+
+  renderAll();
+  selectTemplate(TEMPLATE, false);
+})();
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+function renderAll() {
+  renderPersonal();
+  renderSummary();
+  renderExperience();
+  renderEducation();
+  renderSkills();
+  renderLanguages();
+  renderCertifications();
+}
+
+function renderPersonal() {
+  const p = CV.personal || {};
+  document.getElementById('p-name').value    = p.name    || '';
+  document.getElementById('p-email').value   = p.email   || '';
+  document.getElementById('p-phone').value   = p.phone   || '';
+  document.getElementById('p-address').value = p.address || '';
+  document.getElementById('p-city').value    = p.city    || '';
+  document.getElementById('p-linkedin').value = p.linkedin || '';
+  document.getElementById('p-website').value  = p.website  || '';
+}
+
+function renderSummary() {
+  document.getElementById('cv-summary').value = CV.summary || '';
+}
+
+function renderExperience() {
+  const list = document.getElementById('experience-list');
+  const empty = document.getElementById('exp-empty');
+  const items = CV.experience || [];
+
+  // Remove old rendered cards
+  list.querySelectorAll('.cv-exp-card').forEach(el => el.remove());
+
+  if (items.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  items.forEach((exp, idx) => {
+    const id = ++EXP_COUNTER;
+    const card = document.createElement('div');
+    card.className = 'cv-exp-card';
+    card.dataset.idx = idx;
+    card.style.cssText = 'border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;position:relative;';
+
+    const bullets = (exp.bullets || []).map(b =>
+      `<div style="display:flex;gap:6px;align-items:start;margin-bottom:6px;">
+        <textarea rows="2" data-field="bullet" style="flex:1;resize:vertical;font-size:13px;min-height:36px;">${esc(b)}</textarea>
+        <button type="button" onclick="removeBullet(this)" style="color:var(--danger);background:none;border:none;cursor:pointer;padding:4px;margin-top:2px;font-size:16px;line-height:1;">×</button>
+      </div>`
+    ).join('');
+
+    card.innerHTML = `
+      <button type="button" onclick="removeExp(this)" title="Entfernen"
+        style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--ink-400);font-size:18px;line-height:1;">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Berufsbezeichnung *</label>
+          <input type="text" data-field="role" value="${esc(exp.role||'')}" placeholder="Senior Developer">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Unternehmen *</label>
+          <input type="text" data-field="company" value="${esc(exp.company||'')}" placeholder="Firma GmbH">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Ort</label>
+          <input type="text" data-field="location" value="${esc(exp.location||'')}" placeholder="Berlin">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
+            Zeitraum
+            <label style="font-weight:400;display:flex;align-items:center;gap:4px;cursor:pointer;">
+              <input type="checkbox" data-field="current" ${exp.current?'checked':''} onchange="toggleCurrent(this)"> Aktuell
+            </label>
+          </label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" data-field="start" value="${esc(exp.start||'')}" placeholder="MM/YYYY" style="flex:1;">
+            <input type="text" data-field="end" value="${esc(exp.end||'')}" placeholder="MM/YYYY" style="flex:1;" ${exp.current?'disabled':''}>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label style="font-size:12px;">Aufgaben &amp; Erfolge (Bullets)</label>
+        <div class="bullets-container">${bullets}</div>
+        <button type="button" onclick="addBullet(this)"
+          style="margin-top:6px;font-size:12px;color:var(--primary);background:none;border:none;cursor:pointer;padding:4px 0;">
+          + Bullet hinzufügen
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function renderEducation() {
+  const list = document.getElementById('education-list');
+  const empty = document.getElementById('edu-empty');
+  const items = CV.education || [];
+
+  list.querySelectorAll('.cv-edu-card').forEach(el => el.remove());
+
+  if (items.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  items.forEach((edu, idx) => {
+    const card = document.createElement('div');
+    card.className = 'cv-edu-card';
+    card.dataset.idx = idx;
+    card.style.cssText = 'border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;position:relative;';
+    card.innerHTML = `
+      <button type="button" onclick="removeEdu(this)" title="Entfernen"
+        style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--ink-400);font-size:18px;line-height:1;">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Abschluss</label>
+          <input type="text" data-field="degree" value="${esc(edu.degree||'')}" placeholder="B.Sc., M.A., Abitur">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Fachrichtung</label>
+          <input type="text" data-field="field" value="${esc(edu.field||'')}" placeholder="Informatik, BWL...">
+        </div>
+        <div class="form-group" style="margin:0;grid-column:span 2;">
+          <label style="font-size:12px;">Schule / Hochschule</label>
+          <input type="text" data-field="institution" value="${esc(edu.institution||'')}" placeholder="TU Berlin">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Zeitraum</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" data-field="start" value="${esc(edu.start||'')}" placeholder="YYYY" style="flex:1;">
+            <input type="text" data-field="end" value="${esc(edu.end||'')}" placeholder="YYYY" style="flex:1;">
+          </div>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Note (optional)</label>
+          <input type="text" data-field="grade" value="${esc(edu.grade||'')}" placeholder="1,8">
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function renderSkills() {
+  const skills = CV.skills || [];
+  document.getElementById('skills-input').value = skills.join(', ');
+  renderSkillTags(skills);
+}
+
+function renderSkillTags(skills) {
+  const container = document.getElementById('skills-tags');
+  container.innerHTML = skills.filter(s => s.trim()).map(s =>
+    `<span style="background:var(--navy-50);border:1px solid var(--border);border-radius:var(--r-full);padding:3px 10px;font-size:12px;color:var(--ink-700);">${esc(s.trim())}</span>`
+  ).join('');
+}
+
+document.getElementById('skills-input').addEventListener('input', function() {
+  const skills = this.value.split(',').map(s => s.trim()).filter(Boolean);
+  renderSkillTags(skills);
+});
+
+function renderLanguages() {
+  const list = document.getElementById('languages-list');
+  const empty = document.getElementById('lang-empty');
+  const items = CV.languages || [];
+
+  list.querySelectorAll('.cv-lang-row').forEach(el => el.remove());
+
+  if (items.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  items.forEach((lang, idx) => {
+    const row = document.createElement('div');
+    row.className = 'cv-lang-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 36px;gap:10px;margin-bottom:8px;align-items:end;';
+    row.innerHTML = `
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:12px;">Sprache</label>
+        <input type="text" data-field="lang" value="${esc(lang.lang||'')}" placeholder="Deutsch">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:12px;">Niveau</label>
+        <select data-field="level" style="height:40px;">
+          ${['Muttersprache','C2','C1','B2','B1','A2','A1','Grundkenntnisse'].map(l =>
+            `<option ${(lang.level||'') === l ? 'selected' : ''}>${l}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <button type="button" onclick="this.closest('.cv-lang-row').remove(); checkLangEmpty();"
+        style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function renderCertifications() {
+  const list = document.getElementById('certifications-list');
+  const empty = document.getElementById('cert-empty');
+  const items = CV.certifications || [];
+
+  list.querySelectorAll('.cv-cert-card').forEach(el => el.remove());
+
+  if (items.length === 0) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  items.forEach((cert, idx) => {
+    const card = document.createElement('div');
+    card.className = 'cv-cert-card';
+    card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px 36px;gap:10px;margin-bottom:8px;align-items:end;';
+    card.innerHTML = `
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:12px;">Zertifikat</label>
+        <input type="text" data-field="name" value="${esc(cert.name||'')}" placeholder="AWS Solutions Architect">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:12px;">Aussteller</label>
+        <input type="text" data-field="issuer" value="${esc(cert.issuer||'')}" placeholder="Amazon">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:12px;">Jahr</label>
+        <input type="text" data-field="year" value="${esc(cert.year||'')}" placeholder="2023">
+      </div>
+      <button type="button" onclick="this.closest('.cv-cert-card').remove(); checkCertEmpty();"
+        style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
+    `;
+    list.appendChild(card);
+  });
+}
+
+// ── Add / Remove helpers ──────────────────────────────────────────────────────
+
+function addExperience() {
+  CV.experience.push({company:'',role:'',location:'',start:'',end:'',current:false,bullets:['']});
+  renderExperience();
+}
+function removeExp(btn) {
+  btn.closest('.cv-exp-card').remove();
+  checkExpEmpty();
+}
+function checkExpEmpty() {
+  const empty = document.getElementById('exp-empty');
+  const hasCards = document.querySelectorAll('.cv-exp-card').length > 0;
+  if (empty) empty.style.display = hasCards ? 'none' : 'block';
+}
+
+function addEducation() {
+  CV.education.push({institution:'',degree:'',field:'',start:'',end:'',grade:''});
+  renderEducation();
+}
+function removeEdu(btn) {
+  btn.closest('.cv-edu-card').remove();
+  const empty = document.getElementById('edu-empty');
+  const hasCards = document.querySelectorAll('.cv-edu-card').length > 0;
+  if (empty) empty.style.display = hasCards ? 'none' : 'block';
+}
+
+function addLanguage() {
+  const empty = document.getElementById('lang-empty');
+  if (empty) empty.style.display = 'none';
+  const list = document.getElementById('languages-list');
+  const row = document.createElement('div');
+  row.className = 'cv-lang-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 36px;gap:10px;margin-bottom:8px;align-items:end;';
+  row.innerHTML = `
+    <div class="form-group" style="margin:0;">
+      <label style="font-size:12px;">Sprache</label>
+      <input type="text" data-field="lang" placeholder="Deutsch">
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label style="font-size:12px;">Niveau</label>
+      <select data-field="level" style="height:40px;">
+        ${['Muttersprache','C2','C1','B2','B1','A2','A1','Grundkenntnisse'].map(l =>
+          `<option>${l}</option>`
+        ).join('')}
+      </select>
+    </div>
+    <button type="button" onclick="this.closest('.cv-lang-row').remove(); checkLangEmpty();"
+      style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
+  `;
+  list.appendChild(row);
+}
+function checkLangEmpty() {
+  const empty = document.getElementById('lang-empty');
+  const hasRows = document.querySelectorAll('.cv-lang-row').length > 0;
+  if (empty) empty.style.display = hasRows ? 'none' : 'block';
+}
+
+function addCertification() {
+  const empty = document.getElementById('cert-empty');
+  if (empty) empty.style.display = 'none';
+  const list = document.getElementById('certifications-list');
+  const card = document.createElement('div');
+  card.className = 'cv-cert-card';
+  card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px 36px;gap:10px;margin-bottom:8px;align-items:end;';
+  card.innerHTML = `
+    <div class="form-group" style="margin:0;">
+      <label style="font-size:12px;">Zertifikat</label>
+      <input type="text" data-field="name" placeholder="AWS Solutions Architect">
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label style="font-size:12px;">Aussteller</label>
+      <input type="text" data-field="issuer" placeholder="Amazon">
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label style="font-size:12px;">Jahr</label>
+      <input type="text" data-field="year" placeholder="2023">
+    </div>
+    <button type="button" onclick="this.closest('.cv-cert-card').remove(); checkCertEmpty();"
+      style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
+  `;
+  list.appendChild(card);
+}
+function checkCertEmpty() {
+  const empty = document.getElementById('cert-empty');
+  const hasCards = document.querySelectorAll('.cv-cert-card').length > 0;
+  if (empty) empty.style.display = hasCards ? 'none' : 'block';
+}
+
+function addBullet(btn) {
+  const container = btn.previousElementSibling;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;align-items:start;margin-bottom:6px;';
+  row.innerHTML = `
+    <textarea rows="2" data-field="bullet" style="flex:1;resize:vertical;font-size:13px;min-height:36px;"></textarea>
+    <button type="button" onclick="removeBullet(this)" style="color:var(--danger);background:none;border:none;cursor:pointer;padding:4px;margin-top:2px;font-size:16px;line-height:1;">×</button>
+  `;
+  container.appendChild(row);
+}
+function removeBullet(btn) {
+  btn.closest('div').remove();
+}
+function toggleCurrent(cb) {
+  const card = cb.closest('.cv-exp-card');
+  const endInput = card.querySelector('[data-field="end"]');
+  if (endInput) endInput.disabled = cb.checked;
+}
+
+// ── Collect from DOM ──────────────────────────────────────────────────────────
+
+function collectCV() {
+  const cv = JSON.parse(JSON.stringify(CV_EMPTY));
+
+  cv.personal = {
+    name:     document.getElementById('p-name').value.trim(),
+    email:    document.getElementById('p-email').value.trim(),
+    phone:    document.getElementById('p-phone').value.trim(),
+    address:  document.getElementById('p-address').value.trim(),
+    city:     document.getElementById('p-city').value.trim(),
+    linkedin: document.getElementById('p-linkedin').value.trim(),
+    website:  document.getElementById('p-website').value.trim(),
+  };
+
+  cv.summary = document.getElementById('cv-summary').value.trim();
+
+  cv.skills = document.getElementById('skills-input').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+
+  document.querySelectorAll('.cv-exp-card').forEach(card => {
+    const get = f => (card.querySelector(`[data-field="${f}"]`) || {}).value || '';
+    const bullets = Array.from(card.querySelectorAll('[data-field="bullet"]'))
+      .map(ta => ta.value.trim()).filter(Boolean);
+    cv.experience.push({
+      company:  get('company'),
+      role:     get('role'),
+      location: get('location'),
+      start:    get('start'),
+      end:      get('end'),
+      current:  (card.querySelector('[data-field="current"]') || {}).checked || false,
+      bullets,
+    });
+  });
+
+  document.querySelectorAll('.cv-edu-card').forEach(card => {
+    const get = f => (card.querySelector(`[data-field="${f}"]`) || {}).value || '';
+    cv.education.push({
+      institution: get('institution'),
+      degree:      get('degree'),
+      field:       get('field'),
+      start:       get('start'),
+      end:         get('end'),
+      grade:       get('grade'),
+    });
+  });
+
+  document.querySelectorAll('.cv-lang-row').forEach(row => {
+    const lang  = (row.querySelector('[data-field="lang"]') || {}).value || '';
+    const level = (row.querySelector('[data-field="level"]') || {}).value || '';
+    if (lang.trim()) cv.languages.push({lang: lang.trim(), level});
+  });
+
+  document.querySelectorAll('.cv-cert-card').forEach(card => {
+    const get = f => (card.querySelector(`[data-field="${f}"]`) || {}).value || '';
+    if (get('name').trim()) cv.certifications.push({
+      name:   get('name'),
+      issuer: get('issuer'),
+      year:   get('year'),
+    });
+  });
+
+  return cv;
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+
+async function saveCV() {
+  CV = collectCV();
+  try {
+    const res = await fetch('/api/cv-data', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({data: CV, template: TEMPLATE})
+    });
+    const d = await res.json();
+    if (d.success) {
+      showToast('Gespeichert');
+    } else {
+      alert('Fehler beim Speichern: ' + (d.error || ''));
+    }
+  } catch (e) {
+    alert('Fehler: ' + e.message);
+  }
+}
+
+// ── KI Parse ─────────────────────────────────────────────────────────────────
+
+async function parseCV() {
+  const btn = document.getElementById('parseBtn');
+  const origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span style="opacity:.6;">KI analysiert...</span>';
+
+  try {
+    const res = await fetch('/api/parse-cv', {method: 'POST'});
+    const d = await res.json();
+    if (d.success && d.data) {
+      CV = Object.assign(JSON.parse(JSON.stringify(CV_EMPTY)), d.data);
+      renderAll();
+      showToast('KI-Analyse abgeschlossen — Inhalt wurde befüllt');
+    } else {
+      alert('Fehler: ' + (d.error || 'Unbekannter Fehler'));
+    }
+  } catch (e) {
+    alert('Fehler: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+
+// ── Template ──────────────────────────────────────────────────────────────────
+
+function selectTemplate(t, save = true) {
+  TEMPLATE = t;
+  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById('tpl-' + t);
+  if (el) el.classList.add('selected');
+  const names = {klassisch:'Klassisch', modern:'Modern', minimal:'Minimal'};
+  const nameEl = document.getElementById('selected-template-name');
+  if (nameEl) nameEl.textContent = names[t] || t;
+}
+
+// ── Export PDF ────────────────────────────────────────────────────────────────
+
+function exportPDF() {
+  window.location.href = '/cv/pdf/' + TEMPLATE;
+}
+
+// ── Upload / Delete ───────────────────────────────────────────────────────────
+
+async function deleteCV() {
+  if (!confirm('Lebenslauf wirklich löschen? Auch die KI-Analyse wird gelöscht.')) return;
+  const res = await fetch('{{ url_for("delete_cv") }}', {method: 'POST'});
+  const d = await res.json();
+  if (d.success) location.reload();
+}
+
+async function uploadCV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('cv', file);
+  try {
+    const res = await fetch('{{ url_for("upload_cv") }}', {method: 'POST', body: formData});
+    const d = await res.json();
+    if (d.success) {
+      location.reload();
+    } else {
+      alert('Fehler: ' + d.error);
+    }
+  } catch (e) {
+    alert('Upload fehlgeschlagen: ' + e.message);
+  }
+}
+
+// ── Tab switch ────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  const tabs = ['inhalt', 'vorlage'];
+  tabs.forEach(t => {
+    const content = document.getElementById('tab-' + t);
+    const btn = document.getElementById('tab-btn-' + t);
+    if (t === tab) {
+      if (content) content.style.display = 'block';
+      if (btn) {
+        btn.style.color = 'var(--primary)';
+        btn.style.borderBottomColor = 'var(--primary)';
+      }
+    } else {
+      if (content) content.style.display = 'none';
+      if (btn) {
+        btn.style.color = 'var(--ink-400)';
+        btn.style.borderBottomColor = 'transparent';
+      }
+    }
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('cv-toast');
+  t.textContent = msg;
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(80px)'; }, 2400);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BewerbungsKI — KI-gestütztes Bewerbungsmanagement</title>
+  <link rel="stylesheet" href="/static/design-tokens.css">
+  <style>
+    /* Landing Page Specific Styles */
+    
+    /* Sticky Navigation */
+    .landing-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(248, 250, 252, 0.82);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .landing-nav-container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .logo-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--navy-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.04em;
+    }
+
+    .logo-text {
+      font-size: 18.6px;
+      font-weight: 680;
+      letter-spacing: -0.02em;
+      color: var(--navy-900);
+    }
+
+    .logo-text .accent {
+      color: var(--accent-600);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .nav-link {
+      display: inline-block;
+      padding: 0 12px;
+      height: 34px;
+      background: transparent;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink-700);
+      border-radius: var(--r);
+      cursor: pointer;
+      transition: all var(--trans-fast) var(--ease-in-out);
+      text-decoration: none;
+    }
+
+    .nav-link:hover {
+      background: var(--bg-soft);
+      transform: translateY(-1px);
+    }
+
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 880px) {
+      .nav-links {
+        display: none;
+      }
+
+      .nav-buttons {
+        gap: 8px;
+      }
+
+      .btn-ghost.desktop-only {
+        display: none;
+      }
+    }
+
+    /* Hero Section */
+    .hero-section {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-background {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(60% 70% at 70% 0%, rgba(6, 182, 212, 0.1), transparent 60%),
+                  radial-gradient(50% 60% at 15% 10%, rgba(30, 58, 95, 0.06), transparent 55%);
+      pointer-events: none;
+    }
+
+    .hero-container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 72px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 56px;
+      align-items: center;
+      margin-bottom: 64px;
+    }
+
+    .hero-left {
+      animation: fadeIn 0.6s var(--ease-in-out);
+    }
+
+    .hero-right {
+      animation: fadeIn 0.6s var(--ease-in-out) 0.1s both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--r-full);
+      background: var(--accent-50);
+      color: var(--accent-600);
+      font-size: var(--eyebrow-size);
+      font-weight: var(--eyebrow-weight);
+      letter-spacing: var(--eyebrow-letter-spacing);
+      text-transform: uppercase;
+      margin-bottom: 22px;
+      border: 1px solid var(--accent-500);
+      width: fit-content;
+    }
+
+    .chip-icon {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+    }
+
+    .hero-h1 {
+      font-size: var(--display-size);
+      font-weight: var(--display-weight);
+      letter-spacing: var(--display-letter-spacing);
+      line-height: 1.1;
+      margin-bottom: 20px;
+      color: var(--navy-700);
+    }
+
+    .hero-h1 .navy {
+      color: var(--navy-700);
+    }
+
+    .highlight-text {
+      position: relative;
+      display: inline-block;
+    }
+
+    .underline-svg {
+      position: absolute;
+      left: 0;
+      bottom: -6px;
+      width: 100%;
+      height: 10px;
+    }
+
+    .hero-subline {
+      font-size: 18.5px;
+      line-height: 1.55;
+      color: var(--ink-500);
+      max-width: 480px;
+      margin-bottom: 30px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 26px;
+      flex-wrap: wrap;
+    }
+
+    .cta-icon {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+    }
+
+    .hero-trust-points {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 13.5px;
+      color: var(--ink-500);
+    }
+
+    .trust-point {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .trust-icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      color: var(--success);
+    }
+
+    /* Hero Preview */
+    .hero-preview {
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--sh-lg);
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-soft);
+    }
+
+    .traffic-light {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .traffic-light.red {
+      background: #f87171;
+    }
+
+    .traffic-light.yellow {
+      background: #fbbf24;
+    }
+
+    .traffic-light.green {
+      background: #34d399;
+    }
+
+    .preview-url {
+      margin-left: 8px;
+      font-size: 12px;
+      color: var(--ink-400);
+      font-family: var(--mono);
+    }
+
+    .preview-body {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      min-height: 320px;
+    }
+
+    .preview-left {
+      padding: 18px;
+      border-right: 1px solid var(--border);
+    }
+
+    .preview-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-400);
+      margin-bottom: 12px;
+    }
+
+    .company-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .company-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--navy-700), var(--accent-500));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 13.6px;
+      flex-shrink: 0;
+    }
+
+    .company-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .company-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+
+    .company-position {
+      font-size: 12.5px;
+      color: var(--ink-500);
+    }
+
+    .skeleton-line {
+      height: 8px;
+      background: var(--bg-soft);
+      border-radius: 4px;
+      margin-bottom: 7px;
+      animation: skeleton-pulse 2s infinite;
+    }
+
+    @keyframes skeleton-pulse {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .skeleton-line:nth-child(4) {
+      width: 85%;
+    }
+
+    .skeleton-line:nth-child(5) {
+      width: 70%;
+      margin-bottom: 18px;
+    }
+
+    .generate-btn {
+      width: 100%;
+      height: 42px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--r);
+      font-size: var(--body-size);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 32px;
+      transition: all var(--trans-fast) var(--ease-in-out);
+      box-shadow: var(--sh-xs);
+      font-family: inherit;
+    }
+
+    .generate-btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--sh-sm);
+    }
+
+    .generate-icon {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+    }
+
+    .preview-right {
+      padding: 18px;
+      background: linear-gradient(180deg, #fff, var(--bg));
+    }
+
+    .ai-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-500);
+      animation: pulse-animation 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-animation {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.6;
+        transform: scale(0.8);
+      }
+    }
+
+    .ai-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-600);
+    }
+
+    .skeleton-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .skel-line {
+      height: 9px;
+      background: var(--bg-soft);
+      border-radius: 4px;
+      margin-bottom: 9px;
+      animation: skeleton-pulse 2s infinite;
+    }
+
+    .skel-line:nth-child(1) {
+      width: 100%;
+      animation-delay: 0s;
+    }
+
+    .skel-line:nth-child(2) {
+      width: 94%;
+      animation-delay: 0.1s;
+    }
+
+    .skel-line:nth-child(3) {
+      width: 88%;
+      animation-delay: 0.2s;
+    }
+
+    .skel-line:nth-child(4) {
+      width: 97%;
+      animation-delay: 0.3s;
+    }
+
+    .skel-line:nth-child(5) {
+      width: 72%;
+      animation-delay: 0.4s;
+    }
+
+    .skel-line:nth-child(6) {
+      width: 90%;
+      animation-delay: 0.5s;
+    }
+
+    .skel-line:nth-child(7) {
+      width: 40%;
+      margin-bottom: 0;
+      animation-delay: 0.6s;
+    }
+
+    .ai-preview-quote {
+      margin-top: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--ink-700);
+    }
+
+    .quote-highlight {
+      background: var(--accent-50);
+      color: var(--accent-600);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    /* Trust Strip */
+    .trust-strip {
+      margin-top: 64px;
+      padding-top: 30px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .trust-label {
+      font-size: 13px;
+      color: var(--ink-400);
+      margin-bottom: 18px;
+      font-weight: 500;
+    }
+
+    .company-logos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 40px;
+      opacity: 0.7;
+    }
+
+    .company-wordmark {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink-400);
+      white-space: nowrap;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 880px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+        margin-bottom: 40px;
+      }
+
+      .hero-h1 {
+        font-size: 34px;
+      }
+
+      .hero-ctas {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .hero-ctas .btn {
+        width: 100%;
+      }
+
+      .preview-body {
+        grid-template-columns: 1fr;
+        min-height: 400px;
+      }
+
+      .preview-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .hero-container {
+        padding: 48px 24px 60px;
+      }
+
+      .trust-strip {
+        margin-top: 40px;
+        padding-top: 24px;
+      }
+
+      .company-logos {
+        gap: 24px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .hero-h1 {
+        font-size: 28px;
+      }
+
+      .hero-subline {
+        font-size: 16px;
+      }
+
+      .hero-trust-points {
+        font-size: 12.5px;
+        gap: 12px;
+      }
+
+      .preview-body {
+        min-height: 300px;
+      }
+
+      .company-wordmark {
+        font-size: 16px;
+      }
+
+      .company-logos {
+        gap: 16px;
+      }
+    }
+
+    /* Icon Styles (SVG) */
+    .icon-svg {
+      display: inline-block;
+      width: 1em;
+      height: 1em;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      vertical-align: -0.125em;
+    }
+
+    /* Button Animations */
+    .btn {
+      cursor: pointer;
+      font-family: inherit;
+      transition: all var(--trans-fast) var(--ease-in-out);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--r);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Link scroll behavior */
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Navigation -->
+  <header class="landing-nav">
+    <div class="landing-nav-container">
+      <!-- Logo -->
+      <div class="logo-wrapper">
+        <div class="logo-mark">B</div>
+        <span class="logo-text">Bewerbungs<span class="accent">KI</span></span>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="nav-links">
+        <a href="#features" class="nav-link">Funktionen</a>
+        <a href="#workflow" class="nav-link">So funktioniert's</a>
+        <a href="#pricing" class="nav-link">Preise</a>
+      </nav>
+
+      <!-- Right buttons -->
+      <div class="nav-buttons">
+        <button class="btn btn-ghost btn-sm desktop-only">Anmelden</button>
+        <button class="btn btn-primary btn-sm">Kostenlos starten</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-background"></div>
+    
+    <div class="hero-container">
+      <!-- Hero Grid: Left Content + Right Preview -->
+      <div class="hero-grid">
+        <!-- Left Column -->
+        <div class="hero-left">
+          <!-- Chip Badge -->
+          <div class="chip-badge">
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/>
+              <path d="M19 14l.7 2 2 .7-2 .7L19 20l-.7-1.9-2-.7 2-.7z"/>
+              <path d="M5 14l.6 1.7 1.7.6-1.7.6L5 18.6l-.6-1.7L2.7 16l1.7-.6z"/>
+            </svg>
+            KI für den deutschen Arbeitsmarkt
+          </div>
+
+          <!-- Headline with underline -->
+          <h1 class="hero-h1">
+            Bewerbungen schreiben in<br><span class="navy">Minuten</span>, nicht 
+            <span class="highlight-text">
+              Stunden
+              <svg class="underline-svg" viewBox="0 0 200 10" preserveAspectRatio="none">
+                <path d="M2 7 Q 100 1 198 6" stroke="var(--accent-500)" stroke-width="3" fill="none" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </h1>
+
+          <!-- Subline -->
+          <p class="hero-subline">
+            Erstelle überzeugende, individuelle Anschreiben mit KI – und behalte mit dem integrierten Bewerbungs-Tracker jede Bewerbung im Blick.
+          </p>
+
+          <!-- CTAs -->
+          <div class="hero-ctas">
+            <button class="btn btn-primary btn-lg">
+              Kostenlos starten
+              <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <button class="btn btn-secondary btn-lg">
+              <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Demo ansehen
+            </button>
+          </div>
+
+          <!-- Trust Points -->
+          <div class="hero-trust-points">
+            <span class="trust-point">
+              <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              Keine Kreditkarte nötig
+            </span>
+            <span class="trust-point">
+              <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+              5 Bewerbungen / Monat gratis
+            </span>
+          </div>
+        </div>
+
+        <!-- Right Column: Hero Preview -->
+        <div class="hero-right">
+          <div class="hero-preview card">
+            <!-- Preview Header with Traffic Lights -->
+            <div class="preview-header">
+              <span class="traffic-light red"></span>
+              <span class="traffic-light yellow"></span>
+              <span class="traffic-light green"></span>
+              <span class="preview-url">bewerbungski.de/bewerbung/neu</span>
+            </div>
+
+            <!-- Preview Body -->
+            <div class="preview-body">
+              <!-- Left: Stelle -->
+              <div class="preview-left">
+                <div class="preview-label">Stelle</div>
+                
+                <div class="company-cell">
+                  <div class="company-logo">SA</div>
+                  <div class="company-info">
+                    <div class="company-name">SAP SE</div>
+                    <div class="company-position">Senior Frontend Developer</div>
+                  </div>
+                </div>
+
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+
+                <button class="generate-btn">
+                  <svg class="generate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/>
+                    <path d="M19 14l.7 2 2 .7-2 .7L19 20l-.7-1.9-2-.7 2-.7z"/>
+                    <path d="M5 14l.6 1.7 1.7.6-1.7.6L5 18.6l-.6-1.7L2.7 16l1.7-.6z"/>
+                  </svg>
+                  KI-Anschreiben generieren
+                </button>
+              </div>
+
+              <!-- Right: KI Output -->
+              <div class="preview-right">
+                <div class="ai-indicator">
+                  <span class="pulse-dot"></span>
+                  <span class="ai-text">KI schreibt …</span>
+                </div>
+
+                <div class="skeleton-lines">
+                  <div class="skel-line"></div>
+                  <div class="skel-line"></div>
+                  <div class="skel-line"></div>
+                  <div class="skel-line"></div>
+                  <div class="skel-line"></div>
+                  <div class="skel-line"></div>
+                  <div class="skel-line"></div>
+                </div>
+
+                <div class="ai-preview-quote">
+                  „… sehe ich in Ihrem Team die <span class="quote-highlight">ideale Gelegenheit</span>, meine Expertise einzubringen."
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust Strip -->
+      <div class="trust-strip">
+        <div class="trust-label">Erfolgreiche Bewerbungen bei Unternehmen wie</div>
+        <div class="company-logos">
+          <span class="company-wordmark">SAP</span>
+          <span class="company-wordmark">Siemens</span>
+          <span class="company-wordmark">Zalando</span>
+          <span class="company-wordmark">N26</span>
+          <span class="company-wordmark">BMW</span>
+          <span class="company-wordmark">Personio</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Smooth scroll anchor navigation
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#' && document.querySelector(href)) {
+          e.preventDefault();
+          document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

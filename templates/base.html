@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}BewerbungsKI — KI-gestütztes Bewerbungsmanagement{% endblock %}</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='design-tokens.css') }}?v=4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='layout.css') }}?v=4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <a href="{{ url_for('index') }}" class="brand-link">
+        <svg width="30" height="30" viewBox="0 0 32 32" fill="none" style="flex-shrink:0;">
+          <rect width="32" height="32" rx="8" fill="var(--navy-700)"/>
+          <text x="15" y="22.5" text-anchor="middle" fill="#fff" style="font-family:Geist,Inter,sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.04em;">B</text>
+          <circle cx="24" cy="9" r="4.2" fill="var(--accent-500)"/>
+          <path d="M24 6.1l.6 1.9 1.9.6-1.9.6-.6 1.9-.6-1.9-1.9-.6 1.9-.6z" fill="#fff"/>
+        </svg>
+        <span class="brand-text">Bewerbungs<strong style="font-weight:700;">KI</strong></span>
+      </a>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-label">Haupt</div>
+        <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </svg>
+          <span class="nav-text">Dashboard</span>
+          {% if nav_total > 0 %}<span class="nav-badge">{{ nav_total }}</span>{% endif %}
+        </a>
+        
+        <a href="{{ url_for('neue_bewerbung') }}" class="nav-item {% if request.endpoint == 'neue_bewerbung' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span class="nav-text">Neue Bewerbung</span>
+        </a>
+
+        <a href="{{ url_for('lebenslauf') }}" class="nav-item {% if request.endpoint == 'lebenslauf' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+            <polyline points="13 2 13 9 20 9"/>
+          </svg>
+          <span class="nav-text">Lebenslauf</span>
+        </a>
+
+        <a href="{{ url_for('jobs') }}" class="nav-item {% if request.endpoint == 'jobs' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </svg>
+          <span class="nav-text">Jobs finden</span>
+        </a>
+      </div>
+
+      <!-- Account Section -->
+      <div class="nav-group">
+        <div class="nav-label">Konto</div>
+        <a href="{{ url_for('profil') }}" class="nav-item {% if request.endpoint == 'profil' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="nav-text">Profil</span>
+        </a>
+        
+        <a href="{{ url_for('einstellungen') }}" class="nav-item {% if request.endpoint == 'einstellungen' %}active{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/>
+          </svg>
+          <span class="nav-text">Einstellungen</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Free Plan Card -->
+    <div class="sidebar-plan-card">
+      <div class="plan-title">Free Plan</div>
+      <div class="plan-progress">
+        <div class="progress-bar" style="width: 60%"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 12px;">Auf Pro upgraden</button>
+    </div>
+
+    <!-- User Chip -->
+    <div class="sidebar-user-chip">
+      <div class="avatar avatar-sm">{{ (profile_name or 'U')[0]|upper }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ profile_name or 'Mein Profil' }}</div>
+        <div class="user-email">{{ profile_email or 'Profil einrichten' }}</div>
+      </div>
+      <svg class="user-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/>
+      </svg>
+    </div>
+  </aside>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+    </div>
+    <div class="topbar-right">
+      {% block topbar_actions %}{% endblock %}
+      <button class="topbar-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="toast {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="page">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <nav class="bottom-nav">
+    <a href="{{ url_for('index') }}" class="bottom-nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+      <span>Dashboard</span>
+    </a>
+    <a href="{{ url_for('neue_bewerbung') }}" class="bottom-nav-item {% if request.endpoint == 'neue_bewerbung' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Neu</span>
+    </a>
+    <a href="{{ url_for('lebenslauf') }}" class="bottom-nav-item {% if request.endpoint == 'lebenslauf' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+        <polyline points="13 2 13 9 20 9"/>
+      </svg>
+      <span>CV</span>
+    </a>
+    <a href="{{ url_for('jobs') }}" class="bottom-nav-item {% if request.endpoint == 'jobs' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+      </svg>
+      <span>Jobs</span>
+    </a>
+    <a href="{{ url_for('profil') }}" class="bottom-nav-item {% if request.endpoint == 'profil' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Profil</span>
+    </a>
+  </nav>
+
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

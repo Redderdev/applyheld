@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — BewerbungsKI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('neue_bewerbung') }}" class="btn btn-primary btn-sm">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Neue Bewerbung
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Begrüßung -->
+<div style="margin-bottom: 28px;">
+  <h1 class="h1" style="margin-bottom: 4px;">Guten Morgen 👋</h1>
+  <p class="text-muted" style="font-size: 15px;">
+    {% if stats.gesendet > 0 %}
+      Du hast <strong>{{ stats.gesendet }} aktive Bewerbung{{ 'en' if stats.gesendet != 1 else '' }}</strong> im Prozess.
+    {% else %}
+      Starte mit deiner ersten Bewerbung.
+    {% endif %}
+  </p>
+</div>
+
+<!-- Stats Grid -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;">
+
+  <div class="card" style="padding: 18px;">
+    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--navy-50); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+      <svg style="width: 19px; height: 19px; color: var(--navy-700);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+        <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+      </svg>
+    </div>
+    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.total }}</div>
+    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Gesamt</div>
+  </div>
+
+  <div class="card" style="padding: 18px;">
+    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--status-draft-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+      <svg style="width: 19px; height: 19px; color: var(--status-draft-fg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </div>
+    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.entwurf }}</div>
+    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Entwürfe</div>
+  </div>
+
+  <div class="card" style="padding: 18px;">
+    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--status-applied-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+      <svg style="width: 19px; height: 19px; color: var(--status-applied-fg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+      </svg>
+    </div>
+    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.gesendet }}</div>
+    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Im Prozess</div>
+  </div>
+
+  <div class="card" style="padding: 18px;">
+    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--status-accepted-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+      <svg style="width: 19px; height: 19px; color: var(--status-accepted-fg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.angenommen }}</div>
+    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Angenommen</div>
+  </div>
+
+</div>
+
+<!-- Toolbar -->
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 16px; flex-wrap: wrap;">
+  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+    <button class="chip active" id="chip-all"    onclick="setFilter('all',   this)">Alle <span style="opacity:.65;">({{ stats.total }})</span></button>
+    <button class="chip"        id="chip-active" onclick="setFilter('active',this)">Aktiv <span style="opacity:.65;">({{ stats.gesendet }})</span></button>
+    <button class="chip"        id="chip-draft"  onclick="setFilter('draft', this)">Entwürfe <span style="opacity:.65;">({{ stats.entwurf }})</span></button>
+  </div>
+  <div style="position: relative; width: 240px;">
+    <svg style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--ink-400); pointer-events: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="search" id="search-input" placeholder="Firma oder Stelle..." oninput="applyFilter()"
+      style="width: 100%; padding-left: 34px; height: 36px; border: 1px solid var(--border-strong); border-radius: var(--r); font-size: 13.5px;">
+  </div>
+</div>
+
+<!-- Inhalt -->
+{% if not bewerbungen %}
+<div class="card" style="text-align: center; padding: 56px 32px; display: flex; flex-direction: column; align-items: center;">
+  <div style="width: 52px; height: 52px; border-radius: var(--r-md); background: var(--bg-soft); display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+    <svg style="width: 26px; height: 26px; color: var(--ink-300);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+    </svg>
+  </div>
+  <h3 class="h3" style="margin-bottom: 8px;">Noch keine Bewerbungen</h3>
+  <p class="text-muted" style="margin-bottom: 24px; max-width: 320px; line-height: 1.6;">Erstelle deine erste Bewerbung und behalte den Überblick über deine Jobsuche.</p>
+  <a href="{{ url_for('neue_bewerbung') }}" class="btn btn-primary btn-sm">Erste Bewerbung erstellen</a>
+</div>
+{% else %}
+
+<!-- Desktop-Tabelle -->
+<div class="card" style="overflow: hidden;" id="table-view">
+  <table style="width: 100%; border-collapse: collapse;" id="main-table">
+    <thead>
+      <tr style="border-bottom: 1px solid var(--border); background: var(--bg-soft);">
+        <th style="padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Firma & Stelle</th>
+        <th style="padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Beworben</th>
+        <th style="padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Status</th>
+        <th style="padding: 12px 18px; text-align: right; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Aktionen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bewerbungen %}
+      <tr class="tbl-row"
+          data-firma="{{ (b.firma or '')|lower }}"
+          data-stelle="{{ (b.stelle or '')|lower }}"
+          data-status="{{ b.status|lower }}"
+          style="border-bottom: 1px solid var(--border); transition: background .12s; cursor: pointer;"
+          onclick="window.location='{{ url_for('bewerbung', bid=b.id) }}'"
+          onmouseover="this.style.background='var(--navy-50)'"
+          onmouseout="this.style.background=''">
+        <td style="padding: 14px 18px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, var(--navy-700), var(--accent-500)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0;">
+              {{ b.firma[0]|upper if b.firma else '?' }}
+            </div>
+            <div>
+              <div style="font-weight: 600; font-size: 14.5px; color: var(--ink-900);">{{ b.firma or '–' }}</div>
+              {% if b.stelle %}<div style="font-size: 13px; color: var(--ink-500); margin-top: 1px;">{{ b.stelle }}</div>{% endif %}
+            </div>
+          </div>
+        </td>
+        <td style="padding: 14px 18px; font-size: 14px; color: var(--ink-500);">{{ b.datum_erstellt or '–' }}</td>
+        <td style="padding: 14px 18px;">
+          <span class="badge badge-{{ status_css[b.status] }}">{{ b.status }}</span>
+        </td>
+        <td style="padding: 14px 18px; text-align: right;" onclick="event.stopPropagation()">
+          <div style="display: flex; gap: 4px; justify-content: flex-end;">
+            <a href="{{ url_for('bewerbung', bid=b.id) }}" class="icon-btn" title="Öffnen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:16px;height:16px;"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </a>
+            <a href="{{ url_for('bewerbung', bid=b.id) }}#pdf" class="icon-btn" title="PDF">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:16px;height:16px;"><path d="M12 17V5M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            </a>
+            <button class="icon-btn" title="Löschen" style="color: var(--status-rejected-fg);" onclick="deleteBewerbung({{ b.id }}, '{{ b.firma|replace("'","\\'")|e }}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:16px;height:16px;"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <!-- Empty search result -->
+  <div id="empty-search" style="display:none; text-align:center; padding: 40px; color: var(--ink-400); font-size: 14px;">
+    Keine Treffer — <button onclick="clearSearch()" style="background:none;border:none;color:var(--accent-600);cursor:pointer;font-size:14px;padding:0;">Suche zurücksetzen</button>
+  </div>
+</div>
+
+<!-- Mobile Cards -->
+<div style="display: flex; flex-direction: column; gap: 10px;" id="card-view">
+  {% for b in bewerbungen %}
+  <a href="{{ url_for('bewerbung', bid=b.id) }}"
+     class="card tbl-row"
+     data-firma="{{ (b.firma or '')|lower }}"
+     data-stelle="{{ (b.stelle or '')|lower }}"
+     data-status="{{ b.status|lower }}"
+     style="padding: 16px; display: flex; align-items: center; gap: 12px; text-decoration: none;">
+    <div style="width: 40px; height: 40px; border-radius: 9px; background: linear-gradient(135deg, var(--navy-700), var(--accent-500)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0;">
+      {{ b.firma[0]|upper if b.firma else '?' }}
+    </div>
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-weight: 600; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ b.firma or '–' }}</div>
+      {% if b.stelle %}<div style="font-size: 13px; color: var(--ink-500); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ b.stelle }}</div>{% endif %}
+      <div style="font-size: 12px; color: var(--ink-400); margin-top: 4px;">{{ b.datum_erstellt or '' }}</div>
+    </div>
+    <span class="badge badge-{{ status_css[b.status] }}" style="flex-shrink: 0;">{{ b.status }}</span>
+  </a>
+  {% endfor %}
+  <div id="empty-search-mobile" style="display:none; text-align:center; padding: 32px; color: var(--ink-400); font-size: 14px;">
+    Keine Treffer
+  </div>
+</div>
+
+{% endif %}
+
+<!-- FAB (Mobile) -->
+<a href="{{ url_for('neue_bewerbung') }}" class="fab" id="mobile-fab" style="display:none;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Neu
+</a>
+
+<script>
+let currentFilter = 'all';
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('.tbl-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const firma  = row.dataset.firma  || '';
+    const stelle = row.dataset.stelle || '';
+    const status = row.dataset.status || '';
+    const matchesSearch = !q || firma.includes(q) || stelle.includes(q);
+    const matchesFilter = currentFilter === 'all'
+      || (currentFilter === 'draft'  && status === 'entwurf')
+      || (currentFilter === 'active' && status !== 'entwurf' && status !== 'angenommen' && status !== 'abgelehnt');
+    const show = matchesSearch && matchesFilter;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const es  = document.getElementById('empty-search');
+  const esm = document.getElementById('empty-search-mobile');
+  if (es)  es.style.display  = visible === 0 ? '' : 'none';
+  if (esm) esm.style.display = visible === 0 ? '' : 'none';
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  applyFilter();
+}
+
+function deleteBewerbung(id, firma) {
+  if (!confirm(`Bewerbung bei "${firma}" wirklich löschen?`)) return;
+  fetch(`/api/delete/${id}`, { method: 'POST' })
+    .then(() => location.reload());
+}
+
+function updateView() {
+  const tableView = document.getElementById('table-view');
+  const cardView  = document.getElementById('card-view');
+  const fab       = document.getElementById('mobile-fab');
+  if (!tableView || !cardView) return;
+  const mobile = window.innerWidth <= 880;
+  tableView.style.display = mobile ? 'none' : '';
+  cardView.style.display  = mobile ? 'flex' : 'none';
+  if (fab) fab.style.display = mobile ? 'inline-flex' : 'none';
+}
+
+window.addEventListener('resize', updateView);
+updateView();
+</script>
+{% endblock %}

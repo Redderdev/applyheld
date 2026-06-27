@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+bewerbungen.db
+uploads/
+.claude/settings.local.json
+*.log
+.env
