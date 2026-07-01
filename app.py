@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, flash, make_response
 import os
 import re
-import sqlite3
 import io
 import json
 import pdfplumber
@@ -27,12 +26,45 @@ except ImportError:
     SCRAPE_SUPPORT = False
 
 app = Flask(__name__)
-app.secret_key = 'bewerbungstool-2024'
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-change-in-production')
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-DATABASE = os.path.join(BASE_DIR, 'bewerbungen.db')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# ── DB Driver (PostgreSQL on Railway, SQLite for local dev) ───────────────────
+DATABASE_URL = os.environ.get('DATABASE_URL')   # Railway injects this automatically
+_PG          = bool(DATABASE_URL)
+
+if _PG:
+    import psycopg2
+    import psycopg2.extras
+else:
+    import sqlite3
+    DATABASE = os.path.join(BASE_DIR, 'bewerbungen.db')
+
+
+class _Conn:
+    """Thin wrapper so psycopg2 and sqlite3 share one call interface.
+
+    – sqlite3  uses ? placeholders and conn.row_factory for dict-like rows
+    – psycopg2 uses %s placeholders and RealDictCursor for dict-like rows
+    Both return objects where row['column'] works, so all templates stay unchanged.
+    """
+    def __init__(self, raw):
+        self._raw = raw
+
+    def execute(self, sql, params=()):
+        if _PG:
+            cur = self._raw.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute(sql.replace('?', '%s'), params)
+        else:
+            cur = self._raw.cursor()
+            cur.execute(sql, params)
+        return cur
+
+    def commit(self): self._raw.commit()
+    def close(self):  self._raw.close()
 
 STATUS_OPTIONS = [
     'Entwurf', 'Gesendet', 'Telefoninterview',
@@ -52,15 +84,48 @@ STATUS_CSS = {
 # ── Database ──────────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if _PG:
+        return _Conn(psycopg2.connect(DATABASE_URL))
+    raw = sqlite3.connect(DATABASE)
+    raw.row_factory = sqlite3.Row
+    return _Conn(raw)
 
 
 def init_db():
     conn = get_db()
-    conn.executescript('''
-        CREATE TABLE IF NOT EXISTS bewerbungen (
+    if _PG:
+        conn.execute('''CREATE TABLE IF NOT EXISTS bewerbungen (
+            id SERIAL PRIMARY KEY,
+            firma TEXT NOT NULL DEFAULT '',
+            stelle TEXT DEFAULT '',
+            url TEXT DEFAULT '',
+            stellenanzeige TEXT DEFAULT '',
+            anschreiben TEXT DEFAULT '',
+            status TEXT DEFAULT 'Entwurf',
+            datum_erstellt TEXT DEFAULT CURRENT_DATE::TEXT,
+            datum_gesendet TEXT,
+            notizen TEXT DEFAULT ''
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT DEFAULT ''
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS chat_nachrichten (
+            id SERIAL PRIMARY KEY,
+            bewerbung_id INTEGER NOT NULL,
+            rolle TEXT NOT NULL,
+            inhalt TEXT NOT NULL,
+            erstellt_am TEXT DEFAULT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS'),
+            FOREIGN KEY (bewerbung_id) REFERENCES bewerbungen(id) ON DELETE CASCADE
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS cv_data (
+            id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+            data TEXT DEFAULT '{}',
+            template TEXT DEFAULT 'klassisch',
+            updated_at TEXT DEFAULT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')
+        )''')
+    else:
+        conn.execute('''CREATE TABLE IF NOT EXISTS bewerbungen (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             firma TEXT NOT NULL DEFAULT '',
             stelle TEXT DEFAULT '',
@@ -71,29 +136,25 @@ def init_db():
             datum_erstellt TEXT DEFAULT (strftime('%Y-%m-%d', 'now')),
             datum_gesendet TEXT,
             notizen TEXT DEFAULT ''
-        );
-
-        CREATE TABLE IF NOT EXISTS settings (
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT DEFAULT ''
-        );
-
-        CREATE TABLE IF NOT EXISTS chat_nachrichten (
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS chat_nachrichten (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             bewerbung_id INTEGER NOT NULL,
             rolle TEXT NOT NULL,
             inhalt TEXT NOT NULL,
             erstellt_am TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (bewerbung_id) REFERENCES bewerbungen(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS cv_data (
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS cv_data (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             data TEXT DEFAULT '{}',
             template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT (datetime('now'))
-        );
-    ''')
+        )''')
     conn.commit()
     conn.close()
 
@@ -110,7 +171,14 @@ def get_setting(key, default=''):
 
 def set_setting(key, value):
     conn = get_db()
-    conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (key, value))
+    if _PG:
+        conn.execute(
+            'INSERT INTO settings (key, value) VALUES (?, ?)'
+            ' ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+            (key, value)
+        )
+    else:
+        conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (key, value))
     conn.commit()
     conn.close()
 
@@ -618,14 +686,21 @@ Wenn der Nutzer eine Frage stellt oder nur Feedback gibt, antworte kurz ohne die
 def save():
     data = request.get_json()
     conn = get_db()
-    cur = conn.execute(
-        'INSERT INTO bewerbungen (firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
-        ' VALUES (?,?,?,?,?,?,?)',
-        (data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
-         data.get('stellenanzeige', ''), data.get('anschreiben', ''),
-         data.get('status', 'Entwurf'), data.get('notizen', ''))
-    )
-    bid = cur.lastrowid
+    params = (data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
+              data.get('stellenanzeige', ''), data.get('anschreiben', ''),
+              data.get('status', 'Entwurf'), data.get('notizen', ''))
+    if _PG:
+        cur = conn.execute(
+            'INSERT INTO bewerbungen (firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
+            ' VALUES (?,?,?,?,?,?,?) RETURNING id', params
+        )
+        bid = cur.fetchone()['id']
+    else:
+        cur = conn.execute(
+            'INSERT INTO bewerbungen (firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
+            ' VALUES (?,?,?,?,?,?,?)', params
+        )
+        bid = cur.lastrowid
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'id': bid})
@@ -697,10 +772,19 @@ def _get_cv_json():
 
 def _save_cv_json(data, template):
     conn = get_db()
-    conn.execute(
-        'INSERT OR REPLACE INTO cv_data (id, data, template, updated_at) VALUES (1, ?, ?, datetime("now"))',
-        (json.dumps(data, ensure_ascii=False), template)
-    )
+    payload = (json.dumps(data, ensure_ascii=False), template)
+    if _PG:
+        conn.execute(
+            'INSERT INTO cv_data (id, data, template, updated_at) VALUES (1, ?, ?, CURRENT_TIMESTAMP::TEXT)'
+            ' ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data,'
+            ' template = EXCLUDED.template, updated_at = CURRENT_TIMESTAMP::TEXT',
+            payload
+        )
+    else:
+        conn.execute(
+            'INSERT OR REPLACE INTO cv_data (id, data, template, updated_at) VALUES (1, ?, ?, datetime("now"))',
+            payload
+        )
     conn.commit()
     conn.close()
 

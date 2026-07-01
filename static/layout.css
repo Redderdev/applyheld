@@ -106,8 +106,22 @@ body {
 .nav-item svg { color: var(--ink-400); transition: color .14s; }
 .nav-item:hover { background: var(--bg-soft); color: var(--ink-900); }
 .nav-item:hover svg { color: var(--ink-700); }
-.nav-item.active { background: var(--navy-50); color: var(--navy-700); font-weight: 600; }
-.nav-item.active svg { color: var(--navy-700); }
+
+/* Active — left accent bar (NOT rounded bg highlight) */
+.nav-item.active {
+  background: rgba(30, 58, 95, .07);
+  color: var(--ink-900);
+  font-weight: 600;
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 5px; bottom: 5px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-500);
+}
+.nav-item.active svg { color: var(--accent-500); }
 
 .nav-icon {
   width: 18px;

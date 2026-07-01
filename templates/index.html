@@ -25,48 +25,30 @@
 </div>
 
 <!-- Stats Grid -->
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;">
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;">
 
-  <div class="card" style="padding: 18px;">
-    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--navy-50); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
-      <svg style="width: 19px; height: 19px; color: var(--navy-700);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
-        <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
-      </svg>
-    </div>
-    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.total }}</div>
-    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Gesamt</div>
+  <div class="card stat-card">
+    <div class="stat-accent" style="background: var(--navy-700);"></div>
+    <div class="stat-val">{{ stats.total }}</div>
+    <div class="stat-lbl">Gesamt</div>
   </div>
 
-  <div class="card" style="padding: 18px;">
-    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--status-draft-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
-      <svg style="width: 19px; height: 19px; color: var(--status-draft-fg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-      </svg>
-    </div>
-    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.entwurf }}</div>
-    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Entwürfe</div>
+  <div class="card stat-card">
+    <div class="stat-accent" style="background: #94a3b8;"></div>
+    <div class="stat-val">{{ stats.entwurf }}</div>
+    <div class="stat-lbl">Entwürfe</div>
   </div>
 
-  <div class="card" style="padding: 18px;">
-    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--status-applied-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
-      <svg style="width: 19px; height: 19px; color: var(--status-applied-fg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
-      </svg>
-    </div>
-    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.gesendet }}</div>
-    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Im Prozess</div>
+  <div class="card stat-card">
+    <div class="stat-accent" style="background: #3b82f6;"></div>
+    <div class="stat-val">{{ stats.gesendet }}</div>
+    <div class="stat-lbl">Im Prozess</div>
   </div>
 
-  <div class="card" style="padding: 18px;">
-    <div style="width: 36px; height: 36px; border-radius: var(--r-sm); background: var(--status-accepted-bg); display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
-      <svg style="width: 19px; height: 19px; color: var(--status-accepted-fg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-      </svg>
-    </div>
-    <div style="font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink-900);">{{ stats.angenommen }}</div>
-    <div style="font-size: 13.5px; color: var(--ink-500); margin-top: 6px;">Angenommen</div>
+  <div class="card stat-card">
+    <div class="stat-accent" style="background: #059669;"></div>
+    <div class="stat-val">{{ stats.angenommen }}</div>
+    <div class="stat-lbl">Angenommen</div>
   </div>
 
 </div>
@@ -105,11 +87,11 @@
 <div class="card" style="overflow: hidden;" id="table-view">
   <table style="width: 100%; border-collapse: collapse;" id="main-table">
     <thead>
-      <tr style="border-bottom: 1px solid var(--border); background: var(--bg-soft);">
-        <th style="padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Firma & Stelle</th>
-        <th style="padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Beworben</th>
-        <th style="padding: 12px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Status</th>
-        <th style="padding: 12px 18px; text-align: right; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-500);">Aktionen</th>
+      <tr style="border-bottom: 2px solid var(--border);">
+        <th style="padding: 11px 18px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-400);">Firma & Stelle</th>
+        <th style="padding: 11px 18px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-400);">Beworben</th>
+        <th style="padding: 11px 18px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-400);">Status</th>
+        <th style="padding: 11px 18px; text-align: right; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-400);">Aktionen</th>
       </tr>
     </thead>
     <tbody>
