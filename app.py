@@ -232,6 +232,12 @@ def init_db():
             template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT (datetime('now'))
         )''')
+    # Assign orphaned rows (user_id IS NULL) to the first user.
+    # Covers bewerbungen created before auth was added.
+    conn.execute('''
+        UPDATE bewerbungen SET user_id = (SELECT id FROM users ORDER BY id LIMIT 1)
+        WHERE user_id IS NULL AND EXISTS (SELECT 1 FROM users)
+    ''')
     conn.commit()
     conn.close()
 
