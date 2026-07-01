@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, flash, make_response
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask_bcrypt import Bcrypt
 import os
 import re
 import io
@@ -27,6 +29,12 @@ except ImportError:
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-change-in-production')
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Bitte melde dich an, um fortzufahren.'
+login_manager.login_message_category = 'info'
+bcrypt = Bcrypt(app)
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
@@ -66,6 +74,27 @@ class _Conn:
     def commit(self): self._raw.commit()
     def close(self):  self._raw.close()
 
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+class User(UserMixin):
+    def __init__(self, id, email, name, plan='free'):
+        self.id = id
+        self.email = email
+        self.name = name
+        self.plan = plan
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    conn = get_db()
+    row = conn.execute('SELECT id, email, name, plan FROM users WHERE id = ?', (int(user_id),)).fetchone()
+    conn.close()
+    if row:
+        return User(row['id'], row['email'], row['name'], row['plan'])
+    return None
+
+
 STATUS_OPTIONS = [
     'Entwurf', 'Gesendet', 'Telefoninterview',
     'Vorstellungsgespräch', 'Angebot erhalten', 'Angenommen', 'Abgelehnt'
@@ -94,8 +123,17 @@ def get_db():
 def init_db():
     conn = get_db()
     if _PG:
+        conn.execute('''CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT DEFAULT '',
+            plan TEXT DEFAULT 'free',
+            created_at TEXT DEFAULT CURRENT_DATE::TEXT
+        )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS bewerbungen (
             id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             firma TEXT NOT NULL DEFAULT '',
             stelle TEXT DEFAULT '',
             url TEXT DEFAULT '',
@@ -106,9 +144,19 @@ def init_db():
             datum_gesendet TEXT,
             notizen TEXT DEFAULT ''
         )''')
+        conn.execute('ALTER TABLE bewerbungen ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE')
+        # Migrate settings: old schema had key as sole PK, no user_id
+        needs_settings_migration = not conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name=? AND column_name=?",
+            ('settings', 'user_id')
+        ).fetchone()
+        if needs_settings_migration:
+            conn.execute('DROP TABLE IF EXISTS settings CASCADE')
         conn.execute('''CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT DEFAULT ''
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            key TEXT NOT NULL,
+            value TEXT DEFAULT '',
+            PRIMARY KEY (user_id, key)
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS chat_nachrichten (
             id SERIAL PRIMARY KEY,
@@ -118,15 +166,31 @@ def init_db():
             erstellt_am TEXT DEFAULT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS'),
             FOREIGN KEY (bewerbung_id) REFERENCES bewerbungen(id) ON DELETE CASCADE
         )''')
+        # Migrate cv_data: old schema was singleton (id=1), new is per-user
+        needs_cv_migration = not conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name=? AND column_name=?",
+            ('cv_data', 'user_id')
+        ).fetchone()
+        if needs_cv_migration:
+            conn.execute('DROP TABLE IF EXISTS cv_data CASCADE')
         conn.execute('''CREATE TABLE IF NOT EXISTS cv_data (
-            id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+            user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             data TEXT DEFAULT '{}',
             template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')
         )''')
     else:
+        conn.execute('''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT DEFAULT '',
+            plan TEXT DEFAULT 'free',
+            created_at TEXT DEFAULT (strftime('%Y-%m-%d', 'now'))
+        )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS bewerbungen (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             firma TEXT NOT NULL DEFAULT '',
             stelle TEXT DEFAULT '',
             url TEXT DEFAULT '',
@@ -137,9 +201,18 @@ def init_db():
             datum_gesendet TEXT,
             notizen TEXT DEFAULT ''
         )''')
+        cur = conn.execute("SELECT 1 FROM pragma_table_info('bewerbungen') WHERE name='user_id'")
+        if not cur.fetchone():
+            conn.execute('ALTER TABLE bewerbungen ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE')
+        # Migrate settings
+        cur = conn.execute("SELECT 1 FROM pragma_table_info('settings') WHERE name='user_id'")
+        if not cur.fetchone():
+            conn.execute('DROP TABLE IF EXISTS settings')
         conn.execute('''CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT DEFAULT ''
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            key TEXT NOT NULL,
+            value TEXT DEFAULT '',
+            PRIMARY KEY (user_id, key)
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS chat_nachrichten (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -149,8 +222,12 @@ def init_db():
             erstellt_am TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (bewerbung_id) REFERENCES bewerbungen(id) ON DELETE CASCADE
         )''')
+        # Migrate cv_data
+        cur = conn.execute("SELECT 1 FROM pragma_table_info('cv_data') WHERE name='user_id'")
+        if not cur.fetchone():
+            conn.execute('DROP TABLE IF EXISTS cv_data')
         conn.execute('''CREATE TABLE IF NOT EXISTS cv_data (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
+            user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             data TEXT DEFAULT '{}',
             template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT (datetime('now'))
@@ -163,22 +240,28 @@ init_db()
 
 
 def get_setting(key, default=''):
+    if not current_user.is_authenticated:
+        return default
+    uid = current_user.id
     conn = get_db()
-    row = conn.execute('SELECT value FROM settings WHERE key = ?', (key,)).fetchone()
+    row = conn.execute('SELECT value FROM settings WHERE user_id = ? AND key = ?', (uid, key)).fetchone()
     conn.close()
     return row['value'] if row and row['value'] else default
 
 
 def set_setting(key, value):
+    if not current_user.is_authenticated:
+        return
+    uid = current_user.id
     conn = get_db()
     if _PG:
         conn.execute(
-            'INSERT INTO settings (key, value) VALUES (?, ?)'
-            ' ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
-            (key, value)
+            'INSERT INTO settings (user_id, key, value) VALUES (?, ?, ?)'
+            ' ON CONFLICT (user_id, key) DO UPDATE SET value = EXCLUDED.value',
+            (uid, key, value)
         )
     else:
-        conn.execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', (key, value))
+        conn.execute('INSERT OR REPLACE INTO settings (user_id, key, value) VALUES (?, ?, ?)', (uid, key, value))
     conn.commit()
     conn.close()
 
@@ -187,13 +270,16 @@ def set_setting(key, value):
 
 @app.context_processor
 def inject_globals():
+    if not current_user.is_authenticated:
+        return {'nav_total': 0, 'profile_name': '', 'profile_email': '',
+                'status_css': STATUS_CSS, 'status_options': STATUS_OPTIONS}
     conn = get_db()
-    total = conn.execute('SELECT COUNT(*) as n FROM bewerbungen').fetchone()['n']
+    total = conn.execute('SELECT COUNT(*) as n FROM bewerbungen WHERE user_id = ?', (current_user.id,)).fetchone()['n']
     conn.close()
     return {
         'nav_total': total,
-        'profile_name': get_setting('name', ''),
-        'profile_email': get_setting('email', ''),
+        'profile_name': current_user.name,
+        'profile_email': current_user.email,
         'status_css': STATUS_CSS,
         'status_options': STATUS_OPTIONS,
     }
@@ -212,9 +298,13 @@ def jobs():
 
 
 @app.route('/')
+@login_required
 def index():
     conn = get_db()
-    bewerbungen = conn.execute('SELECT * FROM bewerbungen ORDER BY datum_erstellt DESC').fetchall()
+    bewerbungen = conn.execute(
+        'SELECT * FROM bewerbungen WHERE user_id = ? ORDER BY datum_erstellt DESC',
+        (current_user.id,)
+    ).fetchall()
     conn.close()
     stats = {
         'total': len(bewerbungen),
@@ -230,6 +320,7 @@ def index():
 
 
 @app.route('/neue-bewerbung')
+@login_required
 def neue_bewerbung():
     has_cv  = bool(get_setting('cv_text'))
     has_api = bool(get_setting('api_key'))
@@ -237,20 +328,22 @@ def neue_bewerbung():
 
 
 @app.route('/bewerbung/<int:bid>')
+@login_required
 def bewerbung(bid):
     conn = get_db()
-    b = conn.execute('SELECT * FROM bewerbungen WHERE id = ?', (bid,)).fetchone()
+    b = conn.execute('SELECT * FROM bewerbungen WHERE id = ? AND user_id = ?', (bid, current_user.id)).fetchone()
+    if not b:
+        return redirect(url_for('index'))
     chat = conn.execute(
         'SELECT * FROM chat_nachrichten WHERE bewerbung_id = ? ORDER BY erstellt_am',
         (bid,)
     ).fetchall()
     conn.close()
-    if not b:
-        return redirect(url_for('index'))
     return render_template('bewerbung.html', b=b, chat=chat)
 
 
 @app.route('/lebenslauf')
+@login_required
 def lebenslauf():
     cv_json, cv_template = _get_cv_json()
     return render_template('lebenslauf.html',
@@ -261,6 +354,7 @@ def lebenslauf():
 
 
 @app.route('/profil', methods=['GET', 'POST'])
+@login_required
 def profil():
     if request.method == 'POST':
         for field in ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']:
@@ -273,6 +367,7 @@ def profil():
 
 
 @app.route('/einstellungen', methods=['GET', 'POST'])
+@login_required
 def einstellungen():
     if request.method == 'POST':
         for field in ['api_key', 'name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']:
@@ -288,6 +383,7 @@ def einstellungen():
 # ── API: Lebenslauf ───────────────────────────────────────────────────────────
 
 @app.route('/api/upload-cv', methods=['POST'])
+@login_required
 def upload_cv():
     if 'cv' not in request.files:
         return jsonify({'error': 'Keine Datei ausgewählt'}), 400
@@ -323,6 +419,7 @@ def upload_cv():
 
 
 @app.route('/api/delete-cv', methods=['POST'])
+@login_required
 def delete_cv():
     set_setting('cv_text', '')
     set_setting('cv_filename', '')
@@ -336,6 +433,7 @@ def delete_cv():
 # ── API: URL-Extraktion ───────────────────────────────────────────────────────
 
 @app.route('/api/extract-url', methods=['POST'])
+@login_required
 def extract_url():
     data = request.get_json()
     url = (data.get('url') or '').strip()
@@ -408,6 +506,7 @@ COMMON_JOB_TITLES = [
 
 
 @app.route('/api/jobs/search')
+@login_required
 def jobs_search():
     if not SCRAPE_SUPPORT:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
@@ -420,8 +519,8 @@ def jobs_search():
     if not stelle:
         return jsonify({'error': 'Bitte eine Stelle eingeben.'}), 400
 
-    app_id  = get_setting('adzuna_app_id')
-    app_key = get_setting('adzuna_app_key')
+    app_id  = os.environ.get('ADZUNA_APP_ID') or get_setting('adzuna_app_id')
+    app_key = os.environ.get('ADZUNA_APP_KEY') or get_setting('adzuna_app_key')
     if not app_id or not app_key:
         return jsonify({'error': 'Adzuna API-Key nicht konfiguriert.'}), 400
 
@@ -519,6 +618,7 @@ def _format_job_age(iso_str):
 # ── API: Anschreiben generieren ───────────────────────────────────────────────
 
 @app.route('/api/generate', methods=['POST'])
+@login_required
 def generate():
     data = request.get_json()
     stellenanzeige = (data.get('stellenanzeige') or '').strip()
@@ -581,6 +681,7 @@ Gib NUR den Brieftext zurück (von Anrede bis Unterschrift), ohne Absenderblock 
 # ── API: AI Chat ──────────────────────────────────────────────────────────────
 
 @app.route('/api/chat/<int:bid>', methods=['POST'])
+@login_required
 def chat(bid):
     data = request.get_json()
     message = (data.get('message') or '').strip()
@@ -593,7 +694,7 @@ def chat(bid):
         return jsonify({'error': 'Kein API-Key hinterlegt'}), 400
 
     conn = get_db()
-    b = conn.execute('SELECT * FROM bewerbungen WHERE id = ?', (bid,)).fetchone()
+    b = conn.execute('SELECT * FROM bewerbungen WHERE id = ? AND user_id = ?', (bid, current_user.id)).fetchone()
     conn.close()
 
     if not b:
@@ -683,22 +784,24 @@ Wenn der Nutzer eine Frage stellt oder nur Feedback gibt, antworte kurz ohne die
 # ── API: Bewerbungen CRUD ─────────────────────────────────────────────────────
 
 @app.route('/api/save', methods=['POST'])
+@login_required
 def save():
     data = request.get_json()
+    uid = current_user.id
     conn = get_db()
-    params = (data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
+    params = (uid, data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
               data.get('stellenanzeige', ''), data.get('anschreiben', ''),
               data.get('status', 'Entwurf'), data.get('notizen', ''))
     if _PG:
         cur = conn.execute(
-            'INSERT INTO bewerbungen (firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
-            ' VALUES (?,?,?,?,?,?,?) RETURNING id', params
+            'INSERT INTO bewerbungen (user_id, firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
+            ' VALUES (?,?,?,?,?,?,?,?) RETURNING id', params
         )
         bid = cur.fetchone()['id']
     else:
         cur = conn.execute(
-            'INSERT INTO bewerbungen (firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
-            ' VALUES (?,?,?,?,?,?,?)', params
+            'INSERT INTO bewerbungen (user_id, firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
+            ' VALUES (?,?,?,?,?,?,?,?)', params
         )
         bid = cur.lastrowid
     conn.commit()
@@ -707,16 +810,18 @@ def save():
 
 
 @app.route('/api/update/<int:bid>', methods=['POST'])
+@login_required
 def update(bid):
     data = request.get_json()
     conn = get_db()
     conn.execute(
         '''UPDATE bewerbungen SET firma=?, stelle=?, url=?, stellenanzeige=?,
-           anschreiben=?, status=?, notizen=?, datum_gesendet=? WHERE id=?''',
+           anschreiben=?, status=?, notizen=?, datum_gesendet=?
+           WHERE id=? AND user_id=?''',
         (data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
          data.get('stellenanzeige', ''), data.get('anschreiben', ''),
          data.get('status', 'Entwurf'), data.get('notizen', ''),
-         data.get('datum_gesendet') or None, bid)
+         data.get('datum_gesendet') or None, bid, current_user.id)
     )
     conn.commit()
     conn.close()
@@ -724,22 +829,25 @@ def update(bid):
 
 
 @app.route('/api/update-status/<int:bid>', methods=['POST'])
+@login_required
 def update_status(bid):
     data = request.get_json()
     status = data.get('status', '')
     if status not in STATUS_OPTIONS:
         return jsonify({'error': 'Ungültiger Status'}), 400
     conn = get_db()
-    conn.execute('UPDATE bewerbungen SET status = ? WHERE id = ?', (status, bid))
+    conn.execute('UPDATE bewerbungen SET status = ? WHERE id = ? AND user_id = ?',
+                 (status, bid, current_user.id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
 
 
 @app.route('/api/delete/<int:bid>', methods=['POST'])
+@login_required
 def delete(bid):
     conn = get_db()
-    conn.execute('DELETE FROM bewerbungen WHERE id = ?', (bid,))
+    conn.execute('DELETE FROM bewerbungen WHERE id = ? AND user_id = ?', (bid, current_user.id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -759,8 +867,10 @@ _CV_EMPTY = {
 
 
 def _get_cv_json():
+    if not current_user.is_authenticated:
+        return {}, 'klassisch'
     conn = get_db()
-    row = conn.execute('SELECT data, template FROM cv_data WHERE id = 1').fetchone()
+    row = conn.execute('SELECT data, template FROM cv_data WHERE user_id = ?', (current_user.id,)).fetchone()
     conn.close()
     if row:
         try:
@@ -771,18 +881,21 @@ def _get_cv_json():
 
 
 def _save_cv_json(data, template):
+    if not current_user.is_authenticated:
+        return
+    uid = current_user.id
+    payload = (uid, json.dumps(data, ensure_ascii=False), template)
     conn = get_db()
-    payload = (json.dumps(data, ensure_ascii=False), template)
     if _PG:
         conn.execute(
-            'INSERT INTO cv_data (id, data, template, updated_at) VALUES (1, ?, ?, CURRENT_TIMESTAMP::TEXT)'
-            ' ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data,'
+            'INSERT INTO cv_data (user_id, data, template, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP::TEXT)'
+            ' ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data,'
             ' template = EXCLUDED.template, updated_at = CURRENT_TIMESTAMP::TEXT',
             payload
         )
     else:
         conn.execute(
-            'INSERT OR REPLACE INTO cv_data (id, data, template, updated_at) VALUES (1, ?, ?, datetime("now"))',
+            'INSERT OR REPLACE INTO cv_data (user_id, data, template, updated_at) VALUES (?, ?, ?, datetime("now"))',
             payload
         )
     conn.commit()
@@ -790,6 +903,7 @@ def _save_cv_json(data, template):
 
 
 @app.route('/api/parse-cv', methods=['POST'])
+@login_required
 def parse_cv():
     api_key = get_setting('api_key')
     if not api_key:
@@ -854,6 +968,7 @@ Regeln:
 
 
 @app.route('/api/cv-data', methods=['GET', 'POST'])
+@login_required
 def cv_data_api():
     if request.method == 'GET':
         data, template = _get_cv_json()
@@ -869,6 +984,7 @@ def cv_data_api():
 
 
 @app.route('/cv/pdf/<template>')
+@login_required
 def cv_pdf(template):
     if template not in ('klassisch', 'modern', 'minimal'):
         return 'Ungültige Vorlage', 400
@@ -1269,9 +1385,10 @@ def _cv_pdf_minimal(data, profile):
 # ── Anschreiben PDF Export ─────────────────────────────────────────────────────
 
 @app.route('/bewerbung/<int:bid>/pdf')
+@login_required
 def export_pdf(bid):
     conn = get_db()
-    row = conn.execute('SELECT * FROM bewerbungen WHERE id = ?', (bid,)).fetchone()
+    row = conn.execute('SELECT * FROM bewerbungen WHERE id = ? AND user_id = ?', (bid, current_user.id)).fetchone()
     conn.close()
     if not row:
         return 'Nicht gefunden', 404
@@ -1335,6 +1452,73 @@ def _build_pdf(b, s):
     doc.build(story)
     buf.seek(0)
     return buf
+
+
+# ── Auth Routes ───────────────────────────────────────────────────────────────
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    error = None
+    if request.method == 'POST':
+        email    = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        conn = get_db()
+        row = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        conn.close()
+        if row and bcrypt.check_password_hash(row['password_hash'], password):
+            user = User(row['id'], row['email'], row['name'], row['plan'])
+            login_user(user, remember=True)
+            return redirect(request.args.get('next') or url_for('index'))
+        error = 'E-Mail oder Passwort falsch.'
+    return render_template('login.html', error=error)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    error = None
+    if request.method == 'POST':
+        name     = request.form.get('name', '').strip()
+        email    = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        if not name or not email or not password:
+            error = 'Bitte alle Felder ausfüllen.'
+        elif len(password) < 8:
+            error = 'Passwort muss mindestens 8 Zeichen haben.'
+        else:
+            pw_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+            conn = get_db()
+            try:
+                if _PG:
+                    cur = conn.execute(
+                        'INSERT INTO users (email, password_hash, name) VALUES (?,?,?) RETURNING id',
+                        (email, pw_hash, name)
+                    )
+                    user_id = cur.fetchone()['id']
+                else:
+                    cur = conn.execute(
+                        'INSERT INTO users (email, password_hash, name) VALUES (?,?,?)',
+                        (email, pw_hash, name)
+                    )
+                    user_id = cur.lastrowid
+                conn.commit()
+                conn.close()
+                login_user(User(user_id, email, name), remember=True)
+                return redirect(url_for('index'))
+            except Exception:
+                conn.close()
+                error = 'Diese E-Mail-Adresse ist bereits registriert.'
+    return render_template('register.html', error=error)
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
