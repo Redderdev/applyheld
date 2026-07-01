@@ -293,8 +293,12 @@ def landing():
 
 
 @app.route('/jobs')
+@login_required
 def jobs():
-    return render_template('jobs.html')
+    has_adzuna = bool(
+        os.environ.get('ADZUNA_APP_ID') or get_setting('adzuna_app_id')
+    )
+    return render_template('jobs.html', has_adzuna=has_adzuna)
 
 
 @app.route('/')

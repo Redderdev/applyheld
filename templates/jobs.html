@@ -6,6 +6,21 @@
 {% block content %}
 <div style="max-width:900px;margin:0 auto;">
 
+{% if not has_adzuna %}
+<div class="card" style="text-align:center;padding:56px 32px;">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--ink-400)" stroke-width="1.5" style="margin:0 auto 16px;">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+  <h2 style="font-size:18px;font-weight:650;color:var(--ink-900);margin-bottom:8px;">Jobbörse nicht verfügbar</h2>
+  <p style="color:var(--ink-500);font-size:14.5px;max-width:380px;margin:0 auto;line-height:1.6;">
+    Die Jobsuche wird über die Adzuna-API bereitgestellt.<br>
+    Bitte <code style="font-size:13px;background:var(--bg-soft);padding:1px 6px;border-radius:4px;">ADZUNA_APP_ID</code> und
+    <code style="font-size:13px;background:var(--bg-soft);padding:1px 6px;border-radius:4px;">ADZUNA_APP_KEY</code>
+    als Umgebungsvariablen in Railway setzen.
+  </p>
+</div>
+{% else %}
+
   <!-- ── Suchmaske ──────────────────────────────────────────────────────────── -->
   <div class="card" style="margin-bottom:20px;">
     <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end;">
@@ -504,4 +519,5 @@ function loadFromCache(stelle, ort, umkreis) {
   search();
 })();
 </script>
+{% endif %}
 {% endblock %}
