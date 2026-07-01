@@ -327,7 +327,7 @@ def index():
 @login_required
 def neue_bewerbung():
     has_cv  = bool(get_setting('cv_text'))
-    has_api = bool(get_setting('api_key'))
+    has_api = bool(os.environ.get('ANTHROPIC_API_KEY'))
     return render_template('neue_bewerbung.html', has_cv=has_cv, has_api=has_api)
 
 
@@ -374,13 +374,13 @@ def profil():
 @login_required
 def einstellungen():
     if request.method == 'POST':
-        for field in ['api_key', 'name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']:
+        for field in ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']:
             if field in request.form:
                 set_setting(field, request.form[field].strip())
         flash('Einstellungen gespeichert!', 'success')
         return redirect(url_for('einstellungen'))
     s = {k: get_setting(k) for k in
-         ['api_key', 'name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort', 'cv_filename', 'cv_text']}
+         ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort', 'cv_filename', 'cv_text']}
     return render_template('einstellungen.html', s=s)
 
 
@@ -632,9 +632,9 @@ def generate():
     if not stellenanzeige:
         return jsonify({'error': 'Bitte eine Stellenanzeige einfügen.'}), 400
 
-    api_key = get_setting('api_key')
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        return jsonify({'error': 'Kein API-Key hinterlegt. Bitte unter Einstellungen eintragen.'}), 400
+        return jsonify({'error': 'Anthropic API-Key nicht konfiguriert (Server-Fehler).'}), 500
 
     cv_text = get_setting('cv_text')
     if not cv_text:
@@ -693,9 +693,9 @@ def chat(bid):
     if not message:
         return jsonify({'error': 'Nachricht fehlt'}), 400
 
-    api_key = get_setting('api_key')
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        return jsonify({'error': 'Kein API-Key hinterlegt'}), 400
+        return jsonify({'error': 'Anthropic API-Key nicht konfiguriert (Server-Fehler).'}), 500
 
     conn = get_db()
     b = conn.execute('SELECT * FROM bewerbungen WHERE id = ? AND user_id = ?', (bid, current_user.id)).fetchone()
@@ -909,9 +909,9 @@ def _save_cv_json(data, template):
 @app.route('/api/parse-cv', methods=['POST'])
 @login_required
 def parse_cv():
-    api_key = get_setting('api_key')
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        return jsonify({'error': 'Kein API-Key hinterlegt. Bitte unter Einstellungen eintragen.'}), 400
+        return jsonify({'error': 'Anthropic API-Key nicht konfiguriert (Server-Fehler).'}), 500
 
     cv_text = get_setting('cv_text')
     if not cv_text:
