@@ -4,7 +4,7 @@
 {% block page_title %}Jobs finden{% endblock %}
 
 {% block content %}
-<div style="max-width:900px;margin:0 auto;">
+<div style="max-width:1400px;margin:0 auto;">
 
 {% if not has_adzuna %}
 <div class="card" style="text-align:center;padding:56px 32px;">
@@ -22,14 +22,13 @@
 {% else %}
 
   <!-- ── Suchmaske ──────────────────────────────────────────────────────────── -->
-  <div class="card" style="margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:12px;align-items:end;">
-
+  <div class="card" style="margin-bottom:16px;">
+    <div class="search-grid">
       <div class="form-group" style="margin:0;">
         <label>Stelle / Beruf</label>
         <input type="text" id="input-stelle" list="job-titles-list"
-               placeholder="z.B. Marketing Manager, Python Entwickler"
-               onkeydown="if(event.key==='Enter') search()" style="height:42px;">
+               placeholder="z.B. Frontend Developer, Marketing Manager"
+               onkeydown="if(event.key==='Enter') search()" style="height:40px;">
         <datalist id="job-titles-list">
           <option value="Softwareentwickler"><option value="Software Engineer">
           <option value="Frontend Developer"><option value="Backend Developer">
@@ -65,12 +64,12 @@
       <div class="form-group" style="margin:0;">
         <label>Ort</label>
         <input type="text" id="input-ort" placeholder="z.B. Berlin, München, Hamburg"
-               onkeydown="if(event.key==='Enter') search()" style="height:42px;">
+               onkeydown="if(event.key==='Enter') search()" style="height:40px;">
       </div>
 
       <div class="form-group" style="margin:0;">
         <label>Umkreis</label>
-        <select id="input-umkreis" style="height:42px;padding:0 12px;min-width:100px;">
+        <select id="input-umkreis" style="height:40px;padding:0 10px;">
           <option value="10">10 km</option>
           <option value="25" selected>25 km</option>
           <option value="50">50 km</option>
@@ -80,18 +79,18 @@
 
       <div class="form-group" style="margin:0;">
         <label>Aktualität</label>
-        <select id="input-alter" style="height:42px;padding:0 12px;min-width:120px;">
+        <select id="input-alter" style="height:40px;padding:0 10px;">
           <option value="">Alle</option>
-          <option value="3">Letzte 3 Tage</option>
-          <option value="7" selected>Letzte 7 Tage</option>
-          <option value="14">Letzte 14 Tage</option>
-          <option value="30">Letzte 30 Tage</option>
+          <option value="3">3 Tage</option>
+          <option value="7" selected>7 Tage</option>
+          <option value="14">14 Tage</option>
+          <option value="30">30 Tage</option>
         </select>
       </div>
 
       <div class="form-group" style="margin:0;">
         <label>Sortierung</label>
-        <select id="input-sortierung" style="height:42px;padding:0 12px;min-width:120px;">
+        <select id="input-sortierung" style="height:40px;padding:0 10px;">
           <option value="date">Neueste</option>
           <option value="relevance">Relevanz</option>
           <option value="salary">Gehalt</option>
@@ -99,169 +98,210 @@
       </div>
 
       <button class="btn btn-primary" onclick="search()" id="search-btn"
-              style="height:42px;padding:0 24px;white-space:nowrap;align-self:end;">
-        Jobs suchen
+              style="height:40px;padding:0 20px;white-space:nowrap;align-self:end;">
+        Suchen
       </button>
     </div>
   </div>
 
   <!-- ── Quick Links ────────────────────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-    <span style="font-size:13px;color:var(--ink-400);flex-shrink:0;">Auch suchen auf:</span>
-    <a id="link-stepstone" href="#" target="_blank" rel="noopener"
-       style="font-size:13px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-full);display:inline-flex;align-items:center;gap:4px;"
-       onclick="openExternal('stepstone',event)">
-      StepStone ↗
-    </a>
-    <a id="link-indeed" href="#" target="_blank" rel="noopener"
-       style="font-size:13px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-full);display:inline-flex;align-items:center;gap:4px;"
-       onclick="openExternal('indeed',event)">
-      Indeed ↗
-    </a>
-    <a id="link-linkedin" href="#" target="_blank" rel="noopener"
-       style="font-size:13px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-full);display:inline-flex;align-items:center;gap:4px;"
-       onclick="openExternal('linkedin',event)">
-      LinkedIn ↗
-    </a>
-    <a id="link-xing" href="#" target="_blank" rel="noopener"
-       style="font-size:13px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-full);display:inline-flex;align-items:center;gap:4px;"
-       onclick="openExternal('xing',event)">
-      Xing ↗
-    </a>
-    <a id="link-ba" href="https://www.arbeitsagentur.de/jobsuche/" target="_blank" rel="noopener"
-       style="font-size:13px;color:var(--ink-500);text-decoration:none;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-full);">
-      Arbeitsagentur ↗
-    </a>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <span style="font-size:12px;color:var(--ink-400);flex-shrink:0;">Auch suchen auf:</span>
+    <a id="link-stepstone" href="#" target="_blank" rel="noopener" class="ext-link" onclick="openExternal('stepstone',event)">StepStone ↗</a>
+    <a id="link-indeed"    href="#" target="_blank" rel="noopener" class="ext-link" onclick="openExternal('indeed',event)">Indeed ↗</a>
+    <a id="link-linkedin"  href="#" target="_blank" rel="noopener" class="ext-link" onclick="openExternal('linkedin',event)">LinkedIn ↗</a>
+    <a id="link-xing"      href="#" target="_blank" rel="noopener" class="ext-link" onclick="openExternal('xing',event)">Xing ↗</a>
+    <a id="link-ba" href="https://www.arbeitsagentur.de/jobsuche/" target="_blank" rel="noopener" class="ext-link">Arbeitsagentur ↗</a>
   </div>
 
-  <!-- ── Ergebnisse ─────────────────────────────────────────────────────────── -->
-  <div id="results-area">
+  <!-- ── Split layout ───────────────────────────────────────────────────────── -->
+  <div class="split-layout">
 
-    <!-- Empty State -->
-    <div id="state-empty" style="text-align:center;padding:60px 20px;color:var(--ink-400);">
-      <svg style="width:48px;height:48px;margin-bottom:16px;opacity:.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-        <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
-      </svg>
-      <div style="font-size:16px;font-weight:600;margin-bottom:6px;color:var(--ink-600);">Jobs suchen</div>
-      <div style="font-size:14px;">Gib eine Stelle und optional einen Ort ein.</div>
-    </div>
+    <!-- LEFT: Job list -->
+    <div class="split-left">
 
-    <!-- Loading State -->
-    <div id="state-loading" style="display:none;text-align:center;padding:60px 20px;">
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;">
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent-500);animation:pulse 1.4s infinite;"></div>
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent-500);animation:pulse 1.4s infinite .2s;"></div>
-        <div style="width:10px;height:10px;border-radius:50%;background:var(--accent-500);animation:pulse 1.4s infinite .4s;"></div>
+      <!-- States -->
+      <div id="state-empty" style="text-align:center;padding:48px 16px;color:var(--ink-400);">
+        <svg style="width:40px;height:40px;margin-bottom:12px;opacity:.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+        </svg>
+        <div style="font-size:15px;font-weight:600;color:var(--ink-600);margin-bottom:4px;">Jobs suchen</div>
+        <div style="font-size:13px;">Stelle und optional Ort eingeben</div>
       </div>
-      <div style="font-size:14px;color:var(--ink-500);">Jobs werden gesucht…</div>
-    </div>
 
-    <!-- Did-you-mean State -->
-    <div id="state-suggest" style="display:none;" class="card" style="text-align:center;padding:32px 20px;">
-      <svg style="width:36px;height:36px;color:var(--accent-500);margin-bottom:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <div style="font-size:15px;font-weight:700;color:var(--ink-700);margin-bottom:6px;">Keine Jobs gefunden</div>
-      <div style="font-size:14px;color:var(--ink-500);margin-bottom:16px;">
-        Hast du dich vielleicht vertippt? Meintest du:
+      <div id="state-loading" style="display:none;text-align:center;padding:48px 16px;">
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent-500);animation:pulse 1.4s infinite;"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent-500);animation:pulse 1.4s infinite .2s;"></div>
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--accent-500);animation:pulse 1.4s infinite .4s;"></div>
+        </div>
+        <div style="font-size:13px;color:var(--ink-500);">Jobs werden gesucht…</div>
       </div>
-      <div id="suggestion-chips" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div>
-    </div>
 
-    <!-- Error State -->
-    <div id="state-error" style="display:none;" class="card" >
-      <div style="color:var(--danger);font-weight:600;margin-bottom:4px;">Fehler</div>
-      <div id="error-msg" style="font-size:14px;color:var(--ink-500);"></div>
-    </div>
+      <div id="state-suggest" style="display:none;padding:20px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink-700);margin-bottom:8px;">Keine Jobs gefunden — meintest du:</div>
+        <div id="suggestion-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
 
-    <!-- Results Header -->
-    <div id="results-header" style="display:none;margin-bottom:12px;display:none;align-items:center;justify-content:space-between;">
-      <div style="font-size:14px;color:var(--ink-500);">
-        <strong id="results-count" style="color:var(--ink-700);">0</strong> Jobs gefunden
+      <div id="state-error" style="display:none;padding:16px;">
+        <div style="color:var(--danger);font-weight:600;font-size:13px;margin-bottom:4px;">Fehler</div>
+        <div id="error-msg" style="font-size:13px;color:var(--ink-500);"></div>
+      </div>
+
+      <!-- Results header -->
+      <div id="results-header" style="display:none;padding:0 4px 10px;font-size:13px;color:var(--ink-500);">
+        <strong id="results-count" style="color:var(--ink-700);">0</strong> Jobs
         <span id="results-query" style="color:var(--ink-400);"></span>
       </div>
-    </div>
 
-    <!-- Job Cards -->
-    <div id="jobs-list"></div>
+      <!-- Compact job cards -->
+      <div id="jobs-list"></div>
 
-    <!-- Load More -->
-    <div id="load-more-wrap" style="display:none;text-align:center;margin-top:16px;">
-      <button class="btn btn-secondary" onclick="loadMore()" id="load-more-btn" style="min-width:160px;">
-        Mehr laden
-      </button>
-    </div>
+      <!-- Load more -->
+      <div id="load-more-wrap" style="display:none;text-align:center;padding:12px 0;">
+        <button class="btn btn-secondary btn-sm" onclick="loadMore()" id="load-more-btn">
+          Mehr laden
+        </button>
+      </div>
 
-  </div><!-- /results-area -->
+    </div><!-- /split-left -->
+
+    <!-- RIGHT: Detail panel -->
+    <div class="split-right">
+      <div id="detail-panel" class="card" style="height:100%;display:flex;flex-direction:column;">
+
+        <!-- Empty state -->
+        <div id="detail-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;color:var(--ink-400);">
+          <svg style="width:48px;height:48px;margin-bottom:16px;opacity:.3;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25">
+            <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+            <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+          </svg>
+          <div style="font-size:15px;font-weight:600;color:var(--ink-600);margin-bottom:6px;">Stelle auswählen</div>
+          <div style="font-size:13px;line-height:1.6;">Klicke auf einen Job in der Liste<br>um die vollständige Anzeige zu lesen.</div>
+        </div>
+
+        <!-- Job detail content (hidden until job selected) -->
+        <div id="detail-content" style="display:none;flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+          <!-- Header -->
+          <div style="padding:20px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div id="d-title" style="font-size:18px;font-weight:700;color:var(--ink-900);line-height:1.3;margin-bottom:8px;"></div>
+            <div id="d-meta" style="display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--ink-500);"></div>
+          </div>
+
+          <!-- Description -->
+          <div style="flex:1;padding:18px 22px;overflow-y:auto;">
+            <div id="d-desc" style="font-size:14px;color:var(--ink-700);line-height:1.75;white-space:pre-wrap;"></div>
+          </div>
+
+          <!-- Actions / Track prompt -->
+          <div id="d-actions" style="flex-shrink:0;padding:14px 22px;border-top:1px solid var(--border);"></div>
+        </div>
+
+      </div>
+    </div><!-- /split-right -->
+
+  </div><!-- /split-layout -->
 
 </div>
 
 <style>
-@keyframes pulse {
-  0%,100% { opacity:1; }
-  50% { opacity:.3; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── Search grid ── */
+.search-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto auto auto;
+  gap: 10px;
+  align-items: end;
 }
+
+/* ── Split layout ── */
+.split-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.split-left {
+  min-width: 0;
+}
+.split-right {
+  position: sticky;
+  top: calc(var(--topbar-h, 60px) + 16px);
+  height: calc(100vh - var(--topbar-h, 60px) - 32px);
+  min-height: 400px;
+}
+#detail-panel {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+/* ── Compact job cards ── */
 .job-card {
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 16px 20px;
-  margin-bottom: 10px;
+  border-radius: var(--r);
+  padding: 12px 14px;
+  margin-bottom: 6px;
   background: var(--surface);
-  transition: border-color .15s, box-shadow .15s;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+  user-select: none;
 }
 .job-card:hover {
   border-color: var(--primary);
-  box-shadow: var(--shadow-md);
+  background: var(--bg-soft);
 }
+.job-card--active {
+  border-color: var(--primary) !important;
+  background: var(--navy-50, #eef2ff) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+.job-card--seen { opacity: .65; }
+.job-card--seen .job-title { color: var(--ink-500); }
+.job-card--pending {
+  border-color: var(--accent-400, #fbbf24) !important;
+}
+
 .job-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 650;
   color: var(--ink-800);
-  margin-bottom: 4px;
   line-height: 1.3;
+  margin-bottom: 5px;
 }
 .job-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-500);
   align-items: center;
-  font-size: 13px;
-  color: var(--ink-500);
-  margin-bottom: 8px;
-}
-.job-desc {
-  font-size: 13px;
-  color: var(--ink-500);
-  line-height: 1.55;
-  margin-bottom: 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.job-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.job-card--seen {
-  opacity: .72;
-  background: var(--bg-soft);
-}
-.job-card--seen .job-title {
-  color: var(--ink-500);
 }
 .seen-badge {
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: 11px;
   color: var(--ink-400);
   background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: var(--r-full);
-  padding: 2px 9px;
+  padding: 1px 7px;
   white-space: nowrap;
+}
+.pending-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-500, #f59e0b);
   flex-shrink: 0;
+  display: inline-block;
+}
+
+/* ── Detail panel actions ── */
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 .track-prompt {
   display: flex;
@@ -272,38 +312,56 @@
   border: 1px solid var(--accent-200, #fde68a);
   border-radius: var(--r);
   flex-wrap: wrap;
+  width: 100%;
 }
-.track-prompt__question {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.track-prompt__q {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-700);
   flex: 1;
-  min-width: 160px;
+  min-width: 120px;
 }
-@media (max-width: 860px) {
-  div[style*="grid-template-columns:1fr 1fr auto auto auto auto"] {
-    grid-template-columns: 1fr 1fr !important;
-  }
+
+/* ── External links ── */
+.ext-link {
+  font-size: 12px;
+  color: var(--ink-500);
+  text-decoration: none;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  transition: border-color .12s, color .12s;
 }
-@media (max-width: 560px) {
-  div[style*="grid-template-columns:1fr 1fr auto auto auto auto"] {
-    grid-template-columns: 1fr !important;
+.ext-link:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Mobile ── */
+@media (max-width: 900px) {
+  .search-grid { grid-template-columns: 1fr 1fr !important; }
+  .split-layout { grid-template-columns: 1fr !important; }
+  .split-right {
+    position: static !important;
+    height: auto !important;
+    min-height: 300px;
   }
-  .job-actions { flex-wrap: wrap; }
+  #detail-panel { min-height: 360px; }
+}
+@media (max-width: 520px) {
+  .search-grid { grid-template-columns: 1fr !important; }
 }
 </style>
 
 <script>
-let currentPage = 1;
-let currentStelle = '';
-let currentOrt = '';
-let currentUmkreis = '25';
-let currentAlter = '7';
-let currentSortierung = 'date';
-let totalResults = 0;
+let currentPage      = 1;
+let currentStelle    = '';
+let currentOrt       = '';
+let currentUmkreis   = '25';
+let currentAlter     = '7';
+let currentSortierung= 'date';
+let totalResults     = 0;
+let activeCardEl     = null;
+let activeJob        = null;
+
+// ── Search ────────────────────────────────────────────────────────────────────
 
 async function search(page = 1) {
   const stelle     = document.getElementById('input-stelle').value.trim();
@@ -312,10 +370,7 @@ async function search(page = 1) {
   const alter      = document.getElementById('input-alter').value;
   const sortierung = document.getElementById('input-sortierung').value;
 
-  if (!stelle) {
-    document.getElementById('input-stelle').focus();
-    return;
-  }
+  if (!stelle) { document.getElementById('input-stelle').focus(); return; }
 
   currentStelle     = stelle;
   currentOrt        = ort;
@@ -324,10 +379,8 @@ async function search(page = 1) {
   currentSortierung = sortierung;
   currentPage       = page;
 
-  // Persist search + update URL
   if (page === 1) {
-    const params = new URLSearchParams({ stelle, ort, umkreis, alter, sortierung });
-    history.replaceState(null, '', '/jobs?' + params.toString());
+    history.replaceState(null, '', '/jobs?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung }));
   }
 
   updateQuickLinks(stelle, ort);
@@ -336,67 +389,51 @@ async function search(page = 1) {
     document.getElementById('jobs-list').innerHTML = '';
     document.getElementById('load-more-wrap').style.display = 'none';
     document.getElementById('results-header').style.display = 'none';
+    resetDetail();
+    activeCardEl = null; activeJob = null;
   }
 
   setState('loading');
 
   try {
-    const params = new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, page });
-    const res = await fetch('/api/jobs/search?' + params);
+    const res  = await fetch('/api/jobs/search?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, page }));
     const data = await res.json();
 
-    if (!data.success) {
-      setState('error');
-      document.getElementById('error-msg').textContent = data.error || 'Unbekannter Fehler';
-      return;
-    }
+    if (!data.success) { setState('error'); document.getElementById('error-msg').textContent = data.error || 'Unbekannter Fehler'; return; }
 
     totalResults = data.total || 0;
 
     if (page === 1) {
-      // Show results header
       const hdr = document.getElementById('results-header');
-      hdr.style.display = 'flex';
+      hdr.style.display = 'block';
       document.getElementById('results-count').textContent = totalResults.toLocaleString('de-DE');
-      document.getElementById('results-query').textContent =
-        ` für „${stelle}"` + (ort ? ` in ${ort}` : '');
+      document.getElementById('results-query').textContent = ` für „${stelle}"` + (ort ? ` in ${ort}` : '');
     }
 
     if (data.jobs.length === 0 && page === 1) {
-      if (data.suggestions && data.suggestions.length > 0) {
-        showSuggestions(data.suggestions);
-      } else {
-        setState('empty-results');
-      }
+      if (data.suggestions && data.suggestions.length) showSuggestions(data.suggestions);
+      else setState('empty-results');
       return;
     }
 
-    // Cache results so navigating away and back doesn't re-fetch
-    if (page === 1) {
-      cacheResults(stelle, ort, umkreis, alter, sortierung, data);
-    }
+    if (page === 1) cacheResults(stelle, ort, umkreis, alter, sortierung, data);
 
     setState('results');
     renderJobs(data.jobs);
 
-    // Show "Load more" if there are more results
     const shown = (page - 1) * 50 + data.jobs.length;
-    if (shown < totalResults && data.jobs.length === 50) {
-      document.getElementById('load-more-wrap').style.display = 'block';
-    } else {
-      document.getElementById('load-more-wrap').style.display = 'none';
-    }
+    document.getElementById('load-more-wrap').style.display =
+      (shown < totalResults && data.jobs.length === 50) ? 'block' : 'none';
 
-  } catch (e) {
+  } catch(e) {
     setState('error');
     document.getElementById('error-msg').textContent = 'Netzwerkfehler: ' + e.message;
   }
 }
 
-function loadMore() {
-  search(currentPage + 1);
-  currentPage++;
-}
+function loadMore() { search(currentPage + 1); currentPage++; }
+
+// ── Render compact job cards ──────────────────────────────────────────────────
 
 function renderJobs(jobs) {
   const list    = document.getElementById('jobs-list');
@@ -406,112 +443,155 @@ function renderJobs(jobs) {
     const seen      = hasSeenJob(job.url);
     const isPending = pending.has(job.url);
     const card      = document.createElement('div');
-    card.className  = 'job-card' + (seen && !isPending ? ' job-card--seen' : '');
 
-    const salary   = job.salary   ? `<span style="color:var(--success);font-weight:600;">${esc(job.salary)}</span>` : '';
-    const contract = job.contract ? `<span style="background:var(--navy-50);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>` : '';
+    let cls = 'job-card';
+    if (seen && !isPending) cls += ' job-card--seen';
+    if (isPending)          cls += ' job-card--pending';
+    card.className = cls;
+
     const ageColor = job.age_days <= 3 ? 'var(--success)' : job.age_days <= 14 ? 'var(--ink-500)' : 'var(--danger)';
-    const age      = job.age ? `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>` : '';
-    const seenBadge = seen && !isPending ? `<span class="seen-badge">✓ bereits gesehen</span>` : '';
 
     card.innerHTML = `
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
         <div class="job-title">${esc(job.title)}</div>
-        ${seenBadge}
+        ${isPending ? '<span class="pending-dot" title="Noch nicht getracked"></span>' : ''}
+        ${seen && !isPending ? '<span class="seen-badge">gesehen</span>' : ''}
       </div>
       <div class="job-meta">
-        ${job.company  ? `<span style="font-weight:600;color:var(--ink-700);">${esc(job.company)}</span>` : ''}
+        ${job.company  ? `<span style="font-weight:600;color:var(--ink-600);">${esc(job.company)}</span>` : ''}
         ${job.location ? `<span>📍 ${esc(job.location)}</span>` : ''}
-        ${age} ${salary} ${contract}
-      </div>
-      ${job.description ? `<div class="job-desc">${esc(job.description)}</div>` : ''}
-      <div class="job-actions-wrap">
-        ${isPending ? buildTrackPrompt(job) : buildActions(job)}
+        ${job.age      ? `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>` : ''}
+        ${job.salary   ? `<span style="color:var(--success);font-weight:600;">${esc(job.salary)}</span>` : ''}
       </div>
     `;
 
-    wireCard(card, job);
+    card.addEventListener('click', () => selectJob(card, job));
     list.appendChild(card);
   });
 }
 
-function buildActions(job) {
-  return `
-    <div class="job-actions">
-      <button class="btn btn-primary btn-sm js-apply">
-        <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Bewerbung tracken
-      </button>
-      <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm js-open">
-        Stelle ansehen ↗
-      </a>
-    </div>`;
+// ── Select a job (left card click) ───────────────────────────────────────────
+
+function selectJob(card, job) {
+  // Deactivate previous card
+  if (activeCardEl) activeCardEl.classList.remove('job-card--active');
+  activeCardEl = card;
+  activeJob    = job;
+  card.classList.add('job-card--active');
+
+  markJobSeen(job.url);
+  if (!card.classList.contains('job-card--pending')) {
+    card.classList.add('job-card--seen');
+  }
+  // Remove seen badge if pending
+  const seenBadge = card.querySelector('.seen-badge');
+
+  showDetail(job);
+
+  // On mobile scroll detail into view
+  if (window.innerWidth <= 900) {
+    document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
-function buildTrackPrompt(job) {
-  return `
-    <div class="track-prompt">
-      <span class="track-prompt__question">
-        <svg style="width:14px;height:14px;color:var(--accent-600);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        Hast du dich beworben?
-      </span>
-      <button class="btn btn-primary btn-sm js-confirm-track">
-        Ja, jetzt tracken
-      </button>
-      <button class="btn btn-ghost btn-sm js-dismiss-track" style="color:var(--ink-400);">
-        Nein ✕
-      </button>
-    </div>`;
+// ── Detail panel ─────────────────────────────────────────────────────────────
+
+function resetDetail() {
+  document.getElementById('detail-empty').style.display   = 'flex';
+  document.getElementById('detail-content').style.display = 'none';
 }
 
-function wireCard(card, job) {
-  const wrap = card.querySelector('.job-actions-wrap');
+function showDetail(job) {
+  document.getElementById('detail-empty').style.display   = 'none';
+  document.getElementById('detail-content').style.display = 'flex';
 
-  function showPrompt() {
-    markJobSeen(job.url);
-    addPendingJob(job.url);
-    card.classList.remove('job-card--seen');
-    wrap.innerHTML = buildTrackPrompt(job);
-    wirePrompt();
-  }
+  // Title
+  document.getElementById('d-title').textContent = job.title;
 
-  function wirePrompt() {
-    card.querySelector('.js-confirm-track').addEventListener('click', () => {
+  // Meta
+  const ageColor = job.age_days <= 3 ? 'var(--success)' : job.age_days <= 14 ? 'var(--ink-500)' : 'var(--danger)';
+  let meta = '';
+  if (job.company)  meta += `<span style="font-weight:600;color:var(--ink-700);">${esc(job.company)}</span>`;
+  if (job.location) meta += `<span>📍 ${esc(job.location)}</span>`;
+  if (job.age)      meta += `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>`;
+  if (job.salary)   meta += `<span style="color:var(--success);font-weight:600;">${esc(job.salary)}</span>`;
+  if (job.contract) meta += `<span style="background:var(--bg-soft);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>`;
+  document.getElementById('d-meta').innerHTML = meta;
+
+  // Description — use full_desc, fallback to description
+  const fullText = job.full_desc || job.description || '';
+  document.getElementById('d-desc').textContent = fullText || 'Keine Beschreibung verfügbar.';
+
+  // Actions
+  renderDetailActions(job, false);
+}
+
+function renderDetailActions(job, showingPrompt) {
+  const wrap = document.getElementById('d-actions');
+  if (showingPrompt) {
+    wrap.innerHTML = `
+      <div class="track-prompt">
+        <span class="track-prompt__q">Hast du dich beworben?</span>
+        <button class="btn btn-primary btn-sm" id="d-confirm-btn">Ja, jetzt tracken</button>
+        <button class="btn btn-ghost btn-sm" id="d-dismiss-btn" style="color:var(--ink-400);">Nein ✕</button>
+      </div>`;
+    document.getElementById('d-confirm-btn').onclick = () => {
       removePendingJob(job.url);
+      if (activeCardEl) {
+        activeCardEl.classList.remove('job-card--pending');
+        activeCardEl.querySelector('.pending-dot')?.remove();
+      }
       applyDirect(job.company, job.title, job.url, job.full_desc || '');
-    });
-    card.querySelector('.js-dismiss-track').addEventListener('click', () => {
+    };
+    document.getElementById('d-dismiss-btn').onclick = () => {
       removePendingJob(job.url);
-      card.classList.add('job-card--seen');
-      wrap.innerHTML = buildActions(job);
-      wireActions();
-    });
-  }
-
-  function wireActions() {
-    card.querySelector('.js-apply').addEventListener('click', () => {
-      markJobSeen(job.url);
-      applyDirect(job.company, job.title, job.url, job.full_desc || '');
-    });
-    card.querySelector('.js-open').addEventListener('click', () => {
-      showPrompt();
-    });
-  }
-
-  // Initial wire-up
-  if (card.querySelector('.js-confirm-track')) {
-    wirePrompt();
+      if (activeCardEl) {
+        activeCardEl.classList.remove('job-card--pending');
+        activeCardEl.querySelector('.pending-dot')?.remove();
+        if (!activeCardEl.classList.contains('seen-badge')) {
+          activeCardEl.classList.add('job-card--seen');
+        }
+      }
+      renderDetailActions(job, false);
+    };
   } else {
-    wireActions();
+    const isPending = loadPendingJobs().has(job.url);
+    wrap.innerHTML = `
+      <div class="detail-actions">
+        <button class="btn btn-primary btn-sm" id="d-track-btn">
+          <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Bewerbung tracken
+        </button>
+        <a id="d-open-btn" href="${esc(job.url)}" target="_blank" rel="noopener"
+           class="btn btn-secondary btn-sm">
+          Original öffnen ↗
+        </a>
+        ${isPending ? '<span style="font-size:12px;color:var(--accent-600);">● noch nicht getracked</span>' : ''}
+      </div>`;
+    document.getElementById('d-track-btn').onclick = () => {
+      applyDirect(job.company, job.title, job.url, job.full_desc || '');
+    };
+    document.getElementById('d-open-btn').addEventListener('click', () => {
+      addPendingJob(job.url);
+      if (activeCardEl) {
+        activeCardEl.classList.add('job-card--pending');
+        activeCardEl.classList.remove('job-card--seen');
+        if (!activeCardEl.querySelector('.pending-dot')) {
+          const dot = document.createElement('span');
+          dot.className = 'pending-dot';
+          dot.title = 'Noch nicht getracked';
+          activeCardEl.querySelector('.job-title').insertAdjacentElement('afterend', dot);
+        }
+      }
+      // Show track prompt after short delay (give browser time to open tab)
+      setTimeout(() => renderDetailActions(job, true), 400);
+    });
   }
 }
 
 function applyDirect(firma, stelle, url, stellenanzeige) {
-  // Store full job data in sessionStorage — avoids scraping the Adzuna redirect URL
   sessionStorage.setItem('pending_job', JSON.stringify({ firma, stelle, url, stellenanzeige }));
   const params = new URLSearchParams();
   if (firma)  params.set('firma', firma);
@@ -519,34 +599,33 @@ function applyDirect(firma, stelle, url, stellenanzeige) {
   window.location.href = '/neue-bewerbung?' + params.toString();
 }
 
+// ── State machine ─────────────────────────────────────────────────────────────
+
 function setState(state) {
   document.getElementById('state-empty').style.display   = state === 'empty'   ? 'block' : 'none';
   document.getElementById('state-loading').style.display = state === 'loading' ? 'block' : 'none';
   document.getElementById('state-error').style.display   = state === 'error'   ? 'block' : 'none';
   document.getElementById('state-suggest').style.display = state === 'suggest' ? 'block' : 'none';
   if (state === 'empty-results') {
-    document.getElementById('state-empty').style.display = 'block';
-    document.getElementById('state-empty').innerHTML = `
-      <svg style="width:40px;height:40px;margin-bottom:12px;opacity:.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    const el = document.getElementById('state-empty');
+    el.style.display = 'block';
+    el.innerHTML = `
+      <svg style="width:36px;height:36px;margin-bottom:10px;opacity:.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <div style="font-size:15px;font-weight:600;color:var(--ink-600);margin-bottom:6px;">Keine Jobs gefunden</div>
-      <div style="font-size:14px;">Versuche andere Suchbegriffe oder einen größeren Umkreis.</div>
-    `;
+      <div style="font-size:14px;font-weight:600;color:var(--ink-600);margin-bottom:4px;">Keine Jobs gefunden</div>
+      <div style="font-size:13px;">Andere Suchbegriffe oder größeren Umkreis versuchen.</div>`;
   }
 }
 
 function showSuggestions(suggestions) {
   setState('suggest');
-  const chips = document.getElementById('suggestion-chips');
-  chips.innerHTML = suggestions.map(s => `
-    <button onclick="searchWith('${esc(s)}')"
-      style="padding:8px 18px;border:2px solid var(--accent-500);border-radius:var(--r-full);
-             background:var(--navy-50);color:var(--primary);font-weight:600;font-size:14px;
-             cursor:pointer;font-family:inherit;transition:background .15s;">
-      ${esc(s)}
-    </button>
-  `).join('');
+  document.getElementById('suggestion-chips').innerHTML = suggestions.map(s =>
+    `<button onclick="searchWith('${esc(s)}')"
+      style="padding:6px 14px;border:1px solid var(--accent-400);border-radius:var(--r-full);
+             background:var(--accent-50,#fffbeb);color:var(--ink-700);font-size:13px;
+             cursor:pointer;font-family:inherit;">${esc(s)}</button>`
+  ).join('');
 }
 
 function searchWith(term) {
@@ -554,112 +633,74 @@ function searchWith(term) {
   search();
 }
 
+// ── External links ────────────────────────────────────────────────────────────
+
 function updateQuickLinks(stelle, ort) {
-  const q = encodeURIComponent(stelle);
-  const o = encodeURIComponent(ort);
+  const q = encodeURIComponent(stelle), o = encodeURIComponent(ort);
   document.getElementById('link-stepstone').href =
     `https://www.stepstone.de/jobs/${q.toLowerCase().replace(/%20/g,'-')}/${o ? 'in-' + o.toLowerCase().replace(/%20/g,'-') : ''}`;
-  document.getElementById('link-indeed').href =
-    `https://de.indeed.com/jobs?q=${q}${ort ? '&l=' + o : ''}`;
-  document.getElementById('link-linkedin').href =
-    `https://www.linkedin.com/jobs/search/?keywords=${q}${ort ? '&location=' + o : ''}`;
-  document.getElementById('link-xing').href =
-    `https://www.xing.com/jobs/search?keywords=${q}${ort ? '&location=' + o : ''}`;
-  document.getElementById('link-ba').href =
-    `https://www.arbeitsagentur.de/jobsuche/suche?was=${q}${ort ? '&wo=' + o : ''}`;
+  document.getElementById('link-indeed').href   = `https://de.indeed.com/jobs?q=${q}${ort ? '&l='+o : ''}`;
+  document.getElementById('link-linkedin').href = `https://www.linkedin.com/jobs/search/?keywords=${q}${ort ? '&location='+o : ''}`;
+  document.getElementById('link-xing').href     = `https://www.xing.com/jobs/search?keywords=${q}${ort ? '&location='+o : ''}`;
+  document.getElementById('link-ba').href       = `https://www.arbeitsagentur.de/jobsuche/suche?was=${q}${ort ? '&wo='+o : ''}`;
 }
 
 function openExternal(platform, event) {
   const stelle = document.getElementById('input-stelle').value.trim();
   const ort    = document.getElementById('input-ort').value.trim();
   if (stelle) updateQuickLinks(stelle, ort);
-  // Let the default href behavior open the link
 }
 
 function esc(s) {
-  return String(s||'')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Seen-jobs helpers ─────────────────────────────────────────────────────────
+// ── Seen-jobs (localStorage) ──────────────────────────────────────────────────
 
-const SEEN_KEY     = 'jobs_seen';
-const SEEN_MAX     = 500; // cap so localStorage doesn't grow forever
+const SEEN_KEY = 'jobs_seen';
+const SEEN_MAX = 500;
 
 function _loadSeen() {
-  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); }
-  catch(e) { return new Set(); }
+  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY)||'[]')); } catch(e) { return new Set(); }
 }
-
-function _saveSeen(set) {
-  try {
-    let arr = [...set];
-    if (arr.length > SEEN_MAX) arr = arr.slice(arr.length - SEEN_MAX);
-    localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
-  } catch(e) {}
+function _saveSeen(s) {
+  try { let a=[...s]; if(a.length>SEEN_MAX) a=a.slice(a.length-SEEN_MAX); localStorage.setItem(SEEN_KEY,JSON.stringify(a)); } catch(e){}
 }
+function hasSeenJob(url)  { return _loadSeen().has(url); }
+function markJobSeen(url) { const s=_loadSeen(); s.add(url); _saveSeen(s); }
 
-function hasSeenJob(url) { return _loadSeen().has(url); }
-
-function markJobSeen(url) {
-  const s = _loadSeen();
-  s.add(url);
-  _saveSeen(s);
-}
-
-// ── Pending-track helpers (sessionStorage — cleared when tab closes) ──────────
+// ── Pending-track (sessionStorage) ───────────────────────────────────────────
 
 const PENDING_KEY = 'jobs_pending_track';
 
 function loadPendingJobs() {
-  try { return new Set(JSON.parse(sessionStorage.getItem(PENDING_KEY) || '[]')); }
-  catch(e) { return new Set(); }
+  try { return new Set(JSON.parse(sessionStorage.getItem(PENDING_KEY)||'[]')); } catch(e) { return new Set(); }
 }
+function addPendingJob(url)    { const s=loadPendingJobs(); s.add(url);    try{sessionStorage.setItem(PENDING_KEY,JSON.stringify([...s]));}catch(e){} }
+function removePendingJob(url) { const s=loadPendingJobs(); s.delete(url); try{sessionStorage.setItem(PENDING_KEY,JSON.stringify([...s]));}catch(e){} }
 
-function addPendingJob(url) {
-  const s = loadPendingJobs(); s.add(url);
-  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify([...s])); } catch(e) {}
-}
-
-function removePendingJob(url) {
-  const s = loadPendingJobs(); s.delete(url);
-  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify([...s])); } catch(e) {}
-}
-
-// ── Cache helpers ─────────────────────────────────────────────────────────────
+// ── Cache ─────────────────────────────────────────────────────────────────────
 
 const CACHE_KEY = 'jobs_cache';
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 30 * 60 * 1000;
 
 function cacheResults(stelle, ort, umkreis, alter, sortierung, data) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      stelle, ort, umkreis, alter, sortierung,
-      timestamp: Date.now(),
-      data,
-    }));
-  } catch(e) {}
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ stelle,ort,umkreis,alter,sortierung, timestamp:Date.now(), data })); } catch(e){}
 }
-
 function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const c = JSON.parse(raw);
-    if (c.stelle !== stelle || c.ort !== ort || c.umkreis !== umkreis ||
-        c.alter !== alter || c.sortierung !== sortierung) return null;
-    if (Date.now() - c.timestamp > CACHE_TTL) return null;
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    if (!c) return null;
+    if (c.stelle!==stelle||c.ort!==ort||c.umkreis!==umkreis||c.alter!==alter||c.sortierung!==sortierung) return null;
+    if (Date.now()-c.timestamp>CACHE_TTL) return null;
     return c.data;
-  } catch(e) { return null; }
+  } catch(e){ return null; }
 }
 
 // ── Restore last search on page load ─────────────────────────────────────────
 
 (function restore() {
-  const urlP = new URLSearchParams(window.location.search);
+  const urlP     = new URLSearchParams(window.location.search);
   let stelle     = urlP.get('stelle')     || '';
   let ort        = urlP.get('ort')        || '';
   let umkreis    = urlP.get('umkreis')    || '';
@@ -668,12 +709,9 @@ function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
 
   if (!stelle) {
     try {
-      const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-      if (c && c.stelle) {
-        stelle = c.stelle; ort = c.ort || ''; umkreis = c.umkreis || '25';
-        alter = c.alter || '7'; sortierung = c.sortierung || 'date';
-      }
-    } catch(e) {}
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+      if (c&&c.stelle) { stelle=c.stelle; ort=c.ort||''; umkreis=c.umkreis||'25'; alter=c.alter||'7'; sortierung=c.sortierung||'date'; }
+    } catch(e){}
   }
 
   if (!stelle) return;
@@ -684,29 +722,20 @@ function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
   if (alter)      document.getElementById('input-alter').value      = alter;
   if (sortierung) document.getElementById('input-sortierung').value = sortierung;
 
-  const cached = loadFromCache(stelle, ort, umkreis || '25', alter || '7', sortierung || 'date');
+  const cached = loadFromCache(stelle, ort, umkreis||'25', alter||'7', sortierung||'date');
   if (cached) {
-    currentStelle = stelle; currentOrt = ort; currentUmkreis = umkreis || '25';
-    currentAlter = alter || '7'; currentSortierung = sortierung || 'date';
-    totalResults = cached.total || 0;
-
-    const hdr = document.getElementById('results-header');
-    hdr.style.display = 'flex';
-    document.getElementById('results-count').textContent = totalResults.toLocaleString('de-DE');
-    document.getElementById('results-query').textContent =
-      ` für „${stelle}"` + (ort ? ` in ${ort}` : '') + ' (gecacht)';
-
+    currentStelle=stelle; currentOrt=ort; currentUmkreis=umkreis||'25'; currentAlter=alter||'7'; currentSortierung=sortierung||'date';
+    totalResults = cached.total||0;
+    document.getElementById('results-header').style.display = 'block';
+    document.getElementById('results-count').textContent    = totalResults.toLocaleString('de-DE');
+    document.getElementById('results-query').textContent    = ` für „${stelle}"` + (ort ? ` in ${ort}` : '') + ' (gecacht)';
     setState('results');
-    renderJobs(cached.jobs || []);
-
+    renderJobs(cached.jobs||[]);
     const shown = cached.jobs ? cached.jobs.length : 0;
-    if (shown < totalResults && shown === 50) {
-      document.getElementById('load-more-wrap').style.display = 'block';
-    }
+    if (shown < totalResults && shown === 50) document.getElementById('load-more-wrap').style.display = 'block';
     updateQuickLinks(stelle, ort);
     return;
   }
-
   search();
 })();
 </script>
