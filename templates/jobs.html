@@ -245,6 +245,24 @@
   gap: 8px;
   align-items: center;
 }
+.job-card--seen {
+  opacity: .72;
+  background: var(--bg-soft);
+}
+.job-card--seen .job-title {
+  color: var(--ink-500);
+}
+.seen-badge {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-400);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 2px 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 @media (max-width: 860px) {
   div[style*="grid-template-columns:1fr 1fr auto auto auto auto"] {
     grid-template-columns: 1fr 1fr !important;
@@ -363,16 +381,23 @@ function loadMore() {
 function renderJobs(jobs) {
   const list = document.getElementById('jobs-list');
   jobs.forEach(job => {
-    const card = document.createElement('div');
-    card.className = 'job-card';
+    const seen    = hasSeenJob(job.url);
+    const card    = document.createElement('div');
+    card.className = 'job-card' + (seen ? ' job-card--seen' : '');
 
     const salary   = job.salary   ? `<span style="color:var(--success);font-weight:600;">${esc(job.salary)}</span>` : '';
     const contract = job.contract ? `<span style="background:var(--navy-50);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>` : '';
     const ageColor = job.age_days <= 3 ? 'var(--success)' : job.age_days <= 14 ? 'var(--ink-500)' : 'var(--danger)';
     const age      = job.age      ? `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>` : '';
+    const seenBadge = seen
+      ? `<span class="seen-badge">✓ bereits gesehen</span>`
+      : '';
 
     card.innerHTML = `
-      <div class="job-title">${esc(job.title)}</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div class="job-title">${esc(job.title)}</div>
+        ${seenBadge}
+      </div>
       <div class="job-meta">
         ${job.company  ? `<span style="font-weight:600;color:var(--ink-700);">${esc(job.company)}</span>` : ''}
         ${job.location ? `<span>📍 ${esc(job.location)}</span>` : ''}
@@ -386,15 +411,28 @@ function renderJobs(jobs) {
           </svg>
           Direkt bewerben
         </button>
-        <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+        <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm js-open">
           Stelle ansehen ↗
         </a>
       </div>
     `;
 
-    // Attach click handler safely — avoids quote-escaping issues in innerHTML
     card.querySelector('.js-apply').addEventListener('click', () => {
+      markJobSeen(job.url);
       applyDirect(job.company, job.title, job.url, job.full_desc || '');
+    });
+
+    card.querySelector('.js-open').addEventListener('click', () => {
+      markJobSeen(job.url);
+      card.classList.add('job-card--seen');
+      const badge = card.querySelector('.seen-badge');
+      if (!badge) {
+        const titleRow = card.querySelector('.job-title').parentElement;
+        const b = document.createElement('span');
+        b.className = 'seen-badge';
+        b.textContent = '✓ bereits gesehen';
+        titleRow.appendChild(b);
+      }
     });
 
     list.appendChild(card);
@@ -473,6 +511,32 @@ function esc(s) {
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
+}
+
+// ── Seen-jobs helpers ─────────────────────────────────────────────────────────
+
+const SEEN_KEY     = 'jobs_seen';
+const SEEN_MAX     = 500; // cap so localStorage doesn't grow forever
+
+function _loadSeen() {
+  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+
+function _saveSeen(set) {
+  try {
+    let arr = [...set];
+    if (arr.length > SEEN_MAX) arr = arr.slice(arr.length - SEEN_MAX);
+    localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
+  } catch(e) {}
+}
+
+function hasSeenJob(url) { return _loadSeen().has(url); }
+
+function markJobSeen(url) {
+  const s = _loadSeen();
+  s.add(url);
+  _saveSeen(s);
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────────
