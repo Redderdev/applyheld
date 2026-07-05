@@ -629,29 +629,61 @@ def fetch_job_description():
     if not url:
         return jsonify({'error': 'URL fehlt'}), 400
 
-    try:
-        resp = http_requests.get(
-            url, timeout=10,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                              '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Accept-Language': 'de-DE,de;q=0.9',
-            },
-            allow_redirects=True,
-        )
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept-Language': 'de-DE,de;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    }
+
+    def fetch_url(target):
+        resp = http_requests.get(target, timeout=12, headers=headers, allow_redirects=True)
         resp.raise_for_status()
+        return resp
+
+    try:
+        resp = fetch_url(url)
     except Exception as e:
         return jsonify({'error': f'Seite konnte nicht geladen werden: {str(e)}'}), 502
 
     try:
         soup = BeautifulSoup(resp.text, 'html.parser')
 
-        # Remove noise elements
+        # ── Detect Adzuna redirect page and follow to the real job ──────────────
+        # Adzuna redirect pages contain "weitergeleitet" and a destination link
+        page_text = soup.get_text()
+        if 'weitergeleitet' in page_text or 'redirected' in page_text.lower():
+            # Try <meta http-equiv="refresh" content="5; url=...">
+            meta = soup.find('meta', attrs={'http-equiv': lambda v: v and v.lower() == 'refresh'})
+            if meta and meta.get('content'):
+                content = meta['content']
+                # format: "5; url=https://..."
+                match = re.search(r'url=(.+)', content, re.IGNORECASE)
+                if match:
+                    dest_url = match.group(1).strip().strip('"\'')
+                    try:
+                        resp = fetch_url(dest_url)
+                        soup = BeautifulSoup(resp.text, 'html.parser')
+                    except Exception:
+                        pass  # fall through to current soup
+
+            # Also try first <a> that looks like an external job URL
+            if 'weitergeleitet' in soup.get_text():
+                for a in soup.find_all('a', href=True):
+                    href = a['href']
+                    if href.startswith('http') and 'adzuna' not in href:
+                        try:
+                            resp = fetch_url(href)
+                            soup = BeautifulSoup(resp.text, 'html.parser')
+                            break
+                        except Exception:
+                            pass
+
+        # ── Extract job description from the real page ───────────────────────────
         for tag in soup(['script', 'style', 'nav', 'header', 'footer',
                          'aside', 'form', 'iframe', 'button', 'noscript']):
             tag.decompose()
 
-        # Try common job description containers first
         selectors = [
             '[class*="job-description"]', '[class*="jobDescription"]',
             '[class*="job_description"]', '[class*="job-detail"]',
@@ -671,19 +703,16 @@ def fetch_job_description():
                     text = raw
                     break
 
-        # Fallback: body text
         if not text:
             body = soup.find('body')
             text = body.get_text(separator='\n', strip=True) if body else ''
 
-        # Clean up: collapse many blank lines to max 2
-        import re as _re
-        text = _re.sub(r'\n{3,}', '\n\n', text).strip()
+        text = re.sub(r'\n{3,}', '\n\n', text).strip()
 
         if len(text) < 100:
             return jsonify({'error': 'Kein Inhalt gefunden — die Seite ist möglicherweise geschützt.'}), 422
 
-        return jsonify({'success': True, 'text': text[:8000]})  # cap at 8k chars
+        return jsonify({'success': True, 'text': text[:8000]})
 
     except Exception as e:
         return jsonify({'error': f'Fehler beim Parsen: {str(e)}'}), 500
