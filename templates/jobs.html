@@ -93,7 +93,14 @@
         <select id="input-sortierung" style="height:40px;padding:0 10px;">
           <option value="date">Neueste</option>
           <option value="relevance">Relevanz</option>
-          <option value="salary">Gehalt</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin:0;">
+        <label>Quelle</label>
+        <select id="input-quelle" style="height:40px;padding:0 10px;">
+          <option value="ba">Bundesagentur</option>
+          <option value="adzuna">Adzuna</option>
         </select>
       </div>
 
@@ -367,6 +374,7 @@ let currentOrt       = '';
 let currentUmkreis   = '25';
 let currentAlter     = '7';
 let currentSortierung= 'date';
+let currentQuelle    = 'ba';
 let totalResults     = 0;
 let activeCardEl     = null;
 let activeJob        = null;
@@ -379,6 +387,7 @@ async function search(page = 1) {
   const umkreis    = document.getElementById('input-umkreis').value;
   const alter      = document.getElementById('input-alter').value;
   const sortierung = document.getElementById('input-sortierung').value;
+  const quelle     = document.getElementById('input-quelle').value;
 
   if (!stelle) { document.getElementById('input-stelle').focus(); return; }
 
@@ -387,10 +396,11 @@ async function search(page = 1) {
   currentUmkreis    = umkreis;
   currentAlter      = alter;
   currentSortierung = sortierung;
+  currentQuelle     = quelle;
   currentPage       = page;
 
   if (page === 1) {
-    history.replaceState(null, '', '/jobs?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung }));
+    history.replaceState(null, '', '/jobs?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, quelle }));
   }
 
   updateQuickLinks(stelle, ort);
@@ -406,7 +416,8 @@ async function search(page = 1) {
   setState('loading');
 
   try {
-    const res  = await fetch('/api/jobs/search?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, page }));
+    const endpoint = quelle === 'ba' ? '/api/jobs/search-ba' : '/api/jobs/search';
+    const res  = await fetch(endpoint + '?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, page }));
     const data = await res.json();
 
     if (!data.success) { setState('error'); document.getElementById('error-msg').textContent = data.error || 'Unbekannter Fehler'; return; }
@@ -426,7 +437,7 @@ async function search(page = 1) {
       return;
     }
 
-    if (page === 1) cacheResults(stelle, ort, umkreis, alter, sortierung, data);
+    if (page === 1) cacheResults(stelle, ort, umkreis, alter, sortierung, quelle, data);
 
     setState('results');
     renderJobs(data.jobs);
@@ -528,20 +539,50 @@ function showDetail(job) {
   if (job.contract) meta += `<span style="background:var(--bg-soft);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>`;
   document.getElementById('d-meta').innerHTML = meta;
 
-  // Show Adzuna description (API-licensed content)
-  const previewText = job.full_desc || job.description || '';
-  const descEl = document.getElementById('d-desc');
-  descEl.textContent = previewText || 'Keine Beschreibung verfügbar.';
+  const descEl  = document.getElementById('d-desc');
+  const note    = document.getElementById('d-preview-note');
+  const noteLink= document.getElementById('d-preview-link');
   document.getElementById('d-fetch-wrap').style.display = 'none';
 
-  // Show "preview from Adzuna" note when description is truncated
-  const note = document.getElementById('d-preview-note');
-  const link = document.getElementById('d-preview-link');
-  if (previewText.endsWith('…') || previewText.endsWith('...')) {
-    note.style.display = 'block';
-    link.href = job.url || '#';
-  } else {
+  if (job.source === 'ba' && job.hash_id) {
+    // BA: fetch full description from official API
+    descEl.innerHTML = '<span style="color:var(--ink-400);font-size:13px;">Vollständige Anzeige wird geladen…</span>';
     note.style.display = 'none';
+    const capturedHash = job.hash_id;
+    fetch('/api/jobs/detail-ba/' + encodeURIComponent(capturedHash))
+      .then(r => r.json())
+      .then(data => {
+        if (activeJob && activeJob.hash_id !== capturedHash) return;
+        if (data.description) {
+          descEl.textContent = data.description;
+          // Update salary if the detail has it
+          if (data.salary) {
+            const salaryEl = document.getElementById('d-salary');
+            if (salaryEl) salaryEl.textContent = data.salary;
+            else {
+              const metaEl = document.getElementById('d-meta');
+              if (metaEl) metaEl.innerHTML +=
+                `<span style="color:var(--success);font-weight:600;">${esc(data.salary)}</span>`;
+            }
+          }
+        } else {
+          descEl.textContent = 'Keine Beschreibung verfügbar.';
+        }
+      })
+      .catch(() => {
+        if (activeJob && activeJob.hash_id !== capturedHash) return;
+        descEl.textContent = 'Beschreibung konnte nicht geladen werden.';
+      });
+  } else {
+    // Adzuna: show their preview + link if truncated
+    const previewText = job.full_desc || job.description || '';
+    descEl.textContent = previewText || 'Keine Beschreibung verfügbar.';
+    if (previewText.endsWith('…') || previewText.endsWith('...')) {
+      note.style.display = 'block';
+      noteLink.href = job.url || '#';
+    } else {
+      note.style.display = 'none';
+    }
   }
 
   // Actions
@@ -707,14 +748,14 @@ function removePendingJob(url) { const s=loadPendingJobs(); s.delete(url); try{s
 const CACHE_KEY = 'jobs_cache';
 const CACHE_TTL = 30 * 60 * 1000;
 
-function cacheResults(stelle, ort, umkreis, alter, sortierung, data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ stelle,ort,umkreis,alter,sortierung, timestamp:Date.now(), data })); } catch(e){}
+function cacheResults(stelle, ort, umkreis, alter, sortierung, quelle, data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ stelle,ort,umkreis,alter,sortierung,quelle, timestamp:Date.now(), data })); } catch(e){}
 }
-function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
+function loadFromCache(stelle, ort, umkreis, alter, sortierung, quelle) {
   try {
     const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
     if (!c) return null;
-    if (c.stelle!==stelle||c.ort!==ort||c.umkreis!==umkreis||c.alter!==alter||c.sortierung!==sortierung) return null;
+    if (c.stelle!==stelle||c.ort!==ort||c.umkreis!==umkreis||c.alter!==alter||c.sortierung!==sortierung||c.quelle!==quelle) return null;
     if (Date.now()-c.timestamp>CACHE_TTL) return null;
     return c.data;
   } catch(e){ return null; }
@@ -729,11 +770,12 @@ function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
   let umkreis    = urlP.get('umkreis')    || '';
   let alter      = urlP.get('alter')      || '';
   let sortierung = urlP.get('sortierung') || '';
+  let quelle     = urlP.get('quelle')     || '';
 
   if (!stelle) {
     try {
       const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-      if (c&&c.stelle) { stelle=c.stelle; ort=c.ort||''; umkreis=c.umkreis||'25'; alter=c.alter||'7'; sortierung=c.sortierung||'date'; }
+      if (c&&c.stelle) { stelle=c.stelle; ort=c.ort||''; umkreis=c.umkreis||'25'; alter=c.alter||'7'; sortierung=c.sortierung||'date'; quelle=c.quelle||'ba'; }
     } catch(e){}
   }
 
@@ -744,10 +786,11 @@ function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
   if (umkreis)    document.getElementById('input-umkreis').value    = umkreis;
   if (alter)      document.getElementById('input-alter').value      = alter;
   if (sortierung) document.getElementById('input-sortierung').value = sortierung;
+  if (quelle)     document.getElementById('input-quelle').value     = quelle;
 
-  const cached = loadFromCache(stelle, ort, umkreis||'25', alter||'7', sortierung||'date');
+  const cached = loadFromCache(stelle, ort, umkreis||'25', alter||'7', sortierung||'date', quelle||'ba');
   if (cached) {
-    currentStelle=stelle; currentOrt=ort; currentUmkreis=umkreis||'25'; currentAlter=alter||'7'; currentSortierung=sortierung||'date';
+    currentStelle=stelle; currentOrt=ort; currentUmkreis=umkreis||'25'; currentAlter=alter||'7'; currentSortierung=sortierung||'date'; currentQuelle=quelle||'ba';
     totalResults = cached.total||0;
     document.getElementById('results-header').style.display = 'block';
     document.getElementById('results-count').textContent    = totalResults.toLocaleString('de-DE');

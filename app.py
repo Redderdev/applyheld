@@ -626,6 +626,8 @@ def _format_job_age(iso_str):
     try:
         from datetime import timezone
         dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00'))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
         delta = (datetime.now(timezone.utc) - dt).days
         if delta <= 0:   label = 'heute'
         elif delta == 1: label = 'gestern'
@@ -635,6 +637,185 @@ def _format_job_age(iso_str):
         return label, delta
     except Exception:
         return '', 9999
+
+
+# ── Bundesagentur für Arbeit API ──────────────────────────────────────────────
+
+_BA_TOKEN_URL  = 'https://rest.arbeitsagentur.de/oauth/gettoken_cc'
+_BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
+_BA_DETAIL_URL = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/{}'
+
+# Public client credentials embedded in the BA's own web frontend
+_BA_CLIENT_ID     = 'c003a37f-024f-462a-b36d-b001be4cd24a'
+_BA_CLIENT_SECRET = '32a39620-32b3-4307-9aa1-511e3d7f48a8'
+
+_ba_token_cache = {'token': None, 'expires': 0.0}
+
+
+def _get_ba_token():
+    import time
+    now = time.time()
+    if _ba_token_cache['token'] and _ba_token_cache['expires'] > now + 60:
+        return _ba_token_cache['token']
+    resp = http_requests.post(
+        _BA_TOKEN_URL,
+        data={
+            'client_id':     _BA_CLIENT_ID,
+            'client_secret': _BA_CLIENT_SECRET,
+            'grant_type':    'client_credentials',
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    token = data['access_token']
+    _ba_token_cache['token']   = token
+    _ba_token_cache['expires'] = now + data.get('expires_in', 3600)
+    return token
+
+
+@app.route('/api/jobs/search-ba')
+@login_required
+def jobs_search_ba():
+    if not SCRAPE_SUPPORT:
+        return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
+
+    stelle     = request.args.get('stelle', '').strip()
+    ort        = request.args.get('ort', '').strip()
+    umkreis    = request.args.get('umkreis', '25')
+    alter      = request.args.get('alter', '')
+    page       = max(1, int(request.args.get('page', 1)))
+
+    if not stelle:
+        return jsonify({'error': 'Bitte eine Stelle eingeben.'}), 400
+
+    try:
+        token = _get_ba_token()
+    except Exception as e:
+        return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
+
+    params = {
+        'was':  stelle,
+        'size': 25,
+        'page': page - 1,   # BA uses 0-based pages
+    }
+    if ort:
+        params['wo'] = ort
+        try:
+            params['umkreis'] = int(umkreis)
+        except ValueError:
+            params['umkreis'] = 25
+    if alter:
+        try:
+            params['veroeffentlichtseit'] = int(alter)
+        except ValueError:
+            pass
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'User-Agent':    'BewerbungsKI/1.0',
+    }
+
+    try:
+        resp = http_requests.get(_BA_JOBS_URL, params=params, headers=headers, timeout=12)
+        resp.raise_for_status()
+        raw = resp.json()
+    except Exception as e:
+        return jsonify({'error': f'BA API Fehler: {str(e)}'}), 502
+
+    jobs_out = []
+    for r in raw.get('stellenangebote', []) or []:
+        created  = r.get('aktuelleVeroeffentlichungsdatum', '')
+        age, age_days = _format_job_age(created)
+
+        arbeitsort = r.get('arbeitsort', {}) or {}
+        loc_parts  = [arbeitsort.get('ort', ''), arbeitsort.get('region', '')]
+        location   = ', '.join(p for p in loc_parts if p)
+
+        modelle  = r.get('arbeitszeitmodelle', []) or []
+        contract = ', '.join(modelle) if modelle else ''
+
+        hash_id = r.get('hashId', '')
+        ref_nr  = r.get('refnr', '')
+
+        jobs_out.append({
+            'title':    r.get('titel', ''),
+            'company':  r.get('arbeitgeber', ''),
+            'location': location,
+            'url':      f'https://www.arbeitsagentur.de/jobsuche/stelle/{hash_id}' if hash_id else '',
+            'hash_id':  hash_id,
+            'ref_nr':   ref_nr,
+            'age':      age,
+            'age_days': age_days,
+            'description': '',
+            'full_desc':   '',
+            'salary':   '',
+            'contract': contract,
+            'source':   'ba',
+        })
+
+    total = raw.get('maxErgebnisse', 0)
+
+    suggestions = []
+    if total == 0:
+        import difflib
+        titles_lower = {t.lower(): t for t in COMMON_JOB_TITLES}
+        matches = difflib.get_close_matches(stelle.lower(), titles_lower.keys(), n=4, cutoff=0.4)
+        suggestions = [titles_lower[m] for m in matches]
+
+    return jsonify({
+        'success':     True,
+        'jobs':        jobs_out,
+        'total':       total,
+        'page':        page,
+        'suggestions': suggestions,
+        'source':      'ba',
+    })
+
+
+@app.route('/api/jobs/detail-ba/<hash_id>')
+@login_required
+def job_detail_ba(hash_id):
+    if not SCRAPE_SUPPORT:
+        return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
+
+    try:
+        token = _get_ba_token()
+    except Exception as e:
+        return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'User-Agent':    'BewerbungsKI/1.0',
+    }
+
+    try:
+        resp = http_requests.get(
+            _BA_DETAIL_URL.format(hash_id),
+            headers=headers, timeout=12,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        return jsonify({'error': f'Detail konnte nicht geladen werden: {str(e)}'}), 502
+
+    raw_desc = data.get('stellenbeschreibung', '') or ''
+    # Strip HTML tags if present
+    clean = re.sub(r'<[^>]+>', '\n', raw_desc)
+    clean = re.sub(r'&amp;',  '&',  clean)
+    clean = re.sub(r'&lt;',   '<',  clean)
+    clean = re.sub(r'&gt;',   '>',  clean)
+    clean = re.sub(r'&nbsp;', ' ',  clean)
+    clean = re.sub(r'\n{3,}', '\n\n', clean).strip()
+
+    # Enrich with salary if available
+    verguetung = data.get('verguetung', '') or ''
+
+    return jsonify({
+        'success':     True,
+        'description': clean,
+        'salary':      verguetung,
+    })
 
 
 # ── API: Anschreiben generieren ───────────────────────────────────────────────
