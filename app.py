@@ -618,6 +618,77 @@ def jobs_search():
     })
 
 
+@app.route('/api/jobs/fetch-description')
+@login_required
+def fetch_job_description():
+    """Fetch and extract the full job description from the original job URL."""
+    if not SCRAPE_SUPPORT:
+        return jsonify({'error': 'Scraping nicht verfügbar'}), 500
+
+    url = request.args.get('url', '').strip()
+    if not url:
+        return jsonify({'error': 'URL fehlt'}), 400
+
+    try:
+        resp = http_requests.get(
+            url, timeout=10,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                              '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept-Language': 'de-DE,de;q=0.9',
+            },
+            allow_redirects=True,
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        return jsonify({'error': f'Seite konnte nicht geladen werden: {str(e)}'}), 502
+
+    try:
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        # Remove noise elements
+        for tag in soup(['script', 'style', 'nav', 'header', 'footer',
+                         'aside', 'form', 'iframe', 'button', 'noscript']):
+            tag.decompose()
+
+        # Try common job description containers first
+        selectors = [
+            '[class*="job-description"]', '[class*="jobDescription"]',
+            '[class*="job_description"]', '[class*="job-detail"]',
+            '[class*="jobdetail"]',        '[class*="vacancy"]',
+            '[class*="stellenbeschreibung"]', '[class*="anzeige"]',
+            '[id*="job-description"]',     '[id*="jobDescription"]',
+            '[id*="job_description"]',     '[id*="jobDetail"]',
+            'article', '[role="main"]', 'main',
+        ]
+
+        text = ''
+        for sel in selectors:
+            el = soup.select_one(sel)
+            if el:
+                raw = el.get_text(separator='\n', strip=True)
+                if len(raw) > 200:
+                    text = raw
+                    break
+
+        # Fallback: body text
+        if not text:
+            body = soup.find('body')
+            text = body.get_text(separator='\n', strip=True) if body else ''
+
+        # Clean up: collapse many blank lines to max 2
+        import re as _re
+        text = _re.sub(r'\n{3,}', '\n\n', text).strip()
+
+        if len(text) < 100:
+            return jsonify({'error': 'Kein Inhalt gefunden — die Seite ist möglicherweise geschützt.'}), 422
+
+        return jsonify({'success': True, 'text': text[:8000]})  # cap at 8k chars
+
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Parsen: {str(e)}'}), 500
+
+
 def _format_job_age(iso_str):
     if not iso_str:
         return '', 9999
@@ -625,7 +696,7 @@ def _format_job_age(iso_str):
         from datetime import timezone
         dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00'))
         delta = (datetime.now(timezone.utc) - dt).days
-        if delta == 0:   label = 'heute'
+        if delta <= 0:   label = 'heute'
         elif delta == 1: label = 'gestern'
         elif delta < 7:  label = f'vor {delta} Tagen'
         elif delta < 30: label = f'vor {delta // 7} Wo.'
