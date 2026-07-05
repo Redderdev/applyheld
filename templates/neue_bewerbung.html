@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% block title %}Neue Bewerbung — BewerbungsKI{% endblock %}
-
 {% block page_title %}Neue Bewerbung{% endblock %}
 
 {% block topbar_actions %}
@@ -9,356 +8,131 @@
 {% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div style="display: flex; gap: 8px; align-items: center; margin-bottom: 20px;">
-  <a href="{{ url_for('index') }}" style="color: var(--ink-500); text-decoration: none; font-size: 14px;">Dashboard</a>
-  <span style="color: var(--ink-400);">›</span>
-  <span style="color: var(--ink-700); font-size: 14px; font-weight: 600;">Neue Bewerbung</span>
-</div>
+<div style="max-width:580px;margin:0 auto;">
 
-{% if not has_cv or not has_api %}
-<div class="card" style="background: var(--status-phone-bg); border: 1px solid var(--status-phone-dot); margin-bottom: 24px; padding: 16px; display: flex; gap: 12px;">
-  <svg style="width: 20px; height: 20px; color: var(--status-phone-fg); flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-  </svg>
-  <div style="font-size: 14px; color: var(--status-phone-fg);">
-    {% if not has_api %}
-    <strong>Anthropic API-Key erforderlich:</strong> Bitte konfigurieren Sie einen unter <a href="{{ url_for('einstellungen') }}" style="color: inherit; text-decoration: underline;">Einstellungen</a>.
-    {% endif %}
-    {% if not has_cv %}
-    <br><strong>Lebenslauf erforderlich:</strong> Bitte laden Sie einen PDF unter <a href="{{ url_for('lebenslauf') }}" style="color: inherit; text-decoration: underline;">Lebenslauf</a> hoch.
-    {% endif %}
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px;font-size:13px;">
+    <a href="{{ url_for('index') }}" style="color:var(--ink-500);text-decoration:none;">Dashboard</a>
+    <span style="color:var(--ink-400);">›</span>
+    <span style="color:var(--ink-700);font-weight:600;">Neue Bewerbung</span>
   </div>
-</div>
-{% endif %}
 
-<!-- 2-Column Layout -->
-<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 22px; align-items: start; max-width: 1320px; margin: 0 auto;">
-  
-  <!-- LEFT: Stelleninformationen -->
-  <div class="card" style="position: sticky; top: calc(var(--topbar-h) + 20px);">
-    <div class="card-header">
-      <h2 class="h3" style="margin: 0;">Stelleninformationen</h2>
-      <button class="btn btn-ghost btn-sm" type="button" onclick="alert('Demo: Formular mit Beispieldaten gefüllt');">Beispiel</button>
+  <div class="card">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
+      <h2 style="font-size:16px;font-weight:650;color:var(--ink-900);margin:0;">Bewerbung tracken</h2>
+      <p style="font-size:13.5px;color:var(--ink-500);margin:4px 0 0;">Füge eine Bewerbung hinzu — Anschreiben kannst du später erstellen.</p>
     </div>
 
-    <form style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Firma + Stelle (Row, responsive) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div class="form-group">
-          <label for="firma">Firma *</label>
-          <input type="text" id="firma" name="firma" placeholder="z.B. Tech Corp" style="height: 40px;">
+    <form style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;" onsubmit="saveBewerbung(event)">
+
+      <!-- Firma + Stelle -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group" style="margin:0;">
+          <label for="firma">Unternehmen *</label>
+          <input type="text" id="firma" placeholder="z.B. Google GmbH"
+                 required autocomplete="organization" style="height:40px;">
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin:0;">
           <label for="stelle">Stelle *</label>
-          <input type="text" id="stelle" name="stelle" placeholder="z.B. Frontend Dev" style="height: 40px;">
+          <input type="text" id="stelle" placeholder="z.B. Frontend Developer"
+                 required style="height:40px;">
         </div>
       </div>
 
-      <!-- URL + Button -->
-      <div class="form-group">
-        <label for="url">Stellen-URL</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="url" id="url" name="url" placeholder="https://..." style="flex: 1; height: 40px;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="extractURL()">Auslesen</button>
+      <!-- URL -->
+      <div class="form-group" style="margin:0;">
+        <label for="url">Stellen-URL <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
+        <input type="url" id="url" placeholder="https://..." style="height:40px;">
+      </div>
+
+      <!-- Status + Datum -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group" style="margin:0;">
+          <label for="status">Status</label>
+          <select id="status" style="height:40px;padding:0 12px;">
+            {% for opt in status_options %}
+            <option value="{{ opt }}" {% if opt == 'Entwurf' %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="datum_gesendet">Beworben am</label>
+          <input type="date" id="datum_gesendet" style="height:40px;">
         </div>
       </div>
 
-      <!-- Stellenanzeige Textarea -->
-      <div class="form-group">
-        <label for="stellenanzeige">Stellenanzeige Text *</label>
-        <textarea id="stellenanzeige" name="stellenanzeige" placeholder="Vollständigen Text der Stellenanzeige hier einfügen..." style="min-height: 240px; padding: 12px; border: 1px solid var(--border); border-radius: var(--r); font-size: 14px; font-family: inherit; resize: vertical;"></textarea>
-        <div style="font-size: 12px; color: var(--ink-400); margin-top: 4px;">
-          <span id="stellenanzeige-count">0</span> Zeichen
-        </div>
+      <!-- Notizen -->
+      <div class="form-group" style="margin:0;">
+        <label for="notizen">Notizen <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
+        <textarea id="notizen" rows="3"
+          placeholder="Kontaktperson, Gehaltsvorstellung, nächste Schritte..."
+          style="resize:vertical;font-size:14px;"></textarea>
       </div>
 
-      <!-- Generate Button -->
-      <button id="generateBtn" type="button" class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="generateAnschreiben()" disabled>
-        KI-Anschreiben generieren
-      </button>
+      <div style="padding-top:4px;">
+        <button type="submit" id="saveBtn" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;">
+          Bewerbung speichern
+        </button>
+      </div>
     </form>
   </div>
-
-  <!-- RIGHT: Anschreiben Editor -->
-  <div class="card" style="min-height: 560px; display: flex; flex-direction: column;">
-    <div class="card-header">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <svg style="width: 16px; height: 16px; color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-        <h2 class="h3" style="margin: 0;">Anschreiben</h2>
-      </div>
-      <div id="status-badge" style="display: none; padding: 4px 12px; background: var(--status-applied-bg); color: var(--status-applied-fg); border-radius: var(--r-full); font-size: 12px; font-weight: 600;">
-        Generiert
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div id="empty-state" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--ink-400); padding: 20px;">
-      <svg style="width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>
-      </svg>
-      Fülle die Stelleninformation aus und generiere dein Anschreiben
-    </div>
-
-    <!-- Loading State (hidden initially) -->
-    <div id="loading-state" style="flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
-      <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-500); animation: pulse 1.4s infinite;"></div>
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-500); animation: pulse 1.4s infinite 0.2s;"></div>
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-500); animation: pulse 1.4s infinite 0.4s;"></div>
-      </div>
-      <div style="font-size: 14px; color: var(--ink-500);">KI schreibt dein Anschreiben…</div>
-    </div>
-
-    <!-- Editor -->
-    <textarea id="anschreiben" style="flex: 1; display: none; padding: 20px; border: none; border-top: 1px solid var(--border); font-family: inherit; font-size: 15px; line-height: 1.75; resize: none; outline: none;" placeholder="Dein Anschreiben wird hier angezeigt..."></textarea>
-
-    <!-- Footer -->
-    <div class="card-footer" id="editor-footer" style="display: none; flex-direction: column; gap: 12px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--ink-500);">
-        <span id="word-count">0 Wörter · 0 Zeichen</span>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="copyText()">
-          <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-          </svg>
-          Kopieren
-        </button>
-      </div>
-      <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="downloadPDF()" disabled>
-          <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          PDF
-        </button>
-        <button type="button" class="btn btn-primary btn-sm" style="flex: 1;" onclick="saveBewerbung()">
-          Speichern
-        </button>
-      </div>
-    </div>
-  </div>
 </div>
 
-<style>
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-#firma:valid,
-#stelle:valid,
-#stellenanzeige:valid {
-  border-color: var(--success);
-}
-
-@media (max-width: 1024px) {
-  div[style*="grid-template-columns: minmax(0, 1fr)"] {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-@media (max-width: 880px) {
-  #generateBtn {
-    position: sticky;
-    bottom: calc(var(--bottomnav-h) + 12px);
-    z-index: 10;
-    margin-top: auto;
-  }
-}
-</style>
-
 <script>
-const firmaInput = document.getElementById('firma');
-const stelleInput = document.getElementById('stelle');
-const stellenannonceInput = document.getElementById('stellenanzeige');
-const generateBtn = document.getElementById('generateBtn');
-const anschreibenTextarea = document.getElementById('anschreiben');
-
-// Enable/disable generate button
-function updateGenerateBtn() {
-  const firma = firmaInput.value.trim();
-  const anzeige = stellenannonceInput.value.trim();
-  generateBtn.disabled = !firma || anzeige.length < 20;
-}
-
-// Update stellenanzeige character count
-stellenannonceInput.addEventListener('input', () => {
-  document.getElementById('stellenanzeige-count').textContent = stellenannonceInput.value.length;
-  updateGenerateBtn();
-});
-
-firmaInput.addEventListener('input', updateGenerateBtn);
-stelleInput.addEventListener('input', updateGenerateBtn);
-
-// Extract URL
-async function extractURL(autoTriggered = false) {
-  const urlInput = document.getElementById('url');
-  const url = urlInput.value.trim();
-  if (!url) { if (!autoTriggered) urlInput.focus(); return; }
-
-  const btn = document.querySelector('button[onclick="extractURL()"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Wird ausgelesen…'; }
-
-  // Show a hint in the textarea while loading
-  stellenannonceInput.placeholder = 'Stellenanzeige wird von der URL geladen…';
-
-  try {
-    const res = await fetch('{{ url_for("extract_url") }}', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
-    });
-    const data = await res.json();
-
-    if (data.success && data.text) {
-      stellenannonceInput.value = data.text;
-      // Auto-fill Stelle from page title if field is still empty
-      if (!stelleInput.value.trim() && data.title) {
-        stelleInput.value = data.title;
-      }
-      updateGenerateBtn();
-    } else {
-      if (!autoTriggered) alert('Fehler: ' + (data.error || 'Seite konnte nicht geladen werden.'));
-    }
-  } catch (e) {
-    if (!autoTriggered) alert('Netzwerkfehler: ' + e.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Auslesen'; }
-    stellenannonceInput.placeholder = 'Vollständigen Text der Stellenanzeige hier einfügen…';
-  }
-}
-
-// Generate Cover Letter
-async function generateAnschreiben() {
-  const firma = firmaInput.value.trim();
-  const stelle = stelleInput.value.trim();
-  const stellenanzeige = stellenannonceInput.value.trim();
-
-  if (!stellenanzeige) {
-    alert('Bitte eine Stellenanzeige einfügen.');
-    return;
-  }
-
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('loading-state').style.display = 'flex';
-  generateBtn.disabled = true;
-
-  try {
-    const res = await fetch('{{ url_for("generate") }}', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ firma, stelle, stellenanzeige })
-    });
-    const data = await res.json();
-
-    if (data.error) {
-      alert('Fehler: ' + data.error);
-      document.getElementById('empty-state').style.display = 'flex';
-      document.getElementById('loading-state').style.display = 'none';
-      return;
-    }
-
-    document.getElementById('loading-state').style.display = 'none';
-    anschreibenTextarea.value = data.anschreiben;
-    anschreibenTextarea.style.display = 'block';
-    document.getElementById('status-badge').style.display = 'block';
-    document.getElementById('editor-footer').style.display = 'block';
-    updateWordCount();
-  } catch (e) {
-    alert('Fehler: ' + e.message);
-    document.getElementById('empty-state').style.display = 'flex';
-    document.getElementById('loading-state').style.display = 'none';
-  } finally {
-    generateBtn.disabled = false;
-  }
-}
-
-// Update word count
-function updateWordCount() {
-  const text = anschreibenTextarea.value;
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const chars = text.length;
-  document.getElementById('word-count').textContent = `${words} Wörter · ${chars} Zeichen`;
-}
-
-anschreibenTextarea.addEventListener('input', updateWordCount);
-
-// Copy text
-function copyText() {
-  anschreibenTextarea.select();
-  document.execCommand('copy');
-  alert('Kopiert!');
-}
-
-// Download PDF
-function downloadPDF() {
-  alert('PDF-Download noch nicht implementiert');
-}
-
-// Save Bewerbung
-async function saveBewerbung() {
-  const payload = {
-    firma: firmaInput.value.trim(),
-    stelle: stelleInput.value.trim(),
-    url: document.getElementById('url').value.trim(),
-    stellenanzeige: stellenannonceInput.value.trim(),
-    anschreiben: anschreibenTextarea.value.trim(),
-    status: 'Entwurf',
-    notizen: ''
-  };
-
-  if (!payload.firma) { alert('Bitte Firma eingeben'); return; }
-
-  const res = await fetch('{{ url_for("save") }}', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await res.json();
-  
-  if (data.success) {
-    window.location.href = '/bewerbung/' + data.id;
-  } else {
-    alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
-  }
-}
-
-// Pre-fill from sessionStorage (set by "Direkt bewerben" on Jobs page)
-// Falls back to URL params for manual use
-(function prefillFromParams() {
-  const p = new URLSearchParams(window.location.search);
-
-  // Check sessionStorage first (set by Jobs page — avoids scraping Adzuna URLs)
+// Prefill from sessionStorage (set by Jobs page "Speichern"-Button)
+(function() {
   try {
     const pending = JSON.parse(sessionStorage.getItem('pending_job') || 'null');
     if (pending && pending.firma) {
-      sessionStorage.removeItem('pending_job'); // consume once
-      firmaInput.value  = pending.firma  || '';
-      stelleInput.value = pending.stelle || '';
-      if (pending.url) document.getElementById('url').value = pending.url;
-      if (pending.stellenanzeige) {
-        stellenannonceInput.value = pending.stellenanzeige;
-        document.getElementById('stellenanzeige-count').textContent = pending.stellenanzeige.length;
-      }
-      updateGenerateBtn();
+      sessionStorage.removeItem('pending_job');
+      if (pending.firma)  document.getElementById('firma').value  = pending.firma;
+      if (pending.stelle) document.getElementById('stelle').value = pending.stelle;
+      if (pending.url)    document.getElementById('url').value    = pending.url;
       return;
     }
   } catch(e) {}
-
-  // Fallback: URL params (manual entry or bookmark)
-  if (p.get('firma'))  firmaInput.value  = decodeURIComponent(p.get('firma'));
-  if (p.get('stelle')) stelleInput.value = decodeURIComponent(p.get('stelle'));
-  if (p.get('url')) {
-    document.getElementById('url').value = decodeURIComponent(p.get('url'));
-    extractURL(true);
-  }
-  updateGenerateBtn();
+  // URL params fallback
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('firma'))  document.getElementById('firma').value  = decodeURIComponent(p.get('firma'));
+  if (p.get('stelle')) document.getElementById('stelle').value = decodeURIComponent(p.get('stelle'));
+  if (p.get('url'))    document.getElementById('url').value    = decodeURIComponent(p.get('url'));
 })();
 
-// Initialize
-updateGenerateBtn();
+async function saveBewerbung(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Speichert…';
+
+  const payload = {
+    firma:          document.getElementById('firma').value.trim(),
+    stelle:         document.getElementById('stelle').value.trim(),
+    url:            document.getElementById('url').value.trim(),
+    status:         document.getElementById('status').value,
+    datum_gesendet: document.getElementById('datum_gesendet').value || null,
+    notizen:        document.getElementById('notizen').value.trim(),
+    stellenanzeige: '',
+    anschreiben:    '',
+  };
+
+  try {
+    const res  = await fetch('{{ url_for("save") }}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = '/bewerbung/' + data.id;
+    } else {
+      alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
+      btn.disabled = false;
+      btn.textContent = 'Bewerbung speichern';
+    }
+  } catch(err) {
+    alert('Netzwerkfehler');
+    btn.disabled = false;
+    btn.textContent = 'Bewerbung speichern';
+  }
+}
 </script>
 {% endblock %}

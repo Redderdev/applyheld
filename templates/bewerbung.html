@@ -3,11 +3,6 @@
 {% block page_title %}{{ b.firma or 'Bewerbung' }}{% endblock %}
 
 {% block topbar_actions %}
-  <a href="/bewerbung/{{ b.id }}/pdf" class="btn btn-secondary btn-sm">
-    <svg style="width:14px;height:14px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>PDF
-  </a>
   <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteBewerbung()">Löschen</button>
 {% endblock %}
 
@@ -17,22 +12,21 @@
   <a href="{{ url_for('index') }}" style="color:var(--ink-500);text-decoration:none;">Dashboard</a>
   <span style="color:var(--ink-400);">›</span>
   <span style="color:var(--ink-700);font-weight:600;">{{ b.firma }}</span>
-  <span style="color:var(--ink-400);">›</span>
-  <span style="color:var(--ink-500);">{{ b.stelle }}</span>
+  {% if b.stelle %}<span style="color:var(--ink-400);">›</span>
+  <span style="color:var(--ink-500);">{{ b.stelle }}</span>{% endif %}
 </div>
 
-<!-- 3-Column Layout -->
-<div style="display:grid;grid-template-columns:260px minmax(0,1fr) 300px;gap:18px;align-items:start;max-width:1500px;">
+<!-- 2-Column Layout: Left info, Right content -->
+<div style="display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start;max-width:1100px;" id="detail-grid">
 
-  <!-- ── LEFT: Info + Status + Notizen ── -->
-  <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(var(--topbar-h,60px) + 16px);">
+  <!-- ── LEFT: Info + Status + Notizen + Save ── -->
+  <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(var(--topbar-h,60px) + 16px);">
 
     <!-- Meta Card -->
     <div class="card" style="padding:20px;">
-      <div style="font-size:17px;font-weight:700;color:var(--ink-900);margin-bottom:4px;">{{ b.firma }}</div>
-      <div style="font-size:14px;color:var(--ink-500);margin-bottom:16px;">{{ b.stelle }}</div>
+      <div style="font-size:17px;font-weight:700;color:var(--ink-900);margin-bottom:2px;">{{ b.firma }}</div>
+      <div style="font-size:14px;color:var(--ink-500);margin-bottom:16px;">{{ b.stelle or '–' }}</div>
 
-      <!-- Status Dropdown -->
       <div class="form-group" style="margin-bottom:12px;">
         <label>Status</label>
         <select id="status-select" class="form-input" onchange="quickSaveStatus(this.value)">
@@ -42,170 +36,206 @@
         </select>
       </div>
 
-      <!-- Datum beworben -->
-      <div class="form-group" style="margin-bottom:12px;">
+      <div class="form-group" style="margin-bottom:0;">
         <label>Beworben am</label>
         <input type="date" id="datum_gesendet" class="form-input" value="{{ b.datum_gesendet or '' }}">
       </div>
 
-      <!-- URL -->
       {% if b.url %}
-      <div style="margin-top:8px;">
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
         <a href="{{ b.url }}" target="_blank" rel="noopener"
-           style="font-size:13px;color:var(--accent-600);text-decoration:none;display:flex;align-items:center;gap:4px;">
-          <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 1 0h6"/>
+           style="font-size:13px;color:var(--accent-600);text-decoration:none;display:flex;align-items:center;gap:5px;">
+          <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
             <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
           </svg>Stellenanzeige öffnen
         </a>
       </div>
       {% endif %}
 
-      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
-
-      <div style="font-size:12px;color:var(--ink-400);">Erstellt: {{ b.datum_erstellt or '–' }}</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-400);">
+        Erstellt: {{ b.datum_erstellt or '–' }}
+      </div>
     </div>
 
-    <!-- Notizen Card -->
+    <!-- Notizen -->
     <div class="card" style="padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink-700);margin-bottom:10px;">Notizen</div>
       <textarea id="notizen" rows="5" class="form-input"
-        style="resize:vertical;font-size:13px;"
+        style="resize:vertical;font-size:13px;line-height:1.55;"
         placeholder="Kontaktperson, nächste Schritte, Anmerkungen...">{{ b.notizen or '' }}</textarea>
     </div>
 
-    <!-- Save Button -->
     <button class="btn btn-primary" style="width:100%;" onclick="saveAll(this)">
       Änderungen speichern
     </button>
-    <div id="save-status" style="text-align:center;font-size:13px;min-height:20px;"></div>
+    <div id="save-status" style="text-align:center;font-size:13px;min-height:18px;"></div>
   </div>
 
-  <!-- ── MIDDLE: Anschreiben Editor ── -->
-  <div class="card" style="display:flex;flex-direction:column;min-height:600px;padding:0;overflow:hidden;">
-    <!-- Editor Toolbar -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <svg style="width:16px;height:16px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-        <span style="font-size:14px;font-weight:600;color:var(--ink-700);">Anschreiben</span>
-        <span id="word-count" style="font-size:12px;color:var(--ink-400);"></span>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Kopieren">
-          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  <!-- ── RIGHT: Anschreiben + optional KI ── -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Anschreiben Editor -->
+    <div class="card" style="display:flex;flex-direction:column;min-height:480px;padding:0;overflow:hidden;">
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg style="width:15px;height:15px;color:var(--ink-500);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
           </svg>
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="regenerate()">Neu generieren</button>
-      </div>
-    </div>
-
-    <!-- Textarea -->
-    <textarea id="anschreiben"
-      style="flex:1;padding:28px 32px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;"
-      placeholder="Anschreiben hier bearbeiten..."
-      oninput="updateWordCount()">{{ b.anschreiben or '' }}</textarea>
-
-    <!-- Footer -->
-    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:12px;color:var(--ink-400);" id="auto-save-hint"></span>
-      <a href="/bewerbung/{{ b.id }}/pdf" class="btn btn-secondary btn-sm">
-        PDF herunterladen
-      </a>
-    </div>
-  </div>
-
-  <!-- ── RIGHT: AI Chat ── -->
-  <div class="card" style="display:flex;flex-direction:column;height:600px;padding:0;overflow:hidden;position:sticky;top:calc(var(--topbar-h,60px) + 16px);">
-    <!-- Chat Header -->
-    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);">
-      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy-700),var(--accent-600));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg style="width:14px;height:14px;color:#fff;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-        </svg>
-      </div>
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--ink-900);">KI-Assistent</div>
-        <div style="font-size:11px;color:var(--success);display:flex;align-items:center;gap:4px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;"></span>Online
+          <span style="font-size:14px;font-weight:600;color:var(--ink-700);">Anschreiben</span>
+          <span style="font-size:12px;color:var(--ink-400);font-weight:400;">– optional</span>
+          <span id="word-count" style="font-size:12px;color:var(--ink-400);"></span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Kopieren">
+            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <a href="/bewerbung/{{ b.id }}/pdf" class="btn btn-ghost btn-sm" title="PDF">
+            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </a>
         </div>
       </div>
+
+      <!-- Textarea -->
+      <textarea id="anschreiben"
+        style="flex:1;padding:24px 28px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;min-height:360px;"
+        placeholder="Anschreiben hier eingeben oder mit KI generieren..."
+        oninput="updateWordCount()">{{ b.anschreiben or '' }}</textarea>
+
+      <div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--ink-400);" id="auto-save-hint"></span>
+      </div>
     </div>
 
-    <!-- Messages -->
-    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
-      <!-- Greeting -->
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+    <!-- KI Anschreiben generieren (optional, kollabierbar) -->
+    <div class="card" style="padding:0;overflow:hidden;">
+      <button onclick="toggleKI()" id="ki-toggle"
+        style="width:100%;padding:14px 18px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:var(--font);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg style="width:15px;height:15px;color:var(--accent-600);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
+          <span style="font-size:14px;font-weight:600;color:var(--ink-800);">Anschreiben mit KI generieren</span>
+          <span style="font-size:12px;color:var(--ink-400);">– optional</span>
         </div>
-        <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:220px;line-height:1.5;">
-          Ich kann dein Anschreiben verbessern. Sag mir einfach was geändert werden soll!
-        </div>
-      </div>
-
-      {% for msg in chat %}
-      {% if msg.rolle == 'user' %}
-      <div style="display:flex;justify-content:flex-end;">
-        <div style="background:var(--navy-700);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;max-width:220px;line-height:1.5;">
-          {{ msg.inhalt }}
-        </div>
-      </div>
-      {% else %}
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-          </svg>
-        </div>
-        <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:220px;line-height:1.5;">
-          {{ msg.inhalt }}
-        </div>
-      </div>
-      {% endif %}
-      {% endfor %}
-    </div>
-
-    <!-- Quick Chips -->
-    <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;">
-      {% for chip in ['Kürzer', 'Formeller', 'Persönlicher', 'Ersten Absatz überarbeiten'] %}
-      <button class="chip" onclick="sendChip('{{ chip }}')" style="font-size:11px;padding:4px 10px;">{{ chip }}</button>
-      {% endfor %}
-    </div>
-
-    <!-- Chat Input -->
-    <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;">
-      <textarea id="chat-input" rows="2"
-        style="flex:1;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;font-family:var(--font);resize:none;outline:none;line-height:1.5;"
-        placeholder="Sag der KI was geändert werden soll..."
-        onkeydown="handleChatKey(event)"></textarea>
-      <button id="chat-send-btn" onclick="sendChat()"
-        style="width:34px;height:34px;border-radius:50%;background:var(--navy-700);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg style="width:14px;height:14px;color:#fff;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        <svg id="ki-chevron" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
         </svg>
       </button>
-    </div>
-  </div>
 
-</div><!-- end 3-col -->
+      <div id="ki-panel" style="display:{% if b.stellenanzeige %}block{% else %}none{% endif %};border-top:1px solid var(--border);">
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:13px;">Stellenanzeige einfügen</label>
+            <textarea id="stellenanzeige-input" rows="6"
+              style="resize:vertical;font-size:13px;line-height:1.55;"
+              placeholder="Füge den Text der Stellenanzeige hier ein — die KI verwendet ihn für ein passendes Anschreiben.">{{ b.stellenanzeige or '' }}</textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="ki-btn" class="btn btn-primary btn-sm" onclick="generateMitKI()"
+              style="display:flex;align-items:center;gap:6px;">
+              <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              Generieren
+            </button>
+            {% if b.anschreiben %}
+            <span style="font-size:12.5px;color:var(--ink-400);">Achtung: überschreibt das aktuelle Anschreiben</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Chat (Anschreiben verbessern) -->
+    {% if b.anschreiben %}
+    <div class="card" style="padding:0;overflow:hidden;">
+      <button onclick="toggleChat()" id="chat-toggle"
+        style="width:100%;padding:14px 18px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:var(--font);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg style="width:15px;height:15px;color:var(--navy-700);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style="font-size:14px;font-weight:600;color:var(--ink-800);">Anschreiben mit KI verbessern</span>
+        </div>
+        <svg id="chat-chevron" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      <div id="chat-panel" style="display:none;border-top:1px solid var(--border);">
+        <!-- Messages -->
+        <div id="chat-messages" style="height:280px;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:80%;line-height:1.5;">
+              Sag mir was geändert werden soll — kürzer, formeller, anderen Einstieg...
+            </div>
+          </div>
+          {% for msg in chat %}
+          {% if msg.rolle == 'user' %}
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:var(--navy-700);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;max-width:80%;line-height:1.5;">{{ msg.inhalt }}</div>
+          </div>
+          {% else %}
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:80%;line-height:1.5;">{{ msg.inhalt }}</div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+
+        <!-- Quick chips -->
+        <div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;">
+          {% for chip in ['Kürzer', 'Formeller', 'Persönlicher', 'Ersten Absatz überarbeiten'] %}
+          <button class="chip" onclick="sendChip('{{ chip }}')" style="font-size:11.5px;padding:4px 10px;">{{ chip }}</button>
+          {% endfor %}
+        </div>
+
+        <!-- Input -->
+        <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;">
+          <textarea id="chat-input" rows="2"
+            style="flex:1;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;font-family:var(--font);resize:none;outline:none;line-height:1.5;"
+            placeholder="Sag der KI was geändert werden soll..."
+            onkeydown="handleChatKey(event)"></textarea>
+          <button id="chat-send-btn" onclick="sendChat()"
+            style="width:34px;height:34px;border-radius:50%;background:var(--navy-700);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:14px;height:14px;color:#fff;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- end right col -->
+</div><!-- end grid -->
 
 <style>
-@media (max-width: 1180px) {
-  #detail-grid { grid-template-columns: 1fr 1fr !important; }
-}
-@media (max-width: 880px) {
+@media (max-width: 860px) {
   #detail-grid { grid-template-columns: 1fr !important; }
 }
 </style>
 
 <script>
-// Alle Seitendaten als sicheres JSON — kein JS-Injection-Risiko durch Backticks etc.
 const PAGE = {{ {
   'bid': b.id,
   'firma': b.firma or '',
@@ -215,26 +245,54 @@ const PAGE = {{ {
 } | tojson }};
 const BID = PAGE.bid;
 
-// Init
 updateWordCount();
-scrollChatToBottom();
+{% if chat %}scrollChatToBottom();{% endif %}
+{% if b.stellenanzeige %}
+document.getElementById('ki-chevron').style.transform = 'rotate(180deg)';
+{% endif %}
 
 function updateWordCount() {
   const t = document.getElementById('anschreiben').value;
   const w = t.trim() ? t.trim().split(/\s+/).length : 0;
-  document.getElementById('word-count').textContent = `${w} Wörter`;
+  document.getElementById('word-count').textContent = w ? `${w} Wörter` : '';
 }
 
+// ── Collapsible KI panel ──
+function toggleKI() {
+  const panel   = document.getElementById('ki-panel');
+  const chevron = document.getElementById('ki-chevron');
+  const open    = panel.style.display !== 'none';
+  panel.style.display   = open ? 'none' : 'block';
+  chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// ── Collapsible Chat panel ──
+function toggleChat() {
+  const panel   = document.getElementById('chat-panel');
+  const chevron = document.getElementById('chat-chevron');
+  if (!panel) return;
+  const open    = panel.style.display !== 'none';
+  panel.style.display   = open ? 'none' : 'block';
+  chevron.style.transform = open ? '' : 'rotate(180deg)';
+  if (!open) scrollChatToBottom();
+}
+
+// ── Save ──
 async function saveAll(btn) {
   if (!btn) btn = document.querySelector('[onclick^="saveAll"]');
+  const orig = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Speichert…';
+
+  const stellenanzeige = document.getElementById('stellenanzeige-input')
+    ? document.getElementById('stellenanzeige-input').value
+    : PAGE.stellenanzeige;
 
   const payload = {
     firma:          PAGE.firma,
     stelle:         PAGE.stelle,
     url:            PAGE.url,
-    stellenanzeige: PAGE.stellenanzeige,
+    stellenanzeige: stellenanzeige,
     anschreiben:    document.getElementById('anschreiben').value,
     status:         document.getElementById('status-select').value,
     datum_gesendet: document.getElementById('datum_gesendet').value || null,
@@ -259,11 +317,10 @@ async function saveAll(btn) {
     document.getElementById('save-status').innerHTML = '<span style="color:var(--danger)">Netzwerkfehler</span>';
   }
   btn.disabled = false;
-  btn.textContent = 'Änderungen speichern';
+  btn.textContent = orig;
 }
 
 async function quickSaveStatus(status) {
-  const select = document.getElementById('status-select');
   try {
     const res  = await fetch(`/api/update-status/${BID}`, {
       method: 'POST',
@@ -275,39 +332,51 @@ async function quickSaveStatus(status) {
       showToast('Status gespeichert ✓');
     } else {
       showToast('Fehler beim Speichern');
-      console.error('Status update failed:', data);
     }
   } catch (err) {
     showToast('Netzwerkfehler');
-    console.error('quickSaveStatus error:', err);
   }
 }
 
-async function regenerate() {
-  const stellenanzeige = `{{ b.stellenanzeige|e }}`;
-  if (!stellenanzeige) { alert('Keine Stellenanzeige gespeichert.'); return; }
-  if (!confirm('Anschreiben neu generieren? Der aktuelle Text wird überschrieben.')) return;
-
-  const ta = document.getElementById('anschreiben');
-  ta.disabled = true;
-  ta.value = 'KI schreibt dein Anschreiben…';
-
-  const res = await fetch('/api/generate', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ firma: '{{ b.firma|e }}', stelle: '{{ b.stelle|e }}', stellenanzeige }),
-  });
-  const data = await res.json();
-  ta.disabled = false;
-
-  if (data.error) {
-    ta.value = '{{ b.anschreiben|e }}';
-    alert('Fehler: ' + data.error);
-  } else {
-    ta.value = data.anschreiben;
-    updateWordCount();
-    showToast('Anschreiben neu generiert');
+async function generateMitKI() {
+  const stellenanzeige = document.getElementById('stellenanzeige-input').value.trim();
+  if (!stellenanzeige) {
+    showToast('Bitte Stellenanzeige einfügen');
+    document.getElementById('stellenanzeige-input').focus();
+    return;
   }
+
+  const btn = document.getElementById('ki-btn');
+  const ta  = document.getElementById('anschreiben');
+  btn.disabled = true;
+  btn.textContent = 'Generiert…';
+  ta.style.opacity = '0.5';
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        firma:          PAGE.firma,
+        stelle:         PAGE.stelle,
+        stellenanzeige: stellenanzeige,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      showToast('Fehler: ' + data.error);
+    } else {
+      ta.value = data.anschreiben;
+      updateWordCount();
+      showToast('Anschreiben generiert ✓');
+    }
+  } catch(e) {
+    showToast('Netzwerkfehler');
+  }
+
+  ta.style.opacity = '1';
+  btn.disabled = false;
+  btn.innerHTML = '<svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Generieren';
 }
 
 function copyAnschreiben() {
@@ -321,18 +390,14 @@ async function deleteBewerbung() {
   window.location.href = '/';
 }
 
-// ── AI Chat ──────────────────────────────────────────────────────
-
+// ── Chat ──
 function scrollChatToBottom() {
   const el = document.getElementById('chat-messages');
-  el.scrollTop = el.scrollHeight;
+  if (el) el.scrollTop = el.scrollHeight;
 }
 
 function handleChatKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChat();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
 }
 
 function sendChip(text) {
@@ -341,27 +406,23 @@ function sendChip(text) {
 }
 
 async function sendChat() {
-  const input = document.getElementById('chat-input');
+  const input   = document.getElementById('chat-input');
   const message = input.value.trim();
   if (!message) return;
-
   input.value = '';
-  const btn = document.getElementById('chat-send-btn');
-  btn.disabled = true;
+  document.getElementById('chat-send-btn').disabled = true;
 
   appendMessage('user', message);
-
   const typing = appendTyping();
 
   try {
-    const res = await fetch(`/api/chat/${BID}`, {
+    const res  = await fetch(`/api/chat/${BID}`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({message}),
     });
     const data = await res.json();
     typing.remove();
-
     if (data.error) {
       appendMessage('assistant', 'Fehler: ' + data.error);
     } else {
@@ -373,31 +434,25 @@ async function sendChat() {
         setTimeout(() => document.getElementById('auto-save-hint').textContent = '', 3000);
       }
     }
-  } catch (e) {
+  } catch(e) {
     typing.remove();
-    appendMessage('assistant', 'Verbindungsfehler. Bitte versuche es erneut.');
+    appendMessage('assistant', 'Verbindungsfehler. Bitte erneut versuchen.');
   }
 
-  btn.disabled = false;
+  document.getElementById('chat-send-btn').disabled = false;
   scrollChatToBottom();
 }
 
 function appendMessage(role, text) {
   const container = document.getElementById('chat-messages');
   const div = document.createElement('div');
-
   if (role === 'user') {
     div.style.cssText = 'display:flex;justify-content:flex-end;';
-    div.innerHTML = `<div style="background:var(--navy-700);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;max-width:220px;line-height:1.5;">${escHtml(text)}</div>`;
+    div.innerHTML = `<div style="background:var(--navy-700);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 12px;font-size:13px;max-width:80%;line-height:1.5;">${escHtml(text)}</div>`;
   } else {
     div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
-    div.innerHTML = `
-      <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-        </svg>
-      </div>
-      <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:220px;line-height:1.5;">${escHtml(text)}</div>`;
+    div.innerHTML = `<div style="width:26px;height:26px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div>
+      <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;font-size:13px;color:var(--ink-700);max-width:80%;line-height:1.5;">${escHtml(text)}</div>`;
   }
   container.appendChild(div);
   scrollChatToBottom();
@@ -408,16 +463,11 @@ function appendTyping() {
   const container = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
-  div.innerHTML = `
-    <div style="width:26px;height:26px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-      <svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-      </svg>
-    </div>
+  div.innerHTML = `<div style="width:26px;height:26px;border-radius:50%;background:var(--bg-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg style="width:12px;height:12px;color:var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div>
     <div style="background:var(--bg-soft);border-radius:4px 14px 14px 14px;padding:10px 12px;display:flex;gap:5px;align-items:center;">
       <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite;"></span>
-      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite 0.2s;"></span>
-      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite 0.4s;"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite .2s;"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-400);animation:pulse 1.2s infinite .4s;"></span>
     </div>`;
   container.appendChild(div);
   scrollChatToBottom();
@@ -435,5 +485,10 @@ function showToast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2800);
 }
+
+// Pulse animation
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}';
+document.head.appendChild(style);
 </script>
 {% endblock %}

@@ -801,17 +801,18 @@ def save():
     conn = get_db()
     params = (uid, data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
               data.get('stellenanzeige', ''), data.get('anschreiben', ''),
-              data.get('status', 'Entwurf'), data.get('notizen', ''))
+              data.get('status', 'Entwurf'), data.get('notizen', ''),
+              data.get('datum_gesendet') or None)
     if _PG:
         cur = conn.execute(
-            'INSERT INTO bewerbungen (user_id, firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
-            ' VALUES (?,?,?,?,?,?,?,?) RETURNING id', params
+            'INSERT INTO bewerbungen (user_id, firma, stelle, url, stellenanzeige, anschreiben, status, notizen, datum_gesendet)'
+            ' VALUES (?,?,?,?,?,?,?,?,?) RETURNING id', params
         )
         bid = cur.fetchone()['id']
     else:
         cur = conn.execute(
-            'INSERT INTO bewerbungen (user_id, firma, stelle, url, stellenanzeige, anschreiben, status, notizen)'
-            ' VALUES (?,?,?,?,?,?,?,?)', params
+            'INSERT INTO bewerbungen (user_id, firma, stelle, url, stellenanzeige, anschreiben, status, notizen, datum_gesendet)'
+            ' VALUES (?,?,?,?,?,?,?,?,?)', params
         )
         bid = cur.lastrowid
     conn.commit()
