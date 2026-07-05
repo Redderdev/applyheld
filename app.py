@@ -645,9 +645,10 @@ _BA_TOKEN_URL  = 'https://rest.arbeitsagentur.de/oauth/gettoken_cc'
 _BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
 _BA_DETAIL_URL = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/{}'
 
-# Public client credentials embedded in the BA's own web frontend
-_BA_CLIENT_ID     = 'c003a37f-024f-462a-b36d-b001be4cd24a'
-_BA_CLIENT_SECRET = '32a39620-32b3-4307-9aa1-511e3d7f48a8'
+# Set BA_CLIENT_ID and BA_CLIENT_SECRET as environment variables in Railway.
+# Register at: developer.arbeitsagentur.de → API "Jobsuche"
+_BA_CLIENT_ID     = os.environ.get('BA_CLIENT_ID', '')
+_BA_CLIENT_SECRET = os.environ.get('BA_CLIENT_SECRET', '')
 
 _ba_token_cache = {'token': None, 'expires': 0.0}
 
@@ -679,6 +680,8 @@ def _get_ba_token():
 def jobs_search_ba():
     if not SCRAPE_SUPPORT:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
+    if not _BA_CLIENT_ID or not _BA_CLIENT_SECRET:
+        return jsonify({'error': 'BA_NOT_CONFIGURED'}), 503
 
     stelle     = request.args.get('stelle', '').strip()
     ort        = request.args.get('ort', '').strip()
@@ -778,6 +781,8 @@ def jobs_search_ba():
 def job_detail_ba(hash_id):
     if not SCRAPE_SUPPORT:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
+    if not _BA_CLIENT_ID or not _BA_CLIENT_SECRET:
+        return jsonify({'error': 'BA_NOT_CONFIGURED'}), 503
 
     try:
         token = _get_ba_token()

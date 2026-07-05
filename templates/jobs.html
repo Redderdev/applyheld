@@ -156,6 +156,25 @@
         <div id="error-msg" style="font-size:13px;color:var(--ink-500);"></div>
       </div>
 
+      <div id="state-ba-not-configured" style="display:none;padding:20px;">
+        <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--r);padding:20px;">
+          <div style="font-size:14px;font-weight:700;color:var(--ink-800);margin-bottom:8px;">Bundesagentur API nicht konfiguriert</div>
+          <p style="font-size:13px;color:var(--ink-600);line-height:1.6;margin:0 0 12px;">
+            Bitte <code style="background:var(--bg-soft);border:1px solid var(--border);padding:1px 5px;border-radius:4px;">BA_CLIENT_ID</code> und
+            <code style="background:var(--bg-soft);border:1px solid var(--border);padding:1px 5px;border-radius:4px;">BA_CLIENT_SECRET</code>
+            als Umgebungsvariablen in Railway setzen.
+          </p>
+          <ol style="font-size:13px;color:var(--ink-600);line-height:1.8;margin:0 0 12px;padding-left:18px;">
+            <li>Konto erstellen auf <strong>developer.arbeitsagentur.de</strong></li>
+            <li>API <strong>„Jobsuche"</strong> beantragen</li>
+            <li><code>BA_CLIENT_ID</code> und <code>BA_CLIENT_SECRET</code> in Railway → Variables eintragen</li>
+          </ol>
+          <button class="btn btn-secondary btn-sm" onclick="switchToAdzuna()">
+            Stattdessen Adzuna verwenden
+          </button>
+        </div>
+      </div>
+
       <!-- Results header -->
       <div id="results-header" style="display:none;padding:0 4px 10px;font-size:13px;color:var(--ink-500);">
         <strong id="results-count" style="color:var(--ink-700);">0</strong> Jobs
@@ -420,7 +439,15 @@ async function search(page = 1) {
     const res  = await fetch(endpoint + '?' + new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, page }));
     const data = await res.json();
 
-    if (!data.success) { setState('error'); document.getElementById('error-msg').textContent = data.error || 'Unbekannter Fehler'; return; }
+    if (!data.success) {
+      if (data.error === 'BA_NOT_CONFIGURED') {
+        setState('ba-not-configured');
+      } else {
+        setState('error');
+        document.getElementById('error-msg').textContent = data.error || 'Unbekannter Fehler';
+      }
+      return;
+    }
 
     totalResults = data.total || 0;
 
@@ -665,11 +692,17 @@ function applyDirect(firma, stelle, url, stellenanzeige) {
 
 // ── State machine ─────────────────────────────────────────────────────────────
 
+function switchToAdzuna() {
+  document.getElementById('input-quelle').value = 'adzuna';
+  search();
+}
+
 function setState(state) {
-  document.getElementById('state-empty').style.display   = state === 'empty'   ? 'block' : 'none';
-  document.getElementById('state-loading').style.display = state === 'loading' ? 'block' : 'none';
-  document.getElementById('state-error').style.display   = state === 'error'   ? 'block' : 'none';
-  document.getElementById('state-suggest').style.display = state === 'suggest' ? 'block' : 'none';
+  document.getElementById('state-empty').style.display              = state === 'empty'              ? 'block' : 'none';
+  document.getElementById('state-loading').style.display            = state === 'loading'            ? 'block' : 'none';
+  document.getElementById('state-error').style.display              = state === 'error'              ? 'block' : 'none';
+  document.getElementById('state-suggest').style.display            = state === 'suggest'            ? 'block' : 'none';
+  document.getElementById('state-ba-not-configured').style.display  = state === 'ba-not-configured'  ? 'block' : 'none';
   if (state === 'empty-results') {
     const el = document.getElementById('state-empty');
     el.style.display = 'block';
