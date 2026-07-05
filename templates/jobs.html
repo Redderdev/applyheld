@@ -263,6 +263,26 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+.track-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--accent-50, #fffbeb);
+  border: 1px solid var(--accent-200, #fde68a);
+  border-radius: var(--r);
+  flex-wrap: wrap;
+}
+.track-prompt__question {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-700);
+  flex: 1;
+  min-width: 160px;
+}
 @media (max-width: 860px) {
   div[style*="grid-template-columns:1fr 1fr auto auto auto auto"] {
     grid-template-columns: 1fr 1fr !important;
@@ -379,19 +399,20 @@ function loadMore() {
 }
 
 function renderJobs(jobs) {
-  const list = document.getElementById('jobs-list');
+  const list    = document.getElementById('jobs-list');
+  const pending = loadPendingJobs();
+
   jobs.forEach(job => {
-    const seen    = hasSeenJob(job.url);
-    const card    = document.createElement('div');
-    card.className = 'job-card' + (seen ? ' job-card--seen' : '');
+    const seen      = hasSeenJob(job.url);
+    const isPending = pending.has(job.url);
+    const card      = document.createElement('div');
+    card.className  = 'job-card' + (seen && !isPending ? ' job-card--seen' : '');
 
     const salary   = job.salary   ? `<span style="color:var(--success);font-weight:600;">${esc(job.salary)}</span>` : '';
     const contract = job.contract ? `<span style="background:var(--navy-50);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>` : '';
     const ageColor = job.age_days <= 3 ? 'var(--success)' : job.age_days <= 14 ? 'var(--ink-500)' : 'var(--danger)';
-    const age      = job.age      ? `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>` : '';
-    const seenBadge = seen
-      ? `<span class="seen-badge">✓ bereits gesehen</span>`
-      : '';
+    const age      = job.age ? `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>` : '';
+    const seenBadge = seen && !isPending ? `<span class="seen-badge">✓ bereits gesehen</span>` : '';
 
     card.innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
@@ -404,39 +425,89 @@ function renderJobs(jobs) {
         ${age} ${salary} ${contract}
       </div>
       ${job.description ? `<div class="job-desc">${esc(job.description)}</div>` : ''}
-      <div class="job-actions">
-        <button class="btn btn-primary btn-sm js-apply">
-          <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Direkt bewerben
-        </button>
-        <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm js-open">
-          Stelle ansehen ↗
-        </a>
+      <div class="job-actions-wrap">
+        ${isPending ? buildTrackPrompt(job) : buildActions(job)}
       </div>
     `;
 
+    wireCard(card, job);
+    list.appendChild(card);
+  });
+}
+
+function buildActions(job) {
+  return `
+    <div class="job-actions">
+      <button class="btn btn-primary btn-sm js-apply">
+        <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Bewerbung tracken
+      </button>
+      <a href="${esc(job.url)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm js-open">
+        Stelle ansehen ↗
+      </a>
+    </div>`;
+}
+
+function buildTrackPrompt(job) {
+  return `
+    <div class="track-prompt">
+      <span class="track-prompt__question">
+        <svg style="width:14px;height:14px;color:var(--accent-600);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Hast du dich beworben?
+      </span>
+      <button class="btn btn-primary btn-sm js-confirm-track">
+        Ja, jetzt tracken
+      </button>
+      <button class="btn btn-ghost btn-sm js-dismiss-track" style="color:var(--ink-400);">
+        Nein ✕
+      </button>
+    </div>`;
+}
+
+function wireCard(card, job) {
+  const wrap = card.querySelector('.job-actions-wrap');
+
+  function showPrompt() {
+    markJobSeen(job.url);
+    addPendingJob(job.url);
+    card.classList.remove('job-card--seen');
+    wrap.innerHTML = buildTrackPrompt(job);
+    wirePrompt();
+  }
+
+  function wirePrompt() {
+    card.querySelector('.js-confirm-track').addEventListener('click', () => {
+      removePendingJob(job.url);
+      applyDirect(job.company, job.title, job.url, job.full_desc || '');
+    });
+    card.querySelector('.js-dismiss-track').addEventListener('click', () => {
+      removePendingJob(job.url);
+      card.classList.add('job-card--seen');
+      wrap.innerHTML = buildActions(job);
+      wireActions();
+    });
+  }
+
+  function wireActions() {
     card.querySelector('.js-apply').addEventListener('click', () => {
       markJobSeen(job.url);
       applyDirect(job.company, job.title, job.url, job.full_desc || '');
     });
-
     card.querySelector('.js-open').addEventListener('click', () => {
-      markJobSeen(job.url);
-      card.classList.add('job-card--seen');
-      const badge = card.querySelector('.seen-badge');
-      if (!badge) {
-        const titleRow = card.querySelector('.job-title').parentElement;
-        const b = document.createElement('span');
-        b.className = 'seen-badge';
-        b.textContent = '✓ bereits gesehen';
-        titleRow.appendChild(b);
-      }
+      showPrompt();
     });
+  }
 
-    list.appendChild(card);
-  });
+  // Initial wire-up
+  if (card.querySelector('.js-confirm-track')) {
+    wirePrompt();
+  } else {
+    wireActions();
+  }
 }
 
 function applyDirect(firma, stelle, url, stellenanzeige) {
@@ -537,6 +608,25 @@ function markJobSeen(url) {
   const s = _loadSeen();
   s.add(url);
   _saveSeen(s);
+}
+
+// ── Pending-track helpers (sessionStorage — cleared when tab closes) ──────────
+
+const PENDING_KEY = 'jobs_pending_track';
+
+function loadPendingJobs() {
+  try { return new Set(JSON.parse(sessionStorage.getItem(PENDING_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+
+function addPendingJob(url) {
+  const s = loadPendingJobs(); s.add(url);
+  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify([...s])); } catch(e) {}
+}
+
+function removePendingJob(url) {
+  const s = loadPendingJobs(); s.delete(url);
+  try { sessionStorage.setItem(PENDING_KEY, JSON.stringify([...s])); } catch(e) {}
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────────
