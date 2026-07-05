@@ -193,6 +193,15 @@
           <div style="flex:1;padding:18px 22px;overflow-y:auto;">
             <div id="d-desc" style="font-size:14px;color:var(--ink-700);line-height:1.75;white-space:pre-wrap;"></div>
             <div id="d-fetch-wrap" style="display:none;"></div>
+            <div id="d-preview-note" style="display:none;margin-top:16px;padding:10px 14px;background:var(--bg-soft);border-radius:var(--r);border:1px solid var(--border);">
+              <span style="font-size:12.5px;color:var(--ink-500);">
+                Dies ist eine Vorschau von Adzuna. Die vollständige Stellenanzeige findest du über
+                <a id="d-preview-link" href="#" target="_blank" rel="noopener"
+                   style="color:var(--primary);font-weight:600;text-decoration:none;">
+                  die Originalseite ↗
+                </a>
+              </span>
+            </div>
           </div>
 
           <!-- Actions / Track prompt -->
@@ -519,16 +528,20 @@ function showDetail(job) {
   if (job.contract) meta += `<span style="background:var(--bg-soft);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>`;
   document.getElementById('d-meta').innerHTML = meta;
 
-  // Show Adzuna preview immediately, then auto-fetch full description in background
+  // Show Adzuna description (API-licensed content)
   const previewText = job.full_desc || job.description || '';
   const descEl = document.getElementById('d-desc');
-  descEl.innerHTML = `<span style="color:var(--ink-400);font-size:13px;">Beschreibung wird geladen…</span>`;
+  descEl.textContent = previewText || 'Keine Beschreibung verfügbar.';
   document.getElementById('d-fetch-wrap').style.display = 'none';
 
-  if (job.url) {
-    autoFetchDescription(job.url, previewText, descEl);
+  // Show "preview from Adzuna" note when description is truncated
+  const note = document.getElementById('d-preview-note');
+  const link = document.getElementById('d-preview-link');
+  if (previewText.endsWith('…') || previewText.endsWith('...')) {
+    note.style.display = 'block';
+    link.href = job.url || '#';
   } else {
-    descEl.textContent = previewText || 'Keine Beschreibung verfügbar.';
+    note.style.display = 'none';
   }
 
   // Actions
@@ -600,24 +613,6 @@ function renderDetailActions(job, showingPrompt) {
   }
 }
 
-async function autoFetchDescription(url, fallbackText, descEl) {
-  // Track which job is currently selected so we don't overwrite if user clicks another card
-  const jobUrl = url;
-  try {
-    const res  = await fetch('/api/jobs/fetch-description?' + new URLSearchParams({ url }));
-    // If user clicked a different card before this completed, discard result
-    if (activeJob && activeJob.url !== jobUrl) return;
-    const data = await res.json();
-    if (data.error || !data.text) {
-      descEl.textContent = fallbackText || 'Keine Beschreibung verfügbar.';
-    } else {
-      descEl.textContent = data.text;
-    }
-  } catch(e) {
-    if (activeJob && activeJob.url !== jobUrl) return;
-    descEl.textContent = fallbackText || 'Keine Beschreibung verfügbar.';
-  }
-}
 
 function applyDirect(firma, stelle, url, stellenanzeige) {
   sessionStorage.setItem('pending_job', JSON.stringify({ firma, stelle, url, stellenanzeige }));
