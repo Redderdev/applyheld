@@ -192,20 +192,7 @@
           <!-- Description -->
           <div style="flex:1;padding:18px 22px;overflow-y:auto;">
             <div id="d-desc" style="font-size:14px;color:var(--ink-700);line-height:1.75;white-space:pre-wrap;"></div>
-            <div id="d-fetch-wrap" style="margin-top:14px;display:none;">
-              <button id="d-fetch-btn" class="btn btn-ghost btn-sm"
-                style="font-size:12.5px;color:var(--ink-500);border:1px dashed var(--border);"
-                onclick="fetchFullDescription()">
-                <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Vollständige Anzeige laden
-              </button>
-              <span id="d-fetch-note" style="font-size:11.5px;color:var(--ink-400);margin-left:8px;">
-                Adzuna liefert nur eine Vorschau — hier direkt von der Originalseite nachladen
-              </span>
-            </div>
+            <div id="d-fetch-wrap" style="display:none;"></div>
           </div>
 
           <!-- Actions / Track prompt -->
@@ -532,17 +519,16 @@ function showDetail(job) {
   if (job.contract) meta += `<span style="background:var(--bg-soft);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>`;
   document.getElementById('d-meta').innerHTML = meta;
 
-  // Description — use full_desc (full Adzuna text), show fetch button since Adzuna truncates
-  const fullText = job.full_desc || job.description || '';
-  document.getElementById('d-desc').textContent = fullText || 'Keine Beschreibung verfügbar.';
+  // Show Adzuna preview immediately, then auto-fetch full description in background
+  const previewText = job.full_desc || job.description || '';
+  const descEl = document.getElementById('d-desc');
+  descEl.innerHTML = `<span style="color:var(--ink-400);font-size:13px;">Beschreibung wird geladen…</span>`;
+  document.getElementById('d-fetch-wrap').style.display = 'none';
 
-  // Show "load full description" button if we have a URL and Adzuna text ends with "…"
-  const fetchWrap = document.getElementById('d-fetch-wrap');
-  if (job.url && (fullText.endsWith('…') || fullText.endsWith('...'))) {
-    fetchWrap.style.display = 'block';
-    document.getElementById('d-fetch-btn').dataset.url = job.url;
+  if (job.url) {
+    autoFetchDescription(job.url, previewText, descEl);
   } else {
-    fetchWrap.style.display = 'none';
+    descEl.textContent = previewText || 'Keine Beschreibung verfügbar.';
   }
 
   // Actions
@@ -614,35 +600,22 @@ function renderDetailActions(job, showingPrompt) {
   }
 }
 
-async function fetchFullDescription() {
-  const btn  = document.getElementById('d-fetch-btn');
-  const note = document.getElementById('d-fetch-note');
-  const desc = document.getElementById('d-desc');
-  const url  = btn.dataset.url;
-  if (!url) return;
-
-  btn.disabled = true;
-  btn.textContent = 'Wird geladen…';
-  note.textContent = '';
-
+async function autoFetchDescription(url, fallbackText, descEl) {
+  // Track which job is currently selected so we don't overwrite if user clicks another card
+  const jobUrl = url;
   try {
     const res  = await fetch('/api/jobs/fetch-description?' + new URLSearchParams({ url }));
+    // If user clicked a different card before this completed, discard result
+    if (activeJob && activeJob.url !== jobUrl) return;
     const data = await res.json();
-
-    if (data.error) {
-      note.textContent = '⚠ ' + data.error;
-      btn.disabled = false;
-      btn.innerHTML = `<svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.75"/></svg> Erneut versuchen`;
-      return;
+    if (data.error || !data.text) {
+      descEl.textContent = fallbackText || 'Keine Beschreibung verfügbar.';
+    } else {
+      descEl.textContent = data.text;
     }
-
-    desc.textContent = data.text;
-    document.getElementById('d-fetch-wrap').style.display = 'none';
-
   } catch(e) {
-    note.textContent = '⚠ Netzwerkfehler';
-    btn.disabled = false;
-    btn.textContent = 'Erneut versuchen';
+    if (activeJob && activeJob.url !== jobUrl) return;
+    descEl.textContent = fallbackText || 'Keine Beschreibung verfügbar.';
   }
 }
 
