@@ -681,32 +681,81 @@ def fetch_job_description():
 
         # ── Extract job description from the real page ───────────────────────────
         for tag in soup(['script', 'style', 'nav', 'header', 'footer',
-                         'aside', 'form', 'iframe', 'button', 'noscript']):
+                         'aside', 'form', 'iframe', 'button', 'noscript',
+                         '[class*="similar"]', '[class*="recommend"]',
+                         '[class*="related"]', '[class*="other-jobs"]']):
             tag.decompose()
 
-        selectors = [
+        # Site-specific high-precision selectors (tried first)
+        precise_selectors = [
+            # StepStone
+            '[data-at="job-ad-overview-text"]',
+            '[class*="JobAdContent"]',
+            '[class*="job-ad-display__content"]',
+            # Indeed
+            '[id="jobDescriptionText"]',
+            '[class*="jobsearch-jobDescriptionText"]',
+            # LinkedIn
+            '[class*="description__text"]',
+            '[class*="show-more-less-html__markup"]',
+            # Xing
+            '[class*="job-posting-description"]',
+            # Generic
             '[class*="job-description"]', '[class*="jobDescription"]',
             '[class*="job_description"]', '[class*="job-detail"]',
-            '[class*="jobdetail"]',        '[class*="vacancy"]',
             '[class*="stellenbeschreibung"]', '[class*="anzeige"]',
-            '[id*="job-description"]',     '[id*="jobDescription"]',
-            '[id*="job_description"]',     '[id*="jobDetail"]',
-            'article', '[role="main"]', 'main',
+            '[id*="job-description"]', '[id*="jobDescription"]',
+            '[id*="jobDetail"]',
         ]
 
         text = ''
-        for sel in selectors:
-            el = soup.select_one(sel)
+        for sel in precise_selectors:
+            try:
+                el = soup.select_one(sel)
+            except Exception:
+                continue
             if el:
                 raw = el.get_text(separator='\n', strip=True)
                 if len(raw) > 200:
                     text = raw
                     break
 
+        # Wider fallback: article / main — but only if no precise match
+        if not text:
+            for sel in ['article', '[role="main"]', 'main']:
+                el = soup.select_one(sel)
+                if el:
+                    raw = el.get_text(separator='\n', strip=True)
+                    if len(raw) > 200:
+                        text = raw
+                        break
+
         if not text:
             body = soup.find('body')
             text = body.get_text(separator='\n', strip=True) if body else ''
 
+        # ── Post-processing: cut off at noise markers ─────────────────────────
+        NOISE_MARKERS = [
+            'Diese Jobs waren bei anderen',
+            'Ähnliche Stellenangebote',
+            'Ähnliche Stellen',
+            'Similar jobs',
+            'Recommended jobs',
+            'People also viewed',
+            'Jobs you may like',
+            'Weitere Jobs',
+            'Andere Bewerber sahen',
+            'Das könnte Sie auch interessieren',
+            'Jetzt Newsletter abonnieren',
+            'Folge uns auf',
+            'Über das Unternehmen',   # cut company promo block if after description
+        ]
+        for marker in NOISE_MARKERS:
+            idx = text.find(marker)
+            if idx > 300:   # only cut if we have at least 300 chars of real content
+                text = text[:idx]
+
+        # Collapse whitespace
         text = re.sub(r'\n{3,}', '\n\n', text).strip()
 
         if len(text) < 100:
