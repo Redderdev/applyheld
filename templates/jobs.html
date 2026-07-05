@@ -23,7 +23,7 @@
 
   <!-- ── Suchmaske ──────────────────────────────────────────────────────────── -->
   <div class="card" style="margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end;">
+    <div style="display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:12px;align-items:end;">
 
       <div class="form-group" style="margin:0;">
         <label>Stelle / Beruf</label>
@@ -75,6 +75,26 @@
           <option value="25" selected>25 km</option>
           <option value="50">50 km</option>
           <option value="100">100 km</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin:0;">
+        <label>Aktualität</label>
+        <select id="input-alter" style="height:42px;padding:0 12px;min-width:120px;">
+          <option value="">Alle</option>
+          <option value="3">Letzte 3 Tage</option>
+          <option value="7" selected>Letzte 7 Tage</option>
+          <option value="14">Letzte 14 Tage</option>
+          <option value="30">Letzte 30 Tage</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin:0;">
+        <label>Sortierung</label>
+        <select id="input-sortierung" style="height:42px;padding:0 12px;min-width:120px;">
+          <option value="date">Neueste</option>
+          <option value="relevance">Relevanz</option>
+          <option value="salary">Gehalt</option>
         </select>
       </div>
 
@@ -225,8 +245,13 @@
   gap: 8px;
   align-items: center;
 }
-@media (max-width: 640px) {
-  div[style*="grid-template-columns: 1fr 1fr auto auto"] {
+@media (max-width: 860px) {
+  div[style*="grid-template-columns:1fr 1fr auto auto auto auto"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+@media (max-width: 560px) {
+  div[style*="grid-template-columns:1fr 1fr auto auto auto auto"] {
     grid-template-columns: 1fr !important;
   }
   .job-actions { flex-wrap: wrap; }
@@ -238,26 +263,32 @@ let currentPage = 1;
 let currentStelle = '';
 let currentOrt = '';
 let currentUmkreis = '25';
+let currentAlter = '7';
+let currentSortierung = 'date';
 let totalResults = 0;
 
 async function search(page = 1) {
-  const stelle  = document.getElementById('input-stelle').value.trim();
-  const ort     = document.getElementById('input-ort').value.trim();
-  const umkreis = document.getElementById('input-umkreis').value;
+  const stelle     = document.getElementById('input-stelle').value.trim();
+  const ort        = document.getElementById('input-ort').value.trim();
+  const umkreis    = document.getElementById('input-umkreis').value;
+  const alter      = document.getElementById('input-alter').value;
+  const sortierung = document.getElementById('input-sortierung').value;
 
   if (!stelle) {
     document.getElementById('input-stelle').focus();
     return;
   }
 
-  currentStelle  = stelle;
-  currentOrt     = ort;
-  currentUmkreis = umkreis;
-  currentPage    = page;
+  currentStelle     = stelle;
+  currentOrt        = ort;
+  currentUmkreis    = umkreis;
+  currentAlter      = alter;
+  currentSortierung = sortierung;
+  currentPage       = page;
 
   // Persist search + update URL
   if (page === 1) {
-    const params = new URLSearchParams({ stelle, ort, umkreis });
+    const params = new URLSearchParams({ stelle, ort, umkreis, alter, sortierung });
     history.replaceState(null, '', '/jobs?' + params.toString());
   }
 
@@ -272,7 +303,7 @@ async function search(page = 1) {
   setState('loading');
 
   try {
-    const params = new URLSearchParams({ stelle, ort, umkreis, page });
+    const params = new URLSearchParams({ stelle, ort, umkreis, alter, sortierung, page });
     const res = await fetch('/api/jobs/search?' + params);
     const data = await res.json();
 
@@ -304,7 +335,7 @@ async function search(page = 1) {
 
     // Cache results so navigating away and back doesn't re-fetch
     if (page === 1) {
-      cacheResults(stelle, ort, umkreis, data);
+      cacheResults(stelle, ort, umkreis, alter, sortierung, data);
     }
 
     setState('results');
@@ -337,7 +368,8 @@ function renderJobs(jobs) {
 
     const salary   = job.salary   ? `<span style="color:var(--success);font-weight:600;">${esc(job.salary)}</span>` : '';
     const contract = job.contract ? `<span style="background:var(--navy-50);padding:2px 8px;border-radius:var(--r-full);font-size:12px;">${esc(job.contract)}</span>` : '';
-    const age      = job.age      ? `<span>📅 ${esc(job.age)}</span>` : '';
+    const ageColor = job.age_days <= 3 ? 'var(--success)' : job.age_days <= 14 ? 'var(--ink-500)' : 'var(--danger)';
+    const age      = job.age      ? `<span style="color:${ageColor};">📅 ${esc(job.age)}</span>` : '';
 
     card.innerHTML = `
       <div class="job-title">${esc(job.title)}</div>
@@ -448,22 +480,23 @@ function esc(s) {
 const CACHE_KEY = 'jobs_cache';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-function cacheResults(stelle, ort, umkreis, data) {
+function cacheResults(stelle, ort, umkreis, alter, sortierung, data) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
-      stelle, ort, umkreis,
+      stelle, ort, umkreis, alter, sortierung,
       timestamp: Date.now(),
       data,
     }));
   } catch(e) {}
 }
 
-function loadFromCache(stelle, ort, umkreis) {
+function loadFromCache(stelle, ort, umkreis, alter, sortierung) {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const c = JSON.parse(raw);
-    if (c.stelle !== stelle || c.ort !== ort || c.umkreis !== umkreis) return null;
+    if (c.stelle !== stelle || c.ort !== ort || c.umkreis !== umkreis ||
+        c.alter !== alter || c.sortierung !== sortierung) return null;
     if (Date.now() - c.timestamp > CACHE_TTL) return null;
     return c.data;
   } catch(e) { return null; }
@@ -472,30 +505,35 @@ function loadFromCache(stelle, ort, umkreis) {
 // ── Restore last search on page load ─────────────────────────────────────────
 
 (function restore() {
-  // Read params from URL or localStorage cache
   const urlP = new URLSearchParams(window.location.search);
-  let stelle  = urlP.get('stelle') || '';
-  let ort     = urlP.get('ort')    || '';
-  let umkreis = urlP.get('umkreis') || '';
+  let stelle     = urlP.get('stelle')     || '';
+  let ort        = urlP.get('ort')        || '';
+  let umkreis    = urlP.get('umkreis')    || '';
+  let alter      = urlP.get('alter')      || '';
+  let sortierung = urlP.get('sortierung') || '';
 
   if (!stelle) {
     try {
       const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-      if (c && c.stelle) { stelle = c.stelle; ort = c.ort || ''; umkreis = c.umkreis || '25'; }
+      if (c && c.stelle) {
+        stelle = c.stelle; ort = c.ort || ''; umkreis = c.umkreis || '25';
+        alter = c.alter || '7'; sortierung = c.sortierung || 'date';
+      }
     } catch(e) {}
   }
 
   if (!stelle) return;
 
-  // Fill inputs
-  document.getElementById('input-stelle').value  = stelle;
-  document.getElementById('input-ort').value     = ort;
-  if (umkreis) document.getElementById('input-umkreis').value = umkreis;
+  document.getElementById('input-stelle').value = stelle;
+  document.getElementById('input-ort').value    = ort;
+  if (umkreis)    document.getElementById('input-umkreis').value    = umkreis;
+  if (alter)      document.getElementById('input-alter').value      = alter;
+  if (sortierung) document.getElementById('input-sortierung').value = sortierung;
 
-  // Try cache first — no API call if results are fresh
-  const cached = loadFromCache(stelle, ort, umkreis || '25');
+  const cached = loadFromCache(stelle, ort, umkreis || '25', alter || '7', sortierung || 'date');
   if (cached) {
     currentStelle = stelle; currentOrt = ort; currentUmkreis = umkreis || '25';
+    currentAlter = alter || '7'; currentSortierung = sortierung || 'date';
     totalResults = cached.total || 0;
 
     const hdr = document.getElementById('results-header');
@@ -512,10 +550,9 @@ function loadFromCache(stelle, ort, umkreis) {
       document.getElementById('load-more-wrap').style.display = 'block';
     }
     updateQuickLinks(stelle, ort);
-    return; // No Adzuna call needed
+    return;
   }
 
-  // Cache miss or stale → fetch fresh
   search();
 })();
 </script>

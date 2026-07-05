@@ -521,10 +521,12 @@ def jobs_search():
     if not SCRAPE_SUPPORT:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
 
-    stelle   = request.args.get('stelle', '').strip()
-    ort      = request.args.get('ort', '').strip()
-    umkreis  = request.args.get('umkreis', '25')
-    page     = max(1, int(request.args.get('page', 1)))
+    stelle     = request.args.get('stelle', '').strip()
+    ort        = request.args.get('ort', '').strip()
+    umkreis    = request.args.get('umkreis', '25')
+    alter      = request.args.get('alter', '').strip()
+    sortierung = request.args.get('sortierung', 'date').strip()
+    page       = max(1, int(request.args.get('page', 1)))
 
     if not stelle:
         return jsonify({'error': 'Bitte eine Stelle eingeben.'}), 400
@@ -534,13 +536,19 @@ def jobs_search():
     if not app_id or not app_key:
         return jsonify({'error': 'Adzuna API-Key nicht konfiguriert.'}), 400
 
+    sort_by = sortierung if sortierung in ('relevance', 'date', 'salary') else 'date'
     params = {
-        'app_id':          app_id,
-        'app_key':         app_key,
+        'app_id':           app_id,
+        'app_key':          app_key,
         'results_per_page': 50,
-        'what_and':        stelle,   # alle Wörter müssen vorkommen, aber nicht als Phrase
-        'sort_by':         'relevance',
+        'what_and':         stelle,
+        'sort_by':          sort_by,
     }
+    if alter:
+        try:
+            params['max_days_old'] = int(alter)
+        except ValueError:
+            pass
     if ort:
         params['where'] = ort
         try:
@@ -562,7 +570,7 @@ def jobs_search():
     jobs_out = []
     for r in raw.get('results', []):
         created = r.get('created', '')
-        age = _format_job_age(created)
+        age, age_days = _format_job_age(created)
 
         desc = r.get('description', '')
         desc = re.sub(r'<[^>]+>', ' ', desc)          # strip HTML tags
@@ -584,6 +592,7 @@ def jobs_search():
             'location':     r.get('location', {}).get('display_name', ''),
             'url':          r.get('redirect_url', ''),
             'age':          age,
+            'age_days':     age_days,
             'description':  desc,
             'full_desc':    full_desc,
             'salary':       salary,
@@ -611,18 +620,19 @@ def jobs_search():
 
 def _format_job_age(iso_str):
     if not iso_str:
-        return ''
+        return '', 9999
     try:
         from datetime import timezone
         dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00'))
         delta = (datetime.now(timezone.utc) - dt).days
-        if delta == 0:   return 'heute'
-        if delta == 1:   return 'gestern'
-        if delta < 7:    return f'vor {delta} Tagen'
-        if delta < 30:   return f'vor {delta // 7} Wo.'
-        return f'vor {delta // 30} Mon.'
+        if delta == 0:   label = 'heute'
+        elif delta == 1: label = 'gestern'
+        elif delta < 7:  label = f'vor {delta} Tagen'
+        elif delta < 30: label = f'vor {delta // 7} Wo.'
+        else:            label = f'vor {delta // 30} Mon.'
+        return label, delta
     except Exception:
-        return ''
+        return '', 9999
 
 
 # ── API: Anschreiben generieren ───────────────────────────────────────────────
