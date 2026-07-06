@@ -189,6 +189,14 @@ def init_db():
             template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')
         )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS cv_versions (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT DEFAULT 'Lebenslauf',
+            cv_json TEXT DEFAULT '{}',
+            cv_template TEXT DEFAULT 'klassisch',
+            updated_at TEXT DEFAULT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')
+        )''')
     else:
         conn.execute('''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -242,6 +250,22 @@ def init_db():
             template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT (datetime('now'))
         )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS cv_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT DEFAULT 'Lebenslauf',
+            cv_json TEXT DEFAULT '{}',
+            cv_template TEXT DEFAULT 'klassisch',
+            updated_at TEXT DEFAULT (datetime('now'))
+        )''')
+    # Migrate existing cv_data into cv_versions (once per user, idempotent)
+    conn.execute('''
+        INSERT INTO cv_versions (user_id, name, cv_json, cv_template, updated_at)
+        SELECT user_id, 'Lebenslauf', data, template, updated_at
+        FROM cv_data
+        WHERE data != '{}'
+        AND user_id NOT IN (SELECT DISTINCT user_id FROM cv_versions)
+    ''')
     # Assign orphaned rows (user_id IS NULL) to the first user.
     # Covers bewerbungen created before auth was added.
     conn.execute('''
@@ -366,12 +390,31 @@ def bewerbung(bid):
 @app.route('/lebenslauf')
 @login_required
 def lebenslauf():
-    cv_json, cv_template = _get_cv_json()
-    return render_template('lebenslauf.html',
+    versions = _list_cv_versions()
+    return render_template('lebenslauf.html', versions=versions)
+
+
+@app.route('/lebenslauf/neu')
+@login_required
+def lebenslauf_neu():
+    return render_template('lebenslauf_edit.html',
+                           cv_id=None, cv_name='Neuer Lebenslauf',
+                           cv_json={}, cv_template='klassisch',
                            cv_text=get_setting('cv_text'),
-                           cv_filename=get_setting('cv_filename'),
-                           cv_json=cv_json,
-                           cv_template=cv_template)
+                           cv_filename=get_setting('cv_filename'))
+
+
+@app.route('/lebenslauf/<int:cv_id>')
+@login_required
+def lebenslauf_edit(cv_id):
+    cv = _get_cv_version(cv_id)
+    if not cv:
+        abort(404)
+    return render_template('lebenslauf_edit.html',
+                           cv_id=cv['id'], cv_name=cv['name'],
+                           cv_json=cv['data'], cv_template=cv['template'],
+                           cv_text=get_setting('cv_text'),
+                           cv_filename=get_setting('cv_filename'))
 
 
 @app.route('/profil', methods=['GET', 'POST'])
@@ -1122,6 +1165,77 @@ def _save_cv_json(data, template):
     conn.close()
 
 
+def _list_cv_versions():
+    if not current_user.is_authenticated:
+        return []
+    conn = get_db()
+    rows = conn.execute(
+        'SELECT id, name, cv_template, updated_at FROM cv_versions WHERE user_id = ? ORDER BY updated_at DESC',
+        (current_user.id,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def _get_cv_version(cv_id):
+    if not current_user.is_authenticated:
+        return None
+    conn = get_db()
+    row = conn.execute(
+        'SELECT id, name, cv_json, cv_template FROM cv_versions WHERE id = ? AND user_id = ?',
+        (cv_id, current_user.id)
+    ).fetchone()
+    conn.close()
+    if not row:
+        return None
+    try:
+        data = json.loads(row['cv_json'] or '{}')
+    except Exception:
+        data = {}
+    return {'id': row['id'], 'name': row['name'], 'data': data, 'template': row['cv_template']}
+
+
+def _create_cv_version(name, data, template):
+    uid = current_user.id
+    conn = get_db()
+    if _PG:
+        row = conn.execute(
+            'INSERT INTO cv_versions (user_id, name, cv_json, cv_template, updated_at)'
+            ' VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP::TEXT) RETURNING id',
+            (uid, name, json.dumps(data, ensure_ascii=False), template)
+        ).fetchone()
+        new_id = row['id']
+    else:
+        cur = conn.execute(
+            'INSERT INTO cv_versions (user_id, name, cv_json, cv_template, updated_at)'
+            ' VALUES (?, ?, ?, ?, datetime("now"))',
+            (uid, name, json.dumps(data, ensure_ascii=False), template)
+        )
+        new_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return new_id
+
+
+def _update_cv_version(cv_id, name, data, template):
+    uid = current_user.id
+    conn = get_db()
+    if _PG:
+        conn.execute(
+            'UPDATE cv_versions SET name=?, cv_json=?, cv_template=?, updated_at=CURRENT_TIMESTAMP::TEXT'
+            ' WHERE id=? AND user_id=?',
+            (name, json.dumps(data, ensure_ascii=False), template, cv_id, uid)
+        )
+    else:
+        conn.execute(
+            'UPDATE cv_versions SET name=?, cv_json=?, cv_template=?, updated_at=datetime("now")'
+            ' WHERE id=? AND user_id=?',
+            (name, json.dumps(data, ensure_ascii=False), template, cv_id, uid)
+        )
+    conn.commit()
+    conn.close()
+
+
 @app.route('/api/parse-cv', methods=['POST'])
 @login_required
 def parse_cv():
@@ -1190,10 +1304,10 @@ Regeln:
 @app.route('/api/cv-data', methods=['GET', 'POST'])
 @login_required
 def cv_data_api():
+    # Legacy endpoint kept for backward compat (KI parse flow)
     if request.method == 'GET':
         data, template = _get_cv_json()
         return jsonify({'success': True, 'data': data, 'template': template})
-
     body = request.get_json()
     data = body.get('data', {})
     template = body.get('template', 'klassisch')
@@ -1203,11 +1317,49 @@ def cv_data_api():
     return jsonify({'success': True})
 
 
-@app.route('/lebenslauf/drucken')
+@app.route('/api/cv/neu', methods=['POST'])
 @login_required
-def lebenslauf_drucken():
-    cv_json, cv_template = _get_cv_json()
-    return render_template('lebenslauf_print.html', cv_json=cv_json, cv_template=cv_template)
+def cv_create():
+    body = request.get_json()
+    name = (body.get('name') or 'Lebenslauf').strip() or 'Lebenslauf'
+    data = body.get('data', {})
+    template = body.get('template', 'klassisch')
+    if template not in ('klassisch', 'modern', 'minimal'):
+        template = 'klassisch'
+    new_id = _create_cv_version(name, data, template)
+    return jsonify({'success': True, 'id': new_id})
+
+
+@app.route('/api/cv/<int:cv_id>', methods=['POST'])
+@login_required
+def cv_save(cv_id):
+    body = request.get_json()
+    name = (body.get('name') or 'Lebenslauf').strip() or 'Lebenslauf'
+    data = body.get('data', {})
+    template = body.get('template', 'klassisch')
+    if template not in ('klassisch', 'modern', 'minimal'):
+        template = 'klassisch'
+    _update_cv_version(cv_id, name, data, template)
+    return jsonify({'success': True})
+
+
+@app.route('/api/cv/<int:cv_id>/delete', methods=['POST'])
+@login_required
+def cv_delete(cv_id):
+    conn = get_db()
+    conn.execute('DELETE FROM cv_versions WHERE id = ? AND user_id = ?', (cv_id, current_user.id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/lebenslauf/<int:cv_id>/drucken')
+@login_required
+def lebenslauf_drucken(cv_id):
+    cv = _get_cv_version(cv_id)
+    if not cv:
+        abort(404)
+    return render_template('lebenslauf_print.html', cv_json=cv['data'], cv_template=cv['template'])
 
 
 @app.route('/cv/pdf/<template>')
