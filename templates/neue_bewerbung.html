@@ -3,175 +3,239 @@
 {% block page_title %}Neue Bewerbung{% endblock %}
 
 {% block topbar_actions %}
-  <a href="{{ url_for('index') }}" class="btn btn-ghost btn-sm">Abbrechen</a>
+  <a href="{{ url_for('index') }}" class="nb-cancel">Abbrechen</a>
 {% endblock %}
 
 {% block content %}
 <style>
-/* ── Split layout ───────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&display=swap');
+
+/* ── Ground & topbar ─────────────────────────────────────── */
+.page          { background: #FAFAF9; }
+.main          { background: #FAFAF9; }
+.topbar        { border-bottom: 1px solid #ECECE8; background: #FAFAF9; }
+.page-title    { font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 17px; font-weight: 600; color: #0A0A0B; letter-spacing: -.01em; }
+.nb-cancel     { font-size: 13.5px; font-weight: 500; color: #75756F; text-decoration: none; transition: color .12s; }
+.nb-cancel:hover { color: #0A0A0B; }
+.topbar-icon-btn {
+  width: 38px; height: 38px;
+  background: #FFFFFF;
+  border: 1px solid #ECECE8;
+  border-radius: 8px;
+  color: #75756F;
+  padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.topbar-icon-btn svg { width: 17px; height: 17px; stroke-width: 1.7; }
+.topbar-icon-btn:hover { background: #F5F5F2; }
+
+/* ── Breadcrumb ──────────────────────────────────────────── */
+.nb-crumb {
+  display: flex; gap: 7px; align-items: center;
+  margin-bottom: 28px; font-size: 13px;
+}
+.nb-crumb a    { color: #9A9A93; text-decoration: none; transition: color .12s; }
+.nb-crumb a:hover { color: #3A3A35; }
+.nb-crumb-sep  { color: #CECEC8; }
+.nb-crumb-cur  { color: #4F46E5; font-weight: 500; }
+
+/* ── Split layout ────────────────────────────────────────── */
 .nb-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
-  max-width: 1060px;
+  max-width: 1040px;
   margin: 0 auto;
   align-items: start;
 }
 @media (max-width: 860px) {
   .nb-layout { grid-template-columns: 1fr; }
-  .nb-right   { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 28px; margin-top: 8px; }
+  .nb-right  { border-left: none; border-top: 1px solid #ECECE8; padding-left: 0; padding-top: 28px; margin-top: 8px; }
 }
-.nb-left  { padding-right: 44px; }
-.nb-right { padding-left: 44px; border-left: 1px solid var(--border); }
+.nb-left  { padding-right: 48px; }
+.nb-right { padding-left: 48px; border-left: 1px solid #ECECE8; }
 
-/* ── Header ─────────────────────────────────────────────── */
-.nb-hd { margin-bottom: 30px; }
+/* ── Left heading ────────────────────────────────────────── */
+.nb-hd             { margin-bottom: 30px; }
 .nb-hd-title {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -.025em;
-  color: var(--ink-900);
-  margin-bottom: 4px;
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 20px; font-weight: 600;
+  color: #0A0A0B; letter-spacing: -.025em; margin-bottom: 5px;
 }
-.nb-hd-sub { font-size: 13px; color: var(--ink-500); }
+.nb-hd-sub { font-size: 13.5px; color: #75756F; line-height: 1.5; }
 
-/* ── Field label ─────────────────────────────────────────── */
+/* ── Field layout ────────────────────────────────────────── */
+.nb-field { margin-bottom: 20px; }
+.nb-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+/* ── Field label — Geist Mono uppercase ─────────────────── */
 .nb-lbl {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .07em;
+  font-family: 'Geist Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--ink-500);
-  margin-bottom: 7px;
+  color: #3A3A35;
+  margin-bottom: 8px;
 }
+.nb-lbl-req { color: #4F46E5; font-style: normal; }
 .nb-lbl-opt {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 11px;
-  color: var(--ink-400);
-  margin-left: 4px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400; text-transform: none; letter-spacing: 0;
+  font-size: 11px; color: #9A9A93; margin-left: 4px;
 }
 
-/* ── Field containers ───────────────────────────────────── */
-.nb-field { margin-bottom: 20px; }
-.nb-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.nb-row2  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-
-/* ── Input base ─────────────────────────────────────────── */
-.nb-input, .nb-sel, .nb-ta {
+/* ── Input base ──────────────────────────────────────────── */
+.nb-input, .nb-ta {
   width: 100%;
-  font-family: inherit;
-  color: var(--ink-900);
-  background: var(--surface);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--r);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #0A0A0B;
+  background: #FFFFFF;
+  border: 1px solid #E2E2DC;
+  border-radius: 9px;
   transition: border-color .13s, box-shadow .13s;
 }
-.nb-input:focus, .nb-sel:focus, .nb-ta:focus {
+.nb-input:focus, .nb-ta:focus {
   outline: none;
-  border-color: var(--accent-500);
-  box-shadow: 0 0 0 3px rgba(6,182,212,.11);
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
 }
-.nb-input::placeholder, .nb-ta::placeholder { color: var(--ink-400); }
+.nb-input::placeholder, .nb-ta::placeholder { color: #9A9A93; }
 
 .nb-input {
   height: 42px;
-  padding: 0 14px;
-  font-size: 14.5px;
-}
-.nb-sel {
-  height: 42px;
-  padding: 0 36px 0 14px;
-  font-size: 14px;
-  appearance: none;
-  cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d9ab8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
+  padding: 0 13px;
 }
 .nb-ta {
-  padding: 11px 14px;
-  font-size: 14px;
+  padding: 11px 13px;
   line-height: 1.6;
   resize: vertical;
 }
 
-/* ── Anschreiben area ───────────────────────────────────── */
-.nb-cover-head {
-  display: flex;
-  align-items: baseline;
+/* ── Status select wrapper with colored indicator ────────── */
+.nb-sel-wrap {
+  position: relative;
+  display: block;
+}
+.nb-sel-dot {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px; height: 7px;
+  border-radius: 2px;
+  background: #A16207;
+  pointer-events: none;
+  z-index: 1;
+  transition: background .15s;
+}
+.nb-sel {
+  width: 100%; height: 42px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; color: #0A0A0B;
+  background: #FFFFFF;
+  border: 1px solid #E2E2DC;
+  border-radius: 9px;
+  padding: 0 36px 0 28px;
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%239A9A93' stroke-width='1.8'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-color: #FFFFFF;
+  transition: border-color .13s, box-shadow .13s;
+}
+.nb-sel:focus {
+  outline: none;
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+}
+
+/* ── Anschreiben right panel ─────────────────────────────── */
+.nb-cov-head {
+  display: flex; align-items: baseline;
   justify-content: space-between;
   margin-bottom: 10px;
 }
-.nb-cover-title { font-size: 14px; font-weight: 650; color: var(--ink-900); }
-.nb-cover-hint  { font-size: 12px; color: var(--ink-400); }
-.nb-cover-ta {
+.nb-cov-title {
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 14.5px; font-weight: 600; color: #0A0A0B;
+}
+.nb-cov-hint {
+  font-family: 'Geist Mono', 'Menlo', monospace;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: .10em; text-transform: uppercase;
+  color: #9A9A93;
+}
+/* subtle top toolbar strip — just a visual label bar */
+.nb-cov-bar {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 13px;
+  background: #F5F5F2;
+  border: 1px solid #E2E2DC;
+  border-bottom: none;
+  border-radius: 9px 9px 0 0;
+  gap: 6px;
+}
+.nb-cov-bar-dot { width: 7px; height: 7px; border-radius: 50%; }
+.nb-cov-area {
   width: 100%;
-  min-height: 440px;
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.75;
-  color: var(--ink-900);
-  background: var(--surface);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--r);
-  padding: 16px;
+  min-height: 420px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; line-height: 1.75; color: #0A0A0B;
+  background: #FFFFFF;
+  border: 1px solid #E2E2DC;
+  border-radius: 0 0 9px 9px;
+  padding: 16px 14px;
   resize: vertical;
   transition: border-color .13s, box-shadow .13s;
 }
-.nb-cover-ta:focus {
+.nb-cov-area:focus {
   outline: none;
-  border-color: var(--accent-500);
-  box-shadow: 0 0 0 3px rgba(6,182,212,.11);
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
 }
-.nb-cover-ta::placeholder { color: var(--ink-400); }
+.nb-cov-area::placeholder { color: #9A9A93; }
 
-/* ── Action buttons ─────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────────── */
 .nb-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 26px; }
 
-.nb-save {
-  height: 46px; width: 100%;
+.nb-btn-primary {
+  height: 44px; width: 100%;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  border: none; border-radius: var(--r);
-  font-family: inherit; font-size: 14.5px; font-weight: 650;
-  cursor: pointer;
-  background: var(--navy-700); color: #fff;
+  border: none; border-radius: 10px;
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 14.5px; font-weight: 600;
+  cursor: pointer; background: #4F46E5; color: #FFFFFF;
   transition: background .14s, transform .1s, box-shadow .14s;
 }
-.nb-save:hover:not(:disabled) {
-  background: var(--navy-800);
+.nb-btn-primary:hover:not(:disabled) {
+  background: #4338CA;
   transform: translateY(-1px);
-  box-shadow: 0 5px 16px rgba(30,58,95,.3);
+  box-shadow: 0 4px 16px rgba(79,70,229,.30);
 }
-.nb-save:active:not(:disabled) { transform: translateY(0); }
-.nb-save:disabled { opacity: .55; cursor: not-allowed; }
+.nb-btn-primary:active:not(:disabled) { transform: translateY(0); }
+.nb-btn-primary:disabled { opacity: .52; cursor: not-allowed; }
 
-.nb-only {
+.nb-btn-ghost {
   height: 40px; width: 100%;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1.5px solid var(--border-strong); border-radius: var(--r);
-  font-family: inherit; font-size: 14px; font-weight: 500;
-  cursor: pointer; background: transparent; color: var(--ink-500);
-  transition: background .13s, color .13s, border-color .13s;
+  border: 1px solid #E2E2DC; border-radius: 10px;
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer; background: #FFFFFF; color: #0A0A0B;
+  transition: background .13s, border-color .13s;
 }
-.nb-only:hover:not(:disabled) {
-  background: var(--bg-soft); color: var(--ink-700);
+.nb-btn-ghost:hover:not(:disabled) {
+  background: #F5F5F2; border-color: #CECEC8;
 }
-.nb-only:disabled { opacity: .55; cursor: not-allowed; }
-
-/* ── Breadcrumb ─────────────────────────────────────────── */
-.nb-crumb {
-  display: flex; gap: 7px; align-items: center;
-  margin-bottom: 24px; font-size: 13px;
-}
-.nb-crumb a { color: var(--ink-400); text-decoration: none; }
-.nb-crumb a:hover { color: var(--ink-700); }
-.nb-crumb-sep { color: var(--ink-300); }
-.nb-crumb-cur { color: var(--ink-700); font-weight: 600; }
+.nb-btn-ghost:disabled { opacity: .52; cursor: not-allowed; }
 </style>
 
+<!-- Breadcrumb -->
 <div class="nb-crumb">
   <a href="{{ url_for('index') }}">Dashboard</a>
   <span class="nb-crumb-sep">›</span>
@@ -181,7 +245,7 @@
 <form onsubmit="saveBewerbung(event)">
   <div class="nb-layout">
 
-    <!-- ── LEFT: form fields ─────────────────────────── -->
+    <!-- ── LEFT ──────────────────────────────────────── -->
     <div class="nb-left">
 
       <div class="nb-hd">
@@ -189,19 +253,21 @@
         <p class="nb-hd-sub">Details eintragen und sofort tracken.</p>
       </div>
 
+      <!-- Unternehmen + Stelle -->
       <div class="nb-row">
         <div>
-          <label class="nb-lbl" for="firma">Unternehmen *</label>
+          <label class="nb-lbl" for="firma">Unternehmen <em class="nb-lbl-req">*</em></label>
           <input class="nb-input" type="text" id="firma"
                  placeholder="Google GmbH" required autocomplete="organization">
         </div>
         <div>
-          <label class="nb-lbl" for="stelle">Stelle *</label>
+          <label class="nb-lbl" for="stelle">Stelle <em class="nb-lbl-req">*</em></label>
           <input class="nb-input" type="text" id="stelle"
                  placeholder="Frontend Developer" required>
         </div>
       </div>
 
+      <!-- Stellen-URL -->
       <div class="nb-field">
         <label class="nb-lbl" for="url">
           Stellen-URL <span class="nb-lbl-opt">(optional)</span>
@@ -209,14 +275,18 @@
         <input class="nb-input" type="url" id="url" placeholder="https://…">
       </div>
 
-      <div class="nb-row2">
+      <!-- Status + Beworben am -->
+      <div class="nb-row">
         <div>
           <label class="nb-lbl" for="status">Status</label>
-          <select class="nb-sel" id="status">
-            {% for opt in status_options %}
-            <option value="{{ opt }}" {% if opt == 'Entwurf' %}selected{% endif %}>{{ opt }}</option>
-            {% endfor %}
-          </select>
+          <div class="nb-sel-wrap">
+            <span class="nb-sel-dot" id="statusDot"></span>
+            <select class="nb-sel" id="status">
+              {% for opt in status_options %}
+              <option value="{{ opt }}" {% if opt == 'Entwurf' %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
         <div>
           <label class="nb-lbl" for="datum_gesendet">Beworben am</label>
@@ -224,6 +294,7 @@
         </div>
       </div>
 
+      <!-- Notizen -->
       <div class="nb-field">
         <label class="nb-lbl" for="notizen">
           Notizen <span class="nb-lbl-opt">(optional)</span>
@@ -232,23 +303,34 @@
           placeholder="Kontaktperson, Gehaltsvorstellung, nächste Schritte…"></textarea>
       </div>
 
+      <!-- Buttons -->
       <div class="nb-actions">
-        <button type="submit" id="savePdfBtn" class="nb-save">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <button type="submit" id="savePdfBtn" class="nb-btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
           Speichern &amp; PDF herunterladen
         </button>
-        <button type="submit" id="saveBtn" class="nb-only">Nur speichern</button>
+        <button type="submit" id="saveBtn" class="nb-btn-ghost">Nur speichern</button>
       </div>
 
     </div>
 
-    <!-- ── RIGHT: cover letter ───────────────────────── -->
+    <!-- ── RIGHT ─────────────────────────────────────── -->
     <div class="nb-right">
-      <div class="nb-cover-head">
-        <span class="nb-cover-title">Anschreiben</span>
-        <span class="nb-cover-hint">optional · wird ins PDF übernommen</span>
+      <div class="nb-cov-head">
+        <span class="nb-cov-title">Anschreiben</span>
+        <span class="nb-cov-hint">optional · wird ins PDF übernommen</span>
       </div>
-      <textarea class="nb-cover-ta" id="anschreiben"
+      <!-- subtle toolbar strip -->
+      <div class="nb-cov-bar" aria-hidden="true">
+        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
+        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
+        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
+      </div>
+      <textarea class="nb-cov-area" id="anschreiben"
         placeholder="Sehr geehrte Damen und Herren,
 
 ich bewerbe mich auf die ausgeschriebene Stelle als …"></textarea>
@@ -258,9 +340,27 @@ ich bewerbe mich auf die ausgeschriebene Stelle als …"></textarea>
 </form>
 
 <script>
-let _downloadPdf = false;
+/* ── Status dot color map ─────────────────────────────────── */
+const STATUS_COLORS = {
+  'Entwurf':               '#A16207',
+  'Beworben':              '#1d4ed8',
+  'Telefoninterview':      '#d97706',
+  'Vorstellungsgespräch':  '#ea580c',
+  'Angebot':               '#7c3aed',
+  'Angenommen':            '#059669',
+  'Abgelehnt':             '#dc2626',
+};
+const statusDot = document.getElementById('statusDot');
+const statusSel = document.getElementById('status');
+function updateStatusDot() {
+  statusDot.style.background = STATUS_COLORS[statusSel.value] || '#9A9A93';
+}
+statusSel.addEventListener('change', updateStatusDot);
+updateStatusDot();
 
-(function() {
+/* ── Form prefill ─────────────────────────────────────────── */
+let _downloadPdf = false;
+(function () {
   try {
     const pending = JSON.parse(sessionStorage.getItem('pending_job') || 'null');
     if (pending && pending.firma) {
@@ -270,7 +370,7 @@ let _downloadPdf = false;
       if (pending.url)    document.getElementById('url').value    = pending.url;
       return;
     }
-  } catch(e) {}
+  } catch (e) {}
   const p = new URLSearchParams(window.location.search);
   if (p.get('firma'))  document.getElementById('firma').value  = decodeURIComponent(p.get('firma'));
   if (p.get('stelle')) document.getElementById('stelle').value = decodeURIComponent(p.get('stelle'));
@@ -319,7 +419,7 @@ async function saveBewerbung(e) {
       otherBtn.disabled  = false;
       activeBtn.textContent = wantPdf ? 'Speichern & PDF herunterladen' : 'Nur speichern';
     }
-  } catch(err) {
+  } catch (err) {
     alert('Netzwerkfehler');
     activeBtn.disabled = false;
     otherBtn.disabled  = false;
