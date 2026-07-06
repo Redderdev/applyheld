@@ -295,12 +295,12 @@
         <span style="font-size:11px;color:rgba(255,255,255,.75);font-weight:600;white-space:nowrap;">Farbe:</span>
         <div class="clr-swatch active" data-color="#1e3a5f" style="background:#1e3a5f;" onclick="selectColor('#1e3a5f',this)"></div>
         <div class="clr-swatch" data-color="#0369a1" style="background:#0369a1;" onclick="selectColor('#0369a1',this)"></div>
+        <div class="clr-swatch" data-color="#60a5fa" style="background:#60a5fa;" onclick="selectColor('#60a5fa',this)"></div>
+        <div class="clr-swatch" data-color="#0ea5e9" style="background:#0ea5e9;" onclick="selectColor('#0ea5e9',this)"></div>
         <div class="clr-swatch" data-color="#065f46" style="background:#065f46;" onclick="selectColor('#065f46',this)"></div>
         <div class="clr-swatch" data-color="#7c3aed" style="background:#7c3aed;" onclick="selectColor('#7c3aed',this)"></div>
         <div class="clr-swatch" data-color="#be123c" style="background:#be123c;" onclick="selectColor('#be123c',this)"></div>
         <div class="clr-swatch" data-color="#374151" style="background:#374151;" onclick="selectColor('#374151',this)"></div>
-        <div class="clr-swatch" data-color="#b45309" style="background:#b45309;" onclick="selectColor('#b45309',this)"></div>
-        <div class="clr-swatch" data-color="#0f766e" style="background:#0f766e;" onclick="selectColor('#0f766e',this)"></div>
         <input type="color" id="color-custom" value="#1e3a5f" title="Eigene Farbe" oninput="selectColor(this.value,null)">
       </div>
     </div>
@@ -730,7 +730,7 @@ async function saveCV(silent = false) {
 async function exportPDF() {
   await saveCV(true);
   if (CV_ID) {
-    window.open(`/lebenslauf/${CV_ID}/drucken`, '_blank');
+    window.location.href = `/lebenslauf/${CV_ID}/download.pdf`;
   } else {
     alert('Bitte zuerst speichern.');
   }

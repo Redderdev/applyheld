@@ -2,14 +2,70 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Lebenslauf</title>
+<title>Lebenslauf — PDF speichern</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 @page { size: A4; margin: 0; }
-body { width: 210mm; min-height: 297mm; font-size: 10pt; }
+
+/* ── Instruction bar (screen only) ── */
+#print-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  background: #1e3a5f; color: #fff;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+#print-bar .steps {
+  flex: 1; font-size: 14px; line-height: 1.5; color: rgba(255,255,255,.9);
+}
+#print-bar .steps strong { color: #fff; }
+#print-bar button {
+  background: #fff; color: #1e3a5f; border: none;
+  padding: 10px 22px; border-radius: 6px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+#print-bar button:hover { background: #e8eef6; }
+#print-bar .close-btn {
+  background: rgba(255,255,255,.15); color: #fff;
+  padding: 8px 14px; font-size: 13px; font-weight: 600;
+  border-radius: 6px; cursor: pointer; border: none; flex-shrink: 0;
+}
+#print-bar .close-btn:hover { background: rgba(255,255,255,.25); }
+
+/* push CV down on screen so bar doesn't overlap */
+#cv-root { margin-top: 72px; }
+
+@media print {
+  /* force background colours (sidebar) to print */
+  * { -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important; }
+  #print-bar { display: none !important; }
+  #cv-root   { margin-top: 0 !important; }
+  body { width: 210mm; min-height: 297mm; font-size: 10pt; }
+}
 </style>
 </head>
 <body>
+
+<div id="print-bar">
+  <div class="steps">
+    <strong>PDF speichern:</strong>
+    Klicke auf "Als PDF speichern" → im Druckdialog als Drucker <strong>"Als PDF speichern"</strong> wählen → <strong>Speichern</strong>
+  </div>
+  <button onclick="window.print()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    Als PDF speichern
+  </button>
+  <button class="close-btn" onclick="window.close()">✕ Schließen</button>
+</div>
+
 <div id="cv-root"></div>
 
 <script>
@@ -104,9 +160,6 @@ function tplMinimal(cv){ const p=cv.personal||{}; const ACC=cv.accentColor||'#08
 const renderers = { klassisch: tplKlassisch, modern: tplModern, minimal: tplMinimal };
 const render = renderers[TEMPLATE] || tplKlassisch;
 document.getElementById('cv-root').innerHTML = render(CV);
-
-setTimeout(() => window.print(), 800);
-window.onafterprint = () => window.close();
 </script>
 </body>
 </html>

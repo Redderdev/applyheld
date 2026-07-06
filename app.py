@@ -1362,6 +1362,30 @@ def lebenslauf_drucken(cv_id):
     return render_template('lebenslauf_print.html', cv_json=cv['data'], cv_template=cv['template'])
 
 
+@app.route('/lebenslauf/<int:cv_id>/download.pdf')
+@login_required
+def lebenslauf_pdf(cv_id):
+    cv = _get_cv_version(cv_id)
+    if not cv:
+        abort(404)
+    try:
+        from xhtml2pdf import pisa
+        html = render_template('cv_dl.html', cv=cv['data'], template=cv['template'])
+        buf = io.BytesIO()
+        result = pisa.CreatePDF(io.StringIO(html), dest=buf)
+        if result.err:
+            raise RuntimeError('xhtml2pdf error')
+        buf.seek(0)
+        safe_name = re.sub(r'[^\w\-.]', '_', cv['name'] or 'Lebenslauf') + '.pdf'
+        resp = make_response(buf.read())
+        resp.headers['Content-Type'] = 'application/pdf'
+        resp.headers['Content-Disposition'] = f'attachment; filename="{safe_name}"'
+        return resp
+    except Exception as e:
+        app.logger.warning(f'PDF generation error: {e}')
+        return redirect(url_for('lebenslauf_drucken', cv_id=cv_id))
+
+
 @app.route('/cv/pdf/<template>')
 @login_required
 def cv_pdf(template):

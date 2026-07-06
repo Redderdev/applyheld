@@ -9,3 +9,4 @@ beautifulsoup4
 requests
 psycopg2-binary
 gunicorn
+xhtml2pdf

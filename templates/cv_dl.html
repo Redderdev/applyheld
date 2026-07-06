@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { width: 210mm; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172a; }
+
+.page-table { width: 100%; border-collapse: collapse; min-height: 297mm; }
+.sidebar-cell { width: 57mm; background-color: {{ acc }}; color: white; padding: 28pt 14pt; vertical-align: top; }
+.main-cell { padding: 30pt 24pt; vertical-align: top; background-color: white; }
+
+.side-name-first { font-size: 18pt; font-weight: normal; color: rgba(255,255,255,0.9); line-height: 1.1; }
+.side-name-last  { font-size: 18pt; font-weight: bold;   color: white; line-height: 1.1; margin-bottom: 20pt; }
+.side-label { font-size: 7pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5pt; color: rgba(255,255,255,0.6); margin: 0 0 3pt; }
+.side-rule  { border-top: 1px solid rgba(255,255,255,0.2); margin-bottom: 6pt; }
+.side-text  { font-size: 8pt; color: rgba(255,255,255,0.85); margin-bottom: 3pt; line-height: 1.4; }
+.side-text-dim { font-size: 7pt; color: rgba(255,255,255,0.55); }
+.side-section { margin-bottom: 14pt; }
+
+.section-label { font-size: 7pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5pt; color: {{ acc }}; margin: 0 0 4pt; }
+.section-rule  { border-bottom: 1.5pt solid {{ acc }}; margin-bottom: 8pt; }
+.section-block { margin-bottom: 18pt; }
+
+.exp-role    { font-size: 10pt; font-weight: bold; }
+.exp-company { font-size: 8.5pt; color: #64748b; margin: 1pt 0 4pt; }
+.exp-period  { font-size: 7.5pt; color: #94a3b8; }
+.exp-table   { width: 100%; border-collapse: collapse; margin-bottom: 10pt; }
+
+.proj-name { font-size: 9.5pt; font-weight: bold; }
+.proj-desc { font-size: 8.5pt; color: #374151; line-height: 1.5; margin-top: 2pt; }
+
+.skill-tag { background-color: #f1f5f9; border-radius: 2pt; padding: 1pt 6pt; font-size: 8.5pt; margin-right: 3pt; }
+</style>
+</head>
+<body>
+
+{% set acc = cv.accentColor or '#1e3a5f' %}
+{% set p   = cv.personal or {} %}
+
+{# ══════════════════════ KLASSISCH ══════════════════════ #}
+{% if template == 'klassisch' %}
+
+<table class="page-table">
+<tr>
+
+  {# ── SIDEBAR ── #}
+  <td class="sidebar-cell">
+
+    {# Name #}
+    {% set words = ((p.name or '')|trim).split() %}
+    {% if words|length > 1 %}
+    <div class="side-name-first">{{ words[:-1]|join(' ') }}</div>
+    <div class="side-name-last">{{ words[-1] }}</div>
+    {% else %}
+    <div class="side-name-last">{{ words[0] if words else '' }}</div>
+    {% endif %}
+
+    {# Contact #}
+    {% set contacts = [] %}
+    {% if p.phone    %}{% set _ = contacts.append(p.phone)    %}{% endif %}
+    {% if p.email    %}{% set _ = contacts.append(p.email)    %}{% endif %}
+    {% if p.address  %}{% set _ = contacts.append(p.address)  %}{% endif %}
+    {% if p.city     %}{% set _ = contacts.append(p.city)     %}{% endif %}
+    {% if p.linkedin %}{% set _ = contacts.append(p.linkedin) %}{% endif %}
+    {% if contacts %}
+    <div class="side-section">
+      <p class="side-label">Kontakt</p>
+      <div class="side-rule"></div>
+      {% for item in contacts %}
+      <p class="side-text">{{ item }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Education #}
+    {% set edu_list = cv.education|default([]) %}
+    {% if edu_list %}
+    <div class="side-section">
+      <p class="side-label">Bildungsweg</p>
+      <div class="side-rule"></div>
+      {% for edu in edu_list %}
+      <div style="margin-bottom:8pt;">
+        {% set deg = ([edu.degree or '', edu.field or ''])|select|list %}
+        {% if deg %}<p class="side-text" style="font-weight:bold;color:white;">{{ deg|join(', ') }}</p>{% endif %}
+        {% if edu.institution %}<p class="side-text">{{ edu.institution }}</p>{% endif %}
+        <p class="side-text-dim">{{ edu.start or '' }}{% if edu.end %} – {{ edu.end }}{% endif %}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Skills #}
+    {% set skills = cv.skills|default([]) %}
+    {% if skills %}
+    <div class="side-section">
+      <p class="side-label">Kompetenzen</p>
+      <div class="side-rule"></div>
+      {% for s in skills %}{% if s %}<p class="side-text">▪ {{ s }}</p>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {# Languages #}
+    {% set langs = cv.languages|default([]) %}
+    {% if langs %}
+    <div class="side-section">
+      <p class="side-label">Sprachen</p>
+      <div class="side-rule"></div>
+      {% for l in langs %}{% if l.lang %}
+      <p class="side-text">{{ l.lang }}{% if l.level %} ({{ l.level }}){% endif %}</p>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {# Hobbys #}
+    {% set hobbys = cv.hobbys|default([]) %}
+    {% if hobbys %}
+    <div class="side-section">
+      <p class="side-label">Hobbys</p>
+      <div class="side-rule"></div>
+      {% for h in hobbys %}{% if h %}<p class="side-text">▪ {{ h }}</p>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+  </td>{# /sidebar #}
+
+  {# ── MAIN ── #}
+  <td class="main-cell">
+
+    {# Profile #}
+    {% if cv.summary %}
+    <div class="section-block">
+      <p class="section-label">Persönliches Profil</p>
+      <div class="section-rule"></div>
+      <p style="font-size:9pt;line-height:1.6;color:#374151;">{{ cv.summary }}</p>
+    </div>
+    {% endif %}
+
+    {# Experience #}
+    {% set exp_list = cv.experience|default([]) %}
+    {% if exp_list %}
+    <div class="section-block">
+      <p class="section-label">Berufserfahrung</p>
+      <div class="section-rule"></div>
+      {% for e in exp_list %}
+      <table class="exp-table">
+        <tr>
+          <td style="vertical-align:top;"><span class="exp-role">{{ e.role or '' }}</span></td>
+          <td style="text-align:right;vertical-align:top;white-space:nowrap;width:70pt;"><span class="exp-period">{{ e.start or '' }}{% if e.current %} – heute{% elif e.end %} – {{ e.end }}{% endif %}</span></td>
+        </tr>
+      </table>
+      <p class="exp-company">{{ e.company or '' }}{% if e.location %}, {{ e.location }}{% endif %}</p>
+      {% set bullets = e.bullets|default([]) %}
+      {% if bullets %}
+      <ul style="margin:0 0 8pt 14pt;padding:0;font-size:8.5pt;">
+        {% for b in bullets %}{% if b %}<li style="color:#374151;margin-bottom:2pt;">{{ b }}</li>{% endif %}{% endfor %}
+      </ul>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Projects #}
+    {% set proj_list = cv.projects|default([]) %}
+    {% if proj_list %}
+    <div class="section-block">
+      <p class="section-label">Projekte</p>
+      <div class="section-rule"></div>
+      {% for pr in proj_list %}{% if pr.name %}
+      <div style="margin-bottom:9pt;">
+        <p class="proj-name">{{ pr.name }}</p>
+        {% if pr.description %}<p class="proj-desc">{{ pr.description }}</p>{% endif %}
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {# Certifications #}
+    {% set certs = cv.certifications|default([]) %}
+    {% if certs %}
+    <div class="section-block">
+      <p class="section-label">Zertifikate</p>
+      <div class="section-rule"></div>
+      {% for c in certs %}{% if c.name %}
+      <p style="font-size:9pt;margin-bottom:3pt;">{{ c.name }}{% if c.issuer %} – {{ c.issuer }}{% endif %}{% if c.year %} ({{ c.year }}){% endif %}</p>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+  </td>{# /main #}
+</tr>
+</table>
+
+{# ══════════════════════ MODERN ══════════════════════ #}
+{% elif template == 'modern' %}
+
+<table class="page-table">
+<tr>
+  <td style="width:53mm;background-color:{{ acc }};color:white;padding:28pt 16pt;vertical-align:top;">
+
+    <p style="font-size:14pt;font-weight:bold;color:white;margin-bottom:{% if cv.summary %}6pt{% else %}18pt{% endif %};">{{ p.name or '' }}</p>
+    {% if cv.summary %}
+    <p style="font-size:8pt;color:rgba(255,255,255,0.75);margin-bottom:16pt;line-height:1.5;">{{ cv.summary }}</p>
+    {% endif %}
+
+    {% set contacts = [] %}
+    {% if p.phone    %}{% set _ = contacts.append(p.phone)    %}{% endif %}
+    {% if p.email    %}{% set _ = contacts.append(p.email)    %}{% endif %}
+    {% if p.address  %}{% set _ = contacts.append(p.address)  %}{% endif %}
+    {% if p.city     %}{% set _ = contacts.append(p.city)     %}{% endif %}
+    {% if p.linkedin %}{% set _ = contacts.append(p.linkedin) %}{% endif %}
+    {% if contacts %}
+    <div class="side-section">
+      <p class="side-label">Kontakt</p>
+      {% for item in contacts %}<p class="side-text">{{ item }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% set langs = cv.languages|default([]) %}
+    {% if langs %}
+    <div class="side-section">
+      <p class="side-label">Sprachen</p>
+      {% for l in langs %}{% if l.lang %}<p class="side-text">{{ l.lang }}{% if l.level %} ({{ l.level }}){% endif %}</p>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% set skills = cv.skills|default([]) %}
+    {% if skills %}
+    <div class="side-section">
+      <p class="side-label">Fähigkeiten</p>
+      {% for s in skills %}{% if s %}<p class="side-text">{{ s }}</p>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% set hobbys = cv.hobbys|default([]) %}
+    {% if hobbys %}
+    <div class="side-section">
+      <p class="side-label">Hobbys</p>
+      {% for h in hobbys %}{% if h %}<p class="side-text">▪ {{ h }}</p>{% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+  </td>
+  <td style="padding:32pt 26pt;vertical-align:top;background-color:white;">
+
+    {% macro mod_section(title) %}
+    <p style="font-size:11pt;font-weight:bold;color:{{ acc }};margin-bottom:8pt;">{{ title }}</p>
+    {% endmacro %}
+
+    {% set exp_list = cv.experience|default([]) %}
+    {% if exp_list %}
+    <div class="section-block">
+      {{ mod_section('Berufserfahrung') }}
+      {% for e in exp_list %}
+      <table class="exp-table">
+        <tr>
+          <td><span class="exp-role">{{ e.role or '' }}</span></td>
+          <td style="text-align:right;white-space:nowrap;width:70pt;"><span class="exp-period">{{ e.start or '' }}{% if e.current %} – heute{% elif e.end %} – {{ e.end }}{% endif %}</span></td>
+        </tr>
+      </table>
+      <p class="exp-company">{{ e.company or '' }}{% if e.location %}, {{ e.location }}{% endif %}</p>
+      {% set bullets = e.bullets|default([]) %}
+      {% if bullets %}
+      <ul style="margin:0 0 8pt 14pt;font-size:8.5pt;">
+        {% for b in bullets %}{% if b %}<li style="color:#374151;margin-bottom:2pt;">{{ b }}</li>{% endif %}{% endfor %}
+      </ul>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% set edu_list = cv.education|default([]) %}
+    {% if edu_list %}
+    <div class="section-block">
+      {{ mod_section('Ausbildung') }}
+      {% for edu in edu_list %}
+      <table class="exp-table" style="margin-bottom:8pt;">
+        <tr>
+          <td>
+            {% set deg = ([edu.degree or '', edu.field or ''])|select|list %}
+            {% if deg %}<strong>{{ deg|join(', ') }}</strong><br>{% endif %}
+            <span style="font-size:8.5pt;color:#64748b;">{{ edu.institution or '' }}{% if edu.grade %} · Note: {{ edu.grade }}{% endif %}</span>
+          </td>
+          <td style="text-align:right;white-space:nowrap;width:70pt;font-size:7.5pt;color:#94a3b8;">{{ edu.start or '' }}{% if edu.end %} – {{ edu.end }}{% endif %}</td>
+        </tr>
+      </table>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% set proj_list = cv.projects|default([]) %}
+    {% if proj_list %}
+    <div class="section-block">
+      {{ mod_section('Projekte') }}
+      {% for pr in proj_list %}{% if pr.name %}
+      <div style="margin-bottom:9pt;">
+        <p class="proj-name">{{ pr.name }}</p>
+        {% if pr.description %}<p class="proj-desc">{{ pr.description }}</p>{% endif %}
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% set certs = cv.certifications|default([]) %}
+    {% if certs %}
+    <div class="section-block">
+      {{ mod_section('Zertifikate') }}
+      {% for c in certs %}{% if c.name %}
+      <p style="font-size:9pt;margin-bottom:3pt;">{{ c.name }}{% if c.issuer %} – {{ c.issuer }}{% endif %}{% if c.year %} ({{ c.year }}){% endif %}</p>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+  </td>
+</tr>
+</table>
+
+{# ══════════════════════ MINIMAL ══════════════════════ #}
+{% else %}
+
+<div style="padding:40pt 48pt;font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#0f172a;line-height:1.55;">
+
+  <div style="width:48pt;height:4pt;background-color:{{ acc }};margin-bottom:18pt;"></div>
+  <p style="font-size:22pt;font-weight:normal;margin:0 0 4pt;">{{ p.name or '' }}</p>
+
+  {% set contacts = [] %}
+  {% if p.email    %}{% set _ = contacts.append(p.email)    %}{% endif %}
+  {% if p.phone    %}{% set _ = contacts.append(p.phone)    %}{% endif %}
+  {% if p.city     %}{% set _ = contacts.append(p.city)     %}{% endif %}
+  {% if p.linkedin %}{% set _ = contacts.append(p.linkedin) %}{% endif %}
+  {% if contacts %}
+  <p style="font-size:8.5pt;color:#64748b;margin-bottom:18pt;">{{ contacts|join(' · ') }}</p>
+  {% endif %}
+
+  {% if cv.summary %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Profil</p>
+    <p style="font-size:9pt;line-height:1.6;color:#374151;margin-top:6pt;">{{ cv.summary }}</p>
+  </div>
+  {% endif %}
+
+  {% set exp_list = cv.experience|default([]) %}
+  {% if exp_list %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Berufserfahrung</p>
+    {% for e in exp_list %}
+    <table class="exp-table" style="margin-top:8pt;">
+      <tr>
+        <td><span class="exp-role">{{ e.role or '' }}</span><br><span class="exp-company">{{ e.company or '' }}{% if e.location %}, {{ e.location }}{% endif %}</span></td>
+        <td style="text-align:right;white-space:nowrap;width:70pt;"><span class="exp-period">{{ e.start or '' }}{% if e.current %} – heute{% elif e.end %} – {{ e.end }}{% endif %}</span></td>
+      </tr>
+    </table>
+    {% set bullets = e.bullets|default([]) %}
+    {% if bullets %}
+    <ul style="margin:4pt 0 0 14pt;font-size:8.5pt;">
+      {% for b in bullets %}{% if b %}<li style="color:#374151;margin-bottom:2pt;">{{ b }}</li>{% endif %}{% endfor %}
+    </ul>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% set edu_list = cv.education|default([]) %}
+  {% if edu_list %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Ausbildung</p>
+    {% for edu in edu_list %}
+    <table class="exp-table" style="margin-top:8pt;">
+      <tr>
+        <td>
+          {% set deg = ([edu.degree or '', edu.field or ''])|select|list %}
+          {% if deg %}<strong>{{ deg|join(', ') }}</strong><br>{% endif %}
+          <span style="font-size:8.5pt;color:#64748b;">{{ edu.institution or '' }}</span>
+        </td>
+        <td style="text-align:right;white-space:nowrap;width:70pt;font-size:7.5pt;color:#94a3b8;">{{ edu.start or '' }}{% if edu.end %} – {{ edu.end }}{% endif %}</td>
+      </tr>
+    </table>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% set skills = cv.skills|default([]) %}
+  {% if skills %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Kenntnisse</p>
+    <p style="margin-top:6pt;font-size:9pt;">{% for s in skills %}{% if s %}<span class="skill-tag">{{ s }}</span> {% endif %}{% endfor %}</p>
+  </div>
+  {% endif %}
+
+  {% set proj_list = cv.projects|default([]) %}
+  {% if proj_list %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Projekte</p>
+    {% for pr in proj_list %}{% if pr.name %}
+    <div style="margin-top:8pt;">
+      <p class="proj-name">{{ pr.name }}</p>
+      {% if pr.description %}<p class="proj-desc">{{ pr.description }}</p>{% endif %}
+    </div>
+    {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% set langs = cv.languages|default([]) %}
+  {% if langs %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Sprachen</p>
+    <p style="font-size:9pt;margin-top:6pt;">{% for l in langs %}{% if l.lang %}{{ l.lang }}{% if l.level %} ({{ l.level }}){% endif %}{% if not loop.last %} · {% endif %}{% endif %}{% endfor %}</p>
+  </div>
+  {% endif %}
+
+  {% set certs = cv.certifications|default([]) %}
+  {% if certs %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Zertifikate</p>
+    {% for c in certs %}{% if c.name %}
+    <p style="font-size:9pt;margin-top:4pt;">{{ c.name }}{% if c.issuer %} – {{ c.issuer }}{% endif %}{% if c.year %} ({{ c.year }}){% endif %}</p>
+    {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% set hobbys = cv.hobbys|default([]) %}
+  {% if hobbys %}
+  <div style="margin-bottom:18pt;">
+    <p class="section-label">Hobbys</p>
+    <p style="font-size:9pt;margin-top:6pt;">{{ hobbys|select|list|join(' · ') }}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+
+</body>
+</html>
