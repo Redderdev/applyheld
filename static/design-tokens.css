@@ -20,7 +20,7 @@
   --accent-50: #ecfeff;
 
   /* Neutral — navy-tinted, deliberate (NOT Tailwind slate defaults) */
-  --bg: #f3f6fb;
+  --bg: #FAFAF9;
   --bg-soft: #e8ecf5;
   --surface: #ffffff;
   --border: rgba(14, 34, 70, 0.09);
