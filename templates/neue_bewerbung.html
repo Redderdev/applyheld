@@ -146,7 +146,8 @@ async function saveBewerbung(e) {
     const data = await res.json();
     if (data.success) {
       if (wantPdf && payload.anschreiben) {
-        window.location.href = '/bewerbung/' + data.id + '/pdf';
+        // Go to edit page; the ?pdf=1 param auto-triggers the download there
+        window.location.href = '/bewerbung/' + data.id + '?pdf=1';
       } else {
         window.location.href = '/bewerbung/' + data.id;
       }

@@ -76,7 +76,7 @@
   <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- Anschreiben Editor -->
-    <div class="card" style="display:flex;flex-direction:column;min-height:480px;padding:0;overflow:hidden;">
+    <div class="card" style="display:flex;flex-direction:column;padding:0;overflow:hidden;">
       <!-- Toolbar -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -95,14 +95,20 @@
               <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
+          <button class="btn btn-ghost btn-sm" onclick="openFullscreen()" title="Vollbild-Editor">
+            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <!-- Textarea -->
+      <!-- Textarea (auto-grows) -->
       <textarea id="anschreiben"
-        style="flex:1;padding:24px 28px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;min-height:360px;"
+        style="padding:24px 28px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;min-height:320px;overflow:hidden;"
         placeholder="Anschreiben hier eingeben oder mit KI generieren..."
-        oninput="updateWordCount(); markDirty()">{{ b.anschreiben or '' }}</textarea>
+        oninput="autoGrow(this); updateWordCount(); markDirty()">{{ b.anschreiben or '' }}</textarea>
 
       <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <span style="font-size:12px;color:var(--ink-400);" id="auto-save-hint"></span>
@@ -236,10 +242,48 @@
   </div><!-- end right col -->
 </div><!-- end grid -->
 
+<!-- ── Fullscreen Editor Overlay ─────────────────────────────────────── -->
+<div id="fs-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:var(--bg);display:none;flex-direction:column;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:15px;font-weight:650;color:var(--ink-900);">Anschreiben bearbeiten</span>
+      <span id="fs-word-count" style="font-size:12px;color:var(--ink-400);"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:12px;color:var(--ink-400);" id="fs-hint"></span>
+      <button id="fs-save-only" class="btn btn-ghost btn-sm" onclick="fsSave(false)">Speichern</button>
+      <button id="fs-save-pdf" class="btn btn-primary btn-sm" onclick="fsSave(true)"
+        style="display:flex;align-items:center;gap:6px;">
+        <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Speichern &amp; PDF
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="closeFullscreen()" title="Schließen" style="display:flex;align-items:center;gap:5px;">
+        <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+          <line x1="10" y1="14" x2="21" y2="3"/><line x1="3" y1="21" x2="14" y2="10"/>
+        </svg>
+        Schließen
+      </button>
+    </div>
+  </div>
+  <!-- Textarea -->
+  <textarea id="fs-textarea"
+    style="flex:1;width:100%;padding:40px min(10vw, 200px);border:none;outline:none;font-family:var(--font);font-size:16px;line-height:1.85;resize:none;color:var(--ink-900);background:var(--bg);box-sizing:border-box;max-width:860px;margin:0 auto;display:block;"
+    placeholder="Anschreiben hier eingeben..."
+    oninput="fsUpdateWordCount(); markDirty()"></textarea>
+</div>
+
 <style>
 @media (max-width: 860px) {
   #detail-grid { grid-template-columns: 1fr !important; }
 }
+#fs-overlay { display: none; }
+#fs-overlay.open { display: flex !important; }
+#fs-textarea { width: 100%; }
 </style>
 
 <script>
@@ -253,16 +297,121 @@ const PAGE = {{ {
 const BID = PAGE.bid;
 
 updateWordCount();
+autoGrow(document.getElementById('anschreiben'));
 {% if chat %}scrollChatToBottom();{% endif %}
+
+// Auto-download PDF if redirected from neue_bewerbung with ?pdf=1
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('pdf') === '1') {
+    history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => { window.location.href = `/bewerbung/${BID}/pdf`; }, 600);
+  }
+})();
 {% if b.stellenanzeige %}
 document.getElementById('ki-chevron').style.transform = 'rotate(180deg)';
 {% endif %}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
 
 function updateWordCount() {
   const t = document.getElementById('anschreiben').value;
   const w = t.trim() ? t.trim().split(/\s+/).length : 0;
   document.getElementById('word-count').textContent = w ? `${w} Wörter` : '';
 }
+
+// ── Fullscreen editor ──────────────────────────────────────────────────
+function openFullscreen() {
+  const main = document.getElementById('anschreiben');
+  const fs   = document.getElementById('fs-textarea');
+  fs.value   = main.value;
+  fsUpdateWordCount();
+  document.getElementById('fs-overlay').classList.add('open');
+  fs.focus();
+  // place cursor at end
+  fs.setSelectionRange(fs.value.length, fs.value.length);
+}
+
+function closeFullscreen() {
+  const fs   = document.getElementById('fs-textarea');
+  const main = document.getElementById('anschreiben');
+  main.value = fs.value;
+  autoGrow(main);
+  updateWordCount();
+  document.getElementById('fs-overlay').classList.remove('open');
+}
+
+function fsUpdateWordCount() {
+  const t = document.getElementById('fs-textarea').value;
+  const w = t.trim() ? t.trim().split(/\s+/).length : 0;
+  document.getElementById('fs-word-count').textContent = w ? `${w} Wörter` : '';
+}
+
+async function fsSave(downloadPdf) {
+  // Sync back to main textarea first
+  const fs = document.getElementById('fs-textarea');
+  document.getElementById('anschreiben').value = fs.value;
+  autoGrow(document.getElementById('anschreiben'));
+  updateWordCount();
+
+  const saveOnlyBtn = document.getElementById('fs-save-only');
+  const savePdfBtn  = document.getElementById('fs-save-pdf');
+  savePdfBtn.disabled  = true;
+  saveOnlyBtn.disabled = true;
+  const origPdf = savePdfBtn.innerHTML;
+  savePdfBtn.textContent = 'Speichert…';
+
+  const stellenanzeige = document.getElementById('stellenanzeige-input')
+    ? document.getElementById('stellenanzeige-input').value : PAGE.stellenanzeige;
+
+  const payload = {
+    firma:          PAGE.firma,
+    stelle:         PAGE.stelle,
+    url:            PAGE.url,
+    stellenanzeige: stellenanzeige,
+    anschreiben:    fs.value,
+    status:         document.getElementById('status-select').value,
+    datum_gesendet: document.getElementById('datum_gesendet').value || null,
+    notizen:        document.getElementById('notizen').value,
+  };
+
+  try {
+    const res  = await fetch(`/api/update/${BID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) {
+      _dirty = false;
+      document.getElementById('auto-save-hint').textContent = '';
+      document.getElementById('fs-hint').textContent = 'Gespeichert ✓';
+      setTimeout(() => document.getElementById('fs-hint').textContent = '', 3000);
+      if (downloadPdf) {
+        showToast('Gespeichert — PDF wird heruntergeladen…');
+        setTimeout(() => { window.location.href = `/bewerbung/${BID}/pdf`; }, 400);
+      }
+    } else {
+      showToast('Fehler: ' + (data.error || 'unbekannt'));
+    }
+  } catch (err) {
+    showToast('Netzwerkfehler');
+  }
+
+  savePdfBtn.disabled  = false;
+  saveOnlyBtn.disabled = false;
+  savePdfBtn.innerHTML = origPdf;
+}
+
+// Close fullscreen with Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('fs-overlay').classList.contains('open')) {
+    closeFullscreen();
+  }
+});
 
 let _dirty = false;
 function markDirty() {
