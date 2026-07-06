@@ -13,6 +13,7 @@ from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable, Table, TableStyle
 from reportlab.lib import colors
 from datetime import datetime
+import time
 
 try:
     from docx import Document as DocxDocument
@@ -121,6 +122,15 @@ def get_db():
 
 
 def init_db():
+    if _PG:
+        for attempt in range(10):
+            try:
+                psycopg2.connect(DATABASE_URL).close()
+                break
+            except psycopg2.OperationalError:
+                if attempt == 9:
+                    raise
+                time.sleep(3)
     conn = get_db()
     if _PG:
         conn.execute('''CREATE TABLE IF NOT EXISTS users (
@@ -1613,50 +1623,96 @@ def export_pdf(bid):
 
 def _build_pdf(b, s):
     buf = io.BytesIO()
+    # DIN 5008: left=2.5cm, right=2cm, top=2.7cm, bottom=2cm
     doc = SimpleDocTemplate(buf, pagesize=A4,
-                            rightMargin=2.5*cm, leftMargin=2.5*cm,
-                            topMargin=2*cm, bottomMargin=2*cm)
-    styles = getSampleStyleSheet()
+                            rightMargin=2*cm, leftMargin=2.5*cm,
+                            topMargin=2.7*cm, bottomMargin=2*cm)
 
-    normal = ParagraphStyle('N', parent=styles['Normal'],
-                            fontName='Helvetica', fontSize=11, leading=17, spaceAfter=4)
-    bold   = ParagraphStyle('B', parent=normal, fontName='Helvetica-Bold')
-    small  = ParagraphStyle('S', parent=styles['Normal'],
-                            fontName='Helvetica', fontSize=9, textColor=colors.grey)
-    right  = ParagraphStyle('R', parent=normal, alignment=2)  # 2 = TA_RIGHT
+    ACCENT     = colors.HexColor('#1a56db')
+    INK        = colors.HexColor('#111827')
+    GREY       = colors.HexColor('#6b7280')
+    ACCENT_HEX = '1a56db'
+    GREY_HEX   = '6b7280'
+
+    body_w = A4[0] - 2.5*cm - 2*cm  # usable width ~165mm
+
+    def _style(name, **kw):
+        base = ParagraphStyle(name, fontName='Helvetica', fontSize=11,
+                              leading=16, textColor=INK)
+        for k, v in kw.items():
+            setattr(base, k, v)
+        return base
+
+    P     = _style('P')
+    PBold = _style('PB', fontName='Helvetica-Bold')
+    PSmall= _style('PS', fontSize=9, leading=13, textColor=GREY)
+    PRight= _style('PR', alignment=2)
+    PSubj = _style('PSub', fontName='Helvetica-Bold', fontSize=12, leading=18, textColor=INK)
+
     story = []
 
+    # ── Header: two-column (sender left | contact right) ──────────────────────
+    sender_lines = []
     if s.get('name'):
-        story.append(Paragraph(s['name'], bold))
+        sender_lines.append(f"<font name='Helvetica-Bold' size='13' color='#{ACCENT_HEX}'>{s['name']}</font>")
     for field in ['strasse', 'plz_ort']:
         if s.get(field):
-            story.append(Paragraph(s[field], normal))
-    contact = ' · '.join(filter(None, [s.get('telefon'), s.get('email')]))
-    if contact:
-        story.append(Paragraph(contact, small))
+            sender_lines.append(s[field])
 
-    story += [Spacer(1, 0.4*cm),
-              HRFlowable(width='100%', thickness=0.5, color=colors.lightgrey),
-              Spacer(1, 0.6*cm)]
+    contact_lines = []
+    if s.get('telefon'):
+        contact_lines.append(f"<font color='#{GREY_HEX}'>Tel:</font>  {s['telefon']}")
+    if s.get('email'):
+        contact_lines.append(f"<font color='#{GREY_HEX}'>Mail:</font> {s['email']}")
 
+    if sender_lines or contact_lines:
+        left_cell  = [Paragraph(l, PSmall) for l in sender_lines] or [Paragraph('', PSmall)]
+        right_cell = [Paragraph(l, PSmall) for l in contact_lines] or [Paragraph('', PSmall)]
+        hdr_table = Table([[left_cell, right_cell]], colWidths=[body_w*0.6, body_w*0.4])
+        hdr_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING',  (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING',(0,0), (-1,-1), 0),
+            ('TOPPADDING',   (0,0), (-1,-1), 0),
+        ]))
+        story.append(hdr_table)
+        story.append(Spacer(1, 0.25*cm))
+        story.append(HRFlowable(width='100%', thickness=1.5, color=ACCENT, spaceAfter=0.5*cm))
+
+    # ── Recipient block (DIN 5008 address window zone) ─────────────────────────
+    recipient_lines = []
     if b.get('firma'):
-        story.append(Paragraph(b['firma'], bold))
-        story.append(Spacer(1, 0.4*cm))
+        recipient_lines.append(Paragraph(b['firma'], PBold))
+    # placeholder for address if we ever store it
+    if recipient_lines:
+        for rl in recipient_lines:
+            story.append(rl)
+        story.append(Spacer(1, 0.6*cm))
 
-    ort   = s.get('ort', '')
+    # ── Date (right-aligned) ───────────────────────────────────────────────────
+    ort   = s.get('ort', '').strip()
     today = datetime.now().strftime('%d.%m.%Y')
-    story.append(Paragraph(f"{ort + ', ' if ort else ''}{today}", right))
-    story.append(Spacer(1, 0.4*cm))
+    date_str = f"{ort + ', ' if ort else ''}{today}"
+    story.append(Paragraph(date_str, PRight))
+    story.append(Spacer(1, 0.7*cm))
 
+    # ── Subject line ───────────────────────────────────────────────────────────
     if b.get('stelle'):
-        story.append(Paragraph(f"<b>Bewerbung als {b['stelle']}</b>", normal))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(f"Bewerbung als {b['stelle']}", PSubj))
+        story.append(Spacer(1, 0.6*cm))
 
-    for para in (b.get('anschreiben') or '').strip().split('\n\n'):
-        para = para.strip()
-        if para:
-            story.append(Paragraph(para.replace('\n', '<br/>'), normal))
-            story.append(Spacer(1, 0.25*cm))
+    # ── Body ───────────────────────────────────────────────────────────────────
+    anschreiben_text = (b.get('anschreiben') or '').strip()
+    if anschreiben_text:
+        for para in anschreiben_text.split('\n\n'):
+            para = para.strip()
+            if para:
+                story.append(Paragraph(para.replace('\n', '<br/>'), P))
+                story.append(Spacer(1, 0.3*cm))
+    else:
+        story.append(Paragraph('<i>Kein Anschreiben hinterlegt.</i>',
+                               _style('PI', textColor=GREY, fontSize=11)))
 
     doc.build(story)
     buf.seek(0)

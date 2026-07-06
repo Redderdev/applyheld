@@ -124,7 +124,7 @@
             <a href="{{ url_for('bewerbung', bid=b.id) }}" class="icon-btn" title="Öffnen">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:16px;height:16px;"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
             </a>
-            <a href="{{ url_for('bewerbung', bid=b.id) }}#pdf" class="icon-btn" title="PDF">
+            <a href="{{ url_for('export_pdf', bid=b.id) }}" class="icon-btn" title="PDF herunterladen" onclick="event.stopPropagation()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:16px;height:16px;"><path d="M12 17V5M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
             </a>
             <button class="icon-btn" title="Löschen" style="color: var(--status-rejected-fg);" onclick="deleteBewerbung({{ b.id }}, '{{ b.firma|replace("'","\\'")|e }}')">
@@ -145,12 +145,12 @@
 <!-- Mobile Cards -->
 <div style="display: flex; flex-direction: column; gap: 10px;" id="card-view">
   {% for b in bewerbungen %}
-  <a href="{{ url_for('bewerbung', bid=b.id) }}"
-     class="card tbl-row"
+  <div class="card tbl-row"
      data-firma="{{ (b.firma or '')|lower }}"
      data-stelle="{{ (b.stelle or '')|lower }}"
      data-status="{{ b.status|lower }}"
-     style="padding: 16px; display: flex; align-items: center; gap: 12px; text-decoration: none;">
+     style="padding: 16px; display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer;"
+     onclick="window.location='{{ url_for('bewerbung', bid=b.id) }}'">
     <div style="width: 40px; height: 40px; border-radius: 9px; background: linear-gradient(135deg, var(--navy-700), var(--accent-500)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0;">
       {{ b.firma[0]|upper if b.firma else '?' }}
     </div>
@@ -159,8 +159,14 @@
       {% if b.stelle %}<div style="font-size: 13px; color: var(--ink-500); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ b.stelle }}</div>{% endif %}
       <div style="font-size: 12px; color: var(--ink-400); margin-top: 4px;">{{ b.datum_erstellt or '' }}</div>
     </div>
-    <span class="badge badge-{{ status_css[b.status] }}" style="flex-shrink: 0;">{{ b.status }}</span>
-  </a>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <span class="badge badge-{{ status_css[b.status] }}">{{ b.status }}</span>
+      <a href="{{ url_for('export_pdf', bid=b.id) }}" onclick="event.stopPropagation()" title="PDF herunterladen"
+         style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;color:var(--ink-400);border:1px solid var(--border);background:var(--bg-soft);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:14px;height:14px;"><path d="M12 17V5M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      </a>
+    </div>
+  </div>
   {% endfor %}
   <div id="empty-search-mobile" style="display:none; text-align:center; padding: 32px; color: var(--ink-400); font-size: 14px;">
     Keine Treffer

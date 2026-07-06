@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width:580px;margin:0 auto;">
+<div style="max-width:720px;margin:0 auto;">
 
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px;font-size:13px;">
     <a href="{{ url_for('index') }}" style="color:var(--ink-500);text-decoration:none;">Dashboard</a>
@@ -19,7 +19,7 @@
   <div class="card">
     <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
       <h2 style="font-size:16px;font-weight:650;color:var(--ink-900);margin:0;">Bewerbung tracken</h2>
-      <p style="font-size:13.5px;color:var(--ink-500);margin:4px 0 0;">Füge eine Bewerbung hinzu — Anschreiben kannst du später erstellen.</p>
+      <p style="font-size:13.5px;color:var(--ink-500);margin:4px 0 0;">Details ausfüllen, Anschreiben einfügen — fertig.</p>
     </div>
 
     <form style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;" onsubmit="saveBewerbung(event)">
@@ -68,9 +68,24 @@
           style="resize:vertical;font-size:14px;"></textarea>
       </div>
 
-      <div style="padding-top:4px;">
-        <button type="submit" id="saveBtn" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;">
-          Bewerbung speichern
+      <!-- Anschreiben -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label for="anschreiben" style="margin:0;font-size:13.5px;font-weight:600;color:var(--ink-700);">
+            Anschreiben <span style="font-weight:400;color:var(--ink-400);">(optional)</span>
+          </label>
+        </div>
+        <textarea id="anschreiben" rows="14"
+          placeholder="Kopiere hier dein Anschreiben — es wird direkt ins PDF übernommen..."
+          style="resize:vertical;font-size:14px;line-height:1.6;font-family:inherit;"></textarea>
+      </div>
+
+      <div style="padding-top:4px;display:flex;flex-direction:column;gap:10px;">
+        <button type="submit" id="savePdfBtn" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;">
+          Speichern &amp; PDF herunterladen
+        </button>
+        <button type="submit" id="saveBtn" class="btn btn-ghost" style="width:100%;height:40px;font-size:14px;">
+          Nur speichern
         </button>
       </div>
     </form>
@@ -78,6 +93,8 @@
 </div>
 
 <script>
+let _downloadPdf = false;
+
 // Prefill from sessionStorage (set by Jobs page "Speichern"-Button)
 (function() {
   try {
@@ -97,11 +114,17 @@
   if (p.get('url'))    document.getElementById('url').value    = decodeURIComponent(p.get('url'));
 })();
 
+document.getElementById('savePdfBtn').addEventListener('click', () => { _downloadPdf = true; });
+document.getElementById('saveBtn').addEventListener('click',    () => { _downloadPdf = false; });
+
 async function saveBewerbung(e) {
   e.preventDefault();
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = 'Speichert…';
+  const wantPdf = _downloadPdf;
+  const activeBtn = wantPdf ? document.getElementById('savePdfBtn') : document.getElementById('saveBtn');
+  const otherBtn  = wantPdf ? document.getElementById('saveBtn') : document.getElementById('savePdfBtn');
+  activeBtn.disabled = true;
+  activeBtn.textContent = 'Speichert…';
+  otherBtn.disabled = true;
 
   const payload = {
     firma:          document.getElementById('firma').value.trim(),
@@ -111,7 +134,7 @@ async function saveBewerbung(e) {
     datum_gesendet: document.getElementById('datum_gesendet').value || null,
     notizen:        document.getElementById('notizen').value.trim(),
     stellenanzeige: '',
-    anschreiben:    '',
+    anschreiben:    document.getElementById('anschreiben').value.trim(),
   };
 
   try {
@@ -122,16 +145,22 @@ async function saveBewerbung(e) {
     });
     const data = await res.json();
     if (data.success) {
-      window.location.href = '/bewerbung/' + data.id;
+      if (wantPdf && payload.anschreiben) {
+        window.location.href = '/bewerbung/' + data.id + '/pdf';
+      } else {
+        window.location.href = '/bewerbung/' + data.id;
+      }
     } else {
       alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
-      btn.disabled = false;
-      btn.textContent = 'Bewerbung speichern';
+      activeBtn.disabled = false;
+      otherBtn.disabled = false;
+      activeBtn.textContent = wantPdf ? 'Speichern & PDF herunterladen' : 'Nur speichern';
     }
   } catch(err) {
     alert('Netzwerkfehler');
-    btn.disabled = false;
-    btn.textContent = 'Bewerbung speichern';
+    activeBtn.disabled = false;
+    otherBtn.disabled = false;
+    activeBtn.textContent = wantPdf ? 'Speichern & PDF herunterladen' : 'Nur speichern';
   }
 }
 </script>
