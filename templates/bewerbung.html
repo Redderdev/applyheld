@@ -72,64 +72,82 @@
     <div id="save-status" style="text-align:center;font-size:13px;min-height:18px;"></div>
   </div>
 
-  <!-- ── RIGHT: Anschreiben + optional KI ── -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
+  <!-- ── RIGHT: A4 Paper Studio ── -->
+  <div style="display:flex;flex-direction:column;gap:0;">
 
-    <!-- Anschreiben Editor -->
-    <div class="card" style="display:flex;flex-direction:column;padding:0;overflow:hidden;">
-      <!-- Toolbar -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <svg style="width:15px;height:15px;color:var(--ink-500);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
-          </svg>
-          <span style="font-size:14px;font-weight:600;color:var(--ink-700);">Anschreiben</span>
-          <span style="font-size:12px;color:var(--ink-400);font-weight:400;">– optional</span>
-          <span id="word-count" style="font-size:12px;color:var(--ink-400);"></span>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Text kopieren">
-            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="openFullscreen()" title="Vollbild-Editor">
-            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Textarea (auto-grows) -->
-      <textarea id="anschreiben"
-        style="padding:24px 28px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;min-height:320px;overflow:hidden;"
-        placeholder="Anschreiben hier eingeben oder mit KI generieren..."
-        oninput="autoGrow(this); updateWordCount(); markDirty()">{{ b.anschreiben or '' }}</textarea>
-
-      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <!-- Toolbar bar above the paper -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg-soft);border:1px solid var(--border);border-bottom:none;border-radius:var(--r) var(--r) 0 0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;font-weight:600;color:var(--ink-600);">Anschreiben</span>
+        <span id="word-count" style="font-size:12px;color:var(--ink-400);"></span>
         <span style="font-size:12px;color:var(--ink-400);" id="auto-save-hint"></span>
-        <div style="display:flex;gap:8px;">
-          <button id="save-only-btn" class="btn btn-ghost btn-sm" onclick="saveAnschreiben(false)">
-            Speichern
-          </button>
-          <button id="save-pdf-btn" class="btn btn-primary btn-sm" onclick="saveAnschreiben(true)"
-            style="display:flex;align-items:center;gap:6px;">
-            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Speichern &amp; PDF
-          </button>
-        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Kopieren">
+          <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
+        <button id="save-only-btn" class="btn btn-ghost btn-sm" onclick="saveAnschreiben(false)">Speichern</button>
+        <button id="save-pdf-btn" class="btn btn-primary btn-sm" onclick="saveAnschreiben(true)"
+          style="display:flex;align-items:center;gap:5px;">
+          <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Speichern &amp; PDF
+        </button>
       </div>
     </div>
 
-    <!-- KI Anschreiben generieren (optional, kollabierbar) -->
-    <div class="card" style="padding:0;overflow:hidden;">
+    <!-- Paper studio: grey background + white A4 sheet -->
+    <div id="paper-studio" style="background:#d1d5db;padding:28px 24px;border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);min-height:600px;">
+      <div id="paper-sheet" style="background:#fff;max-width:640px;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.18);border-radius:2px;padding:40px 52px 52px;font-family:Georgia,serif;">
+
+        <!-- Letterhead (mirrors _build_pdf) -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div style="font-size:13px;line-height:1.6;color:#111;">
+            {% if s.name %}<div style="font-weight:700;font-size:14px;color:#1a56db;">{{ s.name }}</div>{% endif %}
+            {% if s.strasse %}<div>{{ s.strasse }}</div>{% endif %}
+            {% if s.plz_ort %}<div>{{ s.plz_ort }}</div>{% endif %}
+          </div>
+          <div style="font-size:12px;line-height:1.8;color:#6b7280;text-align:right;">
+            {% if s.telefon %}<div>Tel: {{ s.telefon }}</div>{% endif %}
+            {% if s.email %}<div>{{ s.email }}</div>{% endif %}
+          </div>
+        </div>
+        {% if s.name or s.strasse %}
+        <div style="border-top:1.5px solid #1a56db;margin-bottom:20px;"></div>
+        {% else %}
+        <div style="border-top:1px solid #e5e7eb;margin-bottom:20px;"></div>
+        {% endif %}
+
+        <!-- Recipient + date -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+          <div style="font-size:13px;line-height:1.7;color:#111;">
+            {% if b.firma %}<div style="font-weight:700;">{{ b.firma }}</div>{% endif %}
+          </div>
+          <div style="font-size:13px;color:#374151;">
+            {% if s.ort %}{{ s.ort }}, {% endif %}<span id="paper-date"></span>
+          </div>
+        </div>
+
+        <!-- Subject -->
+        {% if b.stelle %}
+        <div style="font-weight:700;font-size:14px;color:#111;margin-bottom:20px;">Bewerbung als {{ b.stelle }}</div>
+        {% endif %}
+
+        <!-- Editable body -->
+        <textarea id="anschreiben"
+          style="width:100%;border:none;outline:none;font-family:Georgia,serif;font-size:13.5px;line-height:1.85;resize:none;color:#111;background:transparent;overflow:hidden;display:block;box-sizing:border-box;min-height:300px;"
+          placeholder="Anschreiben hier eingeben…"
+          oninput="autoGrow(this); updateWordCount(); markDirty()">{{ b.anschreiben or '' }}</textarea>
+
+      </div>
+    </div>
+
+    <!-- KI Anschreiben generieren (kollabierbar) -->
+    <div class="card" style="padding:0;overflow:hidden;margin-top:12px;">
       <button onclick="toggleKI()" id="ki-toggle"
         style="width:100%;padding:14px 18px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:var(--font);">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -242,48 +260,12 @@
   </div><!-- end right col -->
 </div><!-- end grid -->
 
-<!-- ── Fullscreen Editor Overlay ─────────────────────────────────────── -->
-<div id="fs-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:var(--bg);display:none;flex-direction:column;">
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span style="font-size:15px;font-weight:650;color:var(--ink-900);">Anschreiben bearbeiten</span>
-      <span id="fs-word-count" style="font-size:12px;color:var(--ink-400);"></span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <span style="font-size:12px;color:var(--ink-400);" id="fs-hint"></span>
-      <button id="fs-save-only" class="btn btn-ghost btn-sm" onclick="fsSave(false)">Speichern</button>
-      <button id="fs-save-pdf" class="btn btn-primary btn-sm" onclick="fsSave(true)"
-        style="display:flex;align-items:center;gap:6px;">
-        <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Speichern &amp; PDF
-      </button>
-      <button class="btn btn-ghost btn-sm" onclick="closeFullscreen()" title="Schließen" style="display:flex;align-items:center;gap:5px;">
-        <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
-          <line x1="10" y1="14" x2="21" y2="3"/><line x1="3" y1="21" x2="14" y2="10"/>
-        </svg>
-        Schließen
-      </button>
-    </div>
-  </div>
-  <!-- Textarea -->
-  <textarea id="fs-textarea"
-    style="flex:1;width:100%;padding:40px min(10vw, 200px);border:none;outline:none;font-family:var(--font);font-size:16px;line-height:1.85;resize:none;color:var(--ink-900);background:var(--bg);box-sizing:border-box;max-width:860px;margin:0 auto;display:block;"
-    placeholder="Anschreiben hier eingeben..."
-    oninput="fsUpdateWordCount(); markDirty()"></textarea>
-</div>
-
 <style>
 @media (max-width: 860px) {
   #detail-grid { grid-template-columns: 1fr !important; }
+  #paper-studio { padding: 16px 8px; }
+  #paper-sheet  { padding: 28px 24px 36px; }
 }
-#fs-overlay { display: none; }
-#fs-overlay.open { display: flex !important; }
-#fs-textarea { width: 100%; }
 </style>
 
 <script>
@@ -323,95 +305,8 @@ function updateWordCount() {
   document.getElementById('word-count').textContent = w ? `${w} Wörter` : '';
 }
 
-// ── Fullscreen editor ──────────────────────────────────────────────────
-function openFullscreen() {
-  const main = document.getElementById('anschreiben');
-  const fs   = document.getElementById('fs-textarea');
-  fs.value   = main.value;
-  fsUpdateWordCount();
-  document.getElementById('fs-overlay').classList.add('open');
-  fs.focus();
-  // place cursor at end
-  fs.setSelectionRange(fs.value.length, fs.value.length);
-}
-
-function closeFullscreen() {
-  const fs   = document.getElementById('fs-textarea');
-  const main = document.getElementById('anschreiben');
-  main.value = fs.value;
-  autoGrow(main);
-  updateWordCount();
-  document.getElementById('fs-overlay').classList.remove('open');
-}
-
-function fsUpdateWordCount() {
-  const t = document.getElementById('fs-textarea').value;
-  const w = t.trim() ? t.trim().split(/\s+/).length : 0;
-  document.getElementById('fs-word-count').textContent = w ? `${w} Wörter` : '';
-}
-
-async function fsSave(downloadPdf) {
-  // Sync back to main textarea first
-  const fs = document.getElementById('fs-textarea');
-  document.getElementById('anschreiben').value = fs.value;
-  autoGrow(document.getElementById('anschreiben'));
-  updateWordCount();
-
-  const saveOnlyBtn = document.getElementById('fs-save-only');
-  const savePdfBtn  = document.getElementById('fs-save-pdf');
-  savePdfBtn.disabled  = true;
-  saveOnlyBtn.disabled = true;
-  const origPdf = savePdfBtn.innerHTML;
-  savePdfBtn.textContent = 'Speichert…';
-
-  const stellenanzeige = document.getElementById('stellenanzeige-input')
-    ? document.getElementById('stellenanzeige-input').value : PAGE.stellenanzeige;
-
-  const payload = {
-    firma:          PAGE.firma,
-    stelle:         PAGE.stelle,
-    url:            PAGE.url,
-    stellenanzeige: stellenanzeige,
-    anschreiben:    fs.value,
-    status:         document.getElementById('status-select').value,
-    datum_gesendet: document.getElementById('datum_gesendet').value || null,
-    notizen:        document.getElementById('notizen').value,
-  };
-
-  try {
-    const res  = await fetch(`/api/update/${BID}`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.success) {
-      _dirty = false;
-      document.getElementById('auto-save-hint').textContent = '';
-      document.getElementById('fs-hint').textContent = 'Gespeichert ✓';
-      setTimeout(() => document.getElementById('fs-hint').textContent = '', 3000);
-      if (downloadPdf) {
-        showToast('Gespeichert — PDF wird heruntergeladen…');
-        setTimeout(() => { window.location.href = `/bewerbung/${BID}/pdf`; }, 400);
-      }
-    } else {
-      showToast('Fehler: ' + (data.error || 'unbekannt'));
-    }
-  } catch (err) {
-    showToast('Netzwerkfehler');
-  }
-
-  savePdfBtn.disabled  = false;
-  saveOnlyBtn.disabled = false;
-  savePdfBtn.innerHTML = origPdf;
-}
-
-// Close fullscreen with Escape
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('fs-overlay').classList.contains('open')) {
-    closeFullscreen();
-  }
-});
+// Set today's date on the paper
+document.getElementById('paper-date').textContent = new Date().toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
 
 let _dirty = false;
 function markDirty() {

@@ -358,8 +358,9 @@ def bewerbung(bid):
         'SELECT * FROM chat_nachrichten WHERE bewerbung_id = ? ORDER BY erstellt_am',
         (bid,)
     ).fetchall()
+    s = {k: get_setting(k) for k in ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']}
     conn.close()
-    return render_template('bewerbung.html', b=b, chat=chat)
+    return render_template('bewerbung.html', b=b, chat=chat, s=s)
 
 
 @app.route('/lebenslauf')
