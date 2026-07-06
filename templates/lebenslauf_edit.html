@@ -51,7 +51,10 @@
   background: #fff; max-width: 650px; margin: 24px auto;
   box-shadow: 0 4px 24px rgba(0,0,0,.22); min-height: 918px; overflow: hidden;
 }
-#tpl-tabs { display: flex; gap: 0; padding: 12px 16px 0; background: #b0b8c1; border-bottom: 1px solid #9ca3af; }
+#tpl-tabs {
+  display: flex; align-items: flex-end; gap: 0;
+  padding: 12px 16px 0; background: #b0b8c1; border-bottom: 1px solid #9ca3af;
+}
 .tpl-tab {
   padding: 7px 16px; border: 1px solid transparent; border-bottom: none;
   border-radius: 6px 6px 0 0; cursor: pointer; font-size: 13px; font-weight: 600;
@@ -59,6 +62,26 @@
 }
 .tpl-tab.active { background: #fff; color: #1e3a5f; border-color: #9ca3af; }
 .tpl-tab:hover:not(.active) { background: rgba(255,255,255,.65); }
+/* Color picker */
+.clr-row {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  padding: 0 4px 8px;
+}
+.clr-swatch {
+  width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; outline: 2px solid transparent;
+  flex-shrink: 0; transition: outline .12s;
+}
+.clr-swatch.active { outline: 2px solid #fff; outline-offset: 1px; }
+.clr-swatch:hover { opacity: .85; }
+#color-custom {
+  width: 22px; height: 22px; padding: 0; border: 2px solid rgba(255,255,255,.5);
+  border-radius: 50%; cursor: pointer; background: none;
+  -webkit-appearance: none; overflow: hidden;
+}
+#color-custom::-webkit-color-swatch-wrapper { padding: 0; }
+#color-custom::-webkit-color-swatch { border: none; border-radius: 50%; }
+#color-custom::-moz-color-swatch { border: none; border-radius: 50%; }
 
 @media (max-width: 900px) {
   #cv-builder { grid-template-columns: 1fr; height: auto; overflow: visible; }
@@ -188,9 +211,9 @@
       </div>
       <div class="cv-section-body" id="body-skills">
         <div class="form-group" style="margin-bottom:8px;">
-          <label style="font-size:12px;color:var(--ink-500);">Kommagetrennt eingeben</label>
+          <label style="font-size:12px;color:var(--ink-500);">Komma- oder zeilengetrennt eingeben</label>
           <textarea id="skills-input" rows="3" style="resize:vertical;font-size:13px;"
-            placeholder="Python, SQL, Projektmanagement..." oninput="renderSkillTags();schedulePreview()"></textarea>
+            placeholder="Python&#10;SQL&#10;Projektmanagement" oninput="renderSkillTags();schedulePreview()"></textarea>
         </div>
         <div id="skills-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
       </div>
@@ -268,6 +291,18 @@
       <button class="tpl-tab active" id="tab-klassisch" onclick="selectTemplate('klassisch')">Klassisch</button>
       <button class="tpl-tab" id="tab-modern" onclick="selectTemplate('modern')">Modern</button>
       <button class="tpl-tab" id="tab-minimal" onclick="selectTemplate('minimal')">Minimal</button>
+      <div class="clr-row" title="Akzentfarbe wählen">
+        <span style="font-size:11px;color:rgba(255,255,255,.75);font-weight:600;white-space:nowrap;">Farbe:</span>
+        <div class="clr-swatch active" data-color="#1e3a5f" style="background:#1e3a5f;" onclick="selectColor('#1e3a5f',this)"></div>
+        <div class="clr-swatch" data-color="#0369a1" style="background:#0369a1;" onclick="selectColor('#0369a1',this)"></div>
+        <div class="clr-swatch" data-color="#065f46" style="background:#065f46;" onclick="selectColor('#065f46',this)"></div>
+        <div class="clr-swatch" data-color="#7c3aed" style="background:#7c3aed;" onclick="selectColor('#7c3aed',this)"></div>
+        <div class="clr-swatch" data-color="#be123c" style="background:#be123c;" onclick="selectColor('#be123c',this)"></div>
+        <div class="clr-swatch" data-color="#374151" style="background:#374151;" onclick="selectColor('#374151',this)"></div>
+        <div class="clr-swatch" data-color="#b45309" style="background:#b45309;" onclick="selectColor('#b45309',this)"></div>
+        <div class="clr-swatch" data-color="#0f766e" style="background:#0f766e;" onclick="selectColor('#0f766e',this)"></div>
+        <input type="color" id="color-custom" value="#1e3a5f" title="Eigene Farbe" oninput="selectColor(this.value,null)">
+      </div>
     </div>
     <div style="padding:0 24px 32px;">
       <div id="cv-paper"></div>
@@ -284,7 +319,8 @@
 const CV_EMPTY = {
   personal: {name:'',email:'',phone:'',address:'',city:'',linkedin:'',website:''},
   summary: '', experience: [], education: [], skills: [],
-  languages: [], certifications: [], projects: [], hobbys: []
+  languages: [], certifications: [], projects: [], hobbys: [],
+  accentColor: '#1e3a5f'
 };
 
 let CV_ID    = {{ cv_id | tojson }};
@@ -322,6 +358,13 @@ function selectTemplate(t, doPreview = true) {
   if (doPreview) renderPreview();
 }
 
+function selectColor(color, swatchEl) {
+  document.getElementById('color-custom').value = color;
+  document.querySelectorAll('.clr-swatch').forEach(s => s.classList.remove('active'));
+  if (swatchEl) swatchEl.classList.add('active');
+  schedulePreview();
+}
+
 // ── Scheduling ────────────────────────────────────────────────────────────────
 function schedulePreview() {
   clearTimeout(_previewTimer);
@@ -353,6 +396,11 @@ function renderAll() {
   renderCertifications();
   renderProjects();
   document.getElementById('hobbys-input').value = (CV.hobbys || []).join(', ');
+  const ac = CV.accentColor || '#1e3a5f';
+  document.getElementById('color-custom').value = ac;
+  document.querySelectorAll('.clr-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color === ac);
+  });
 }
 
 function renderExperience() {
@@ -436,7 +484,7 @@ function renderEducation() {
 }
 
 function renderSkillTags() {
-  const skills = document.getElementById('skills-input').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const skills = document.getElementById('skills-input').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
   document.getElementById('skills-tags').innerHTML = skills.map(s =>
     `<span style="background:var(--navy-50);border:1px solid var(--border);border-radius:var(--r-full);padding:2px 9px;font-size:12px;color:var(--ink-700);">${esc(s)}</span>`
   ).join('');
@@ -618,8 +666,9 @@ function collectCV() {
     website:  document.getElementById('p-website').value.trim(),
   };
   cv.summary = document.getElementById('cv-summary').value.trim();
-  cv.skills  = document.getElementById('skills-input').value.split(',').map(s=>s.trim()).filter(Boolean);
-  cv.hobbys  = document.getElementById('hobbys-input').value.split(',').map(s=>s.trim()).filter(Boolean);
+  cv.skills  = document.getElementById('skills-input').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  cv.hobbys      = document.getElementById('hobbys-input').value.split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  cv.accentColor = document.getElementById('color-custom').value || '#1e3a5f';
   document.querySelectorAll('.cv-exp-card').forEach(card => {
     const get = f => (card.querySelector(`[data-field="${f}"]`)||{}).value||'';
     cv.experience.push({
@@ -728,10 +777,10 @@ function esc(s) {
 // ── Template: Klassisch (two-column, sidebar left) ───────────────────────────
 function tplKlassisch(cv) {
   const p = cv.personal||{};
-  const NAVY = '#1e3a5f';
+  const NAVY = cv.accentColor || '#1e3a5f';
   function sideSection(title, inner) {
     return `<div style="margin-bottom:16px;">
-      <p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin:0 0 4px;">${title}</p>
+      <p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.65);margin:0 0 4px;">${title}</p>
       <div style="border-top:1px solid rgba(255,255,255,.2);margin-bottom:8px;"></div>
       ${inner}
     </div>`;
@@ -742,19 +791,19 @@ function tplKlassisch(cv) {
   let sidebar = `<div style="width:205px;background:${NAVY};color:#fff;padding:32px 18px;flex-shrink:0;min-height:918px;font-family:Arial,sans-serif;box-sizing:border-box;">`;
   sidebar += `<div style="font-size:18pt;font-weight:700;line-height:1.2;margin-bottom:28px;color:#fff;">${esc(firstName)}<br>${esc(lastName)}</div>`;
   const contactItems = [p.address, p.city, p.phone, p.email].filter(Boolean);
-  if (contactItems.length) sidebar += sideSection('Kontakt', contactItems.map(c=>`<div style="font-size:8pt;color:#e2e8f0;margin-bottom:4px;word-break:break-all;">${esc(c)}</div>`).join(''));
+  if (contactItems.length) sidebar += sideSection('Kontakt', contactItems.map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:4px;word-break:break-all;">${esc(c)}</div>`).join(''));
   const edu = (cv.education||[]);
   if (edu.length) sidebar += sideSection('Bildungsweg', edu.map(e=>{
     const degree = [e.degree,e.field].filter(Boolean).join(' ');
     const period = `${e.start||''}${e.end?' – '+e.end:''}`;
-    return `<div style="margin-bottom:10px;"><div style="font-size:9pt;font-weight:700;color:#fff;line-height:1.3;">${esc(degree)}</div><div style="font-size:8pt;color:#bfdbfe;">${esc(e.institution||'')}</div>${period?`<div style="font-size:7.5pt;color:#93c5fd;">${esc(period)}</div>`:''}</div>`;
+    return `<div style="margin-bottom:10px;"><div style="font-size:9pt;font-weight:700;color:#fff;line-height:1.3;">${esc(degree)}</div><div style="font-size:8pt;color:rgba(255,255,255,.75);">${esc(e.institution||'')}</div>${period?`<div style="font-size:7.5pt;color:rgba(255,255,255,.55);">${esc(period)}</div>`:''}</div>`;
   }).join(''));
   const skills = (cv.skills||[]).filter(Boolean);
-  if (skills.length) sidebar += sideSection('Kompetenzen', skills.map(s=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:#e2e8f0;line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(s)}</div>`).join(''));
+  if (skills.length) sidebar += sideSection('Kompetenzen', skills.map(s=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:rgba(255,255,255,.85);line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(s)}</div>`).join(''));
   const langs = (cv.languages||[]).filter(l=>l.lang);
-  if (langs.length) sidebar += sideSection('Sprachen', langs.map(l=>`<div style="font-size:8.5pt;margin-bottom:4px;"><strong style="color:#fff;">${esc(l.lang)}</strong><span style="color:#bfdbfe;"> ${esc(l.level||'')}</span></div>`).join(''));
+  if (langs.length) sidebar += sideSection('Sprachen', langs.map(l=>`<div style="font-size:8.5pt;margin-bottom:4px;"><strong style="color:#fff;">${esc(l.lang)}</strong><span style="color:rgba(255,255,255,.65);"> ${esc(l.level||'')}</span></div>`).join(''));
   const hobbys = (cv.hobbys||[]).filter(Boolean);
-  if (hobbys.length) sidebar += sideSection('Hobbys', hobbys.map(h=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:#e2e8f0;line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(h)}</div>`).join(''));
+  if (hobbys.length) sidebar += sideSection('Hobbys', hobbys.map(h=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:rgba(255,255,255,.85);line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(h)}</div>`).join(''));
   sidebar += '</div>';
 
   function mainSection(title, inner) {
@@ -784,23 +833,23 @@ function tplKlassisch(cv) {
 // ── Template: Modern ──────────────────────────────────────────────────────────
 function tplModern(cv) {
   const p = cv.personal||{};
-  const NAVY = '#1e3a5f';
+  const NAVY = cv.accentColor || '#1e3a5f';
   let sidebar = `<div style="width:195px;background:${NAVY};color:#fff;padding:28px 18px;flex-shrink:0;min-height:918px;">`;
   sidebar += `<div style="font-size:16pt;font-weight:700;line-height:1.2;margin-bottom:${cv.summary?'8px':'20px'};color:#fff;">${esc(p.name||'')}</div>`;
-  if (cv.summary) sidebar += `<div style="font-size:8pt;color:#bfdbfe;margin-bottom:20px;line-height:1.5;">${esc(cv.summary)}</div>`;
+  if (cv.summary) sidebar += `<div style="font-size:8pt;color:rgba(255,255,255,.75);margin-bottom:20px;line-height:1.5;">${esc(cv.summary)}</div>`;
   function sideBlock(title, inner) {
-    return `<div style="margin-bottom:16px;"><div style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin-bottom:7px;">${title}</div>${inner}</div>`;
+    return `<div style="margin-bottom:16px;"><div style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.65);margin-bottom:7px;">${title}</div>${inner}</div>`;
   }
   const contacts = [[p.email,'✉'],[p.phone,'☎'],[p.city,'⌖'],[p.linkedin,'in']].filter(([v])=>v);
-  if (contacts.length) sidebar += sideBlock('Kontakt', contacts.map(([v,i])=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;word-break:break-all;">${i} ${esc(v)}</div>`).join(''));
+  if (contacts.length) sidebar += sideBlock('Kontakt', contacts.map(([v,i])=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;word-break:break-all;">${i} ${esc(v)}</div>`).join(''));
   const skills = (cv.skills||[]).filter(Boolean);
-  if (skills.length) sidebar += sideBlock('Fähigkeiten', skills.map(s=>`<div style="background:rgba(255,255,255,.12);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:4px;display:inline-block;margin-right:3px;">${esc(s)}</div>`).join(''));
+  if (skills.length) sidebar += sideBlock('Fähigkeiten', skills.map(s=>`<div style="background:rgba(255,255,255,.15);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:4px;display:inline-block;margin-right:3px;color:#fff;">${esc(s)}</div>`).join(''));
   const langs = (cv.languages||[]).filter(l=>l.lang);
-  if (langs.length) sidebar += sideBlock('Sprachen', langs.map(l=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;">${esc(l.lang)} <span style="color:#93c5fd;">· ${esc(l.level||'')}</span></div>`).join(''));
+  if (langs.length) sidebar += sideBlock('Sprachen', langs.map(l=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">${esc(l.lang)} <span style="color:rgba(255,255,255,.55);">· ${esc(l.level||'')}</span></div>`).join(''));
   const certs = (cv.certifications||[]).filter(c=>c.name);
-  if (certs.length) sidebar += sideBlock('Zertifikate', certs.map(c=>`<div style="font-size:8pt;color:#e2e8f0;margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
+  if (certs.length) sidebar += sideBlock('Zertifikate', certs.map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
   const hobbys = (cv.hobbys||[]).filter(Boolean);
-  if (hobbys.length) sidebar += sideBlock('Hobbys', hobbys.map(h=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;">▪ ${esc(h)}</div>`).join(''));
+  if (hobbys.length) sidebar += sideBlock('Hobbys', hobbys.map(h=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">▪ ${esc(h)}</div>`).join(''));
   sidebar += '</div>';
   function mainSection(title, inner) {
     return `<div style="margin-bottom:18px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:3px;height:15px;background:#06b6d4;border-radius:2px;"></div><span style="font-size:10.5pt;font-weight:700;color:${NAVY};">${title}</span></div><div style="border-top:1px solid #e2e8f0;margin-bottom:10px;"></div>${inner}</div>`;
@@ -828,15 +877,16 @@ function tplModern(cv) {
 // ── Template: Minimal ─────────────────────────────────────────────────────────
 function tplMinimal(cv) {
   const p = cv.personal||{};
+  const ACC = cv.accentColor || '#0891b2';
   const contact = [p.email,p.phone,p.city,p.linkedin].filter(Boolean).map(v=>esc(v)).join(' · ');
   let html = `<div style="font-family:'Helvetica Neue',Arial,sans-serif;padding:44px 52px;color:#0f172a;font-size:10pt;line-height:1.55;">`;
-  html += `<div style="width:52px;height:4px;background:#0891b2;border-radius:2px;margin-bottom:22px;"></div>`;
+  html += `<div style="width:52px;height:4px;background:${ACC};border-radius:2px;margin-bottom:22px;"></div>`;
   html += `<h1 style="font-size:26pt;font-weight:300;letter-spacing:-.025em;margin:0 0 5px;">${esc(p.name||'')}</h1>`;
   if (contact) html += `<p style="font-size:8.5pt;color:#64748b;margin:0 0 ${cv.summary?'10px':'22px'};">${contact}</p>`;
   if (cv.summary) html += `<p style="font-size:9.5pt;color:#475569;margin:0 0 22px;max-width:480px;line-height:1.65;font-style:italic;">${esc(cv.summary)}</p>`;
   html += `<div style="border-top:1px solid #e2e8f0;margin-bottom:22px;"></div>`;
   function minSection(title, inner) {
-    return `<div style="margin-bottom:22px;"><p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#0891b2;margin:0 0 10px;">${title}</p>${inner}</div>`;
+    return `<div style="margin-bottom:22px;"><p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:${ACC};margin:0 0 10px;">${title}</p>${inner}</div>`;
   }
   const expHtml = (cv.experience||[]).map(e=>{
     const period = e.current?`${esc(e.start||'')} – heute`:`${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;

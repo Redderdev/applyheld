@@ -18,24 +18,24 @@ const TEMPLATE = '{{ cv_template or "klassisch" }}';
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* ── KLASSISCH: two-column, matches PDF example ── */
-function tplKlassisch(cv){ const p=cv.personal||{}; const NAVY='#1e3a5f';
-  function sideSection(title,inner){ return `<div style="margin-bottom:16px;"><p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin:0 0 4px;">${title}</p><div style="border-top:1px solid rgba(255,255,255,.2);margin-bottom:8px;"></div>${inner}</div>`; }
+/* ── KLASSISCH ── */
+function tplKlassisch(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'#1e3a5f';
+  function sideSection(title,inner){ return `<div style="margin-bottom:16px;"><p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.65);margin:0 0 4px;">${title}</p><div style="border-top:1px solid rgba(255,255,255,.2);margin-bottom:8px;"></div>${inner}</div>`; }
   const nameParts=(p.name||'').trim().split(/\s+/);
   const lastName=nameParts.length>1?nameParts.slice(-1)[0]:'';
   const firstName=nameParts.length>1?nameParts.slice(0,-1).join(' '):nameParts[0]||'';
   let sidebar=`<div style="width:57mm;background:${NAVY};color:#fff;padding:28px 16px;flex-shrink:0;min-height:297mm;font-family:Arial,sans-serif;box-sizing:border-box;">`;
   sidebar+=`<div style="font-size:18pt;font-weight:700;line-height:1.2;margin-bottom:24px;color:#fff;">${esc(firstName)}<br>${esc(lastName)}</div>`;
   const contactItems=[p.address,p.city,p.phone,p.email].filter(Boolean);
-  if(contactItems.length) sidebar+=sideSection('Kontakt',contactItems.map(c=>`<div style="font-size:8pt;color:#e2e8f0;margin-bottom:4px;word-break:break-all;">${esc(c)}</div>`).join(''));
+  if(contactItems.length) sidebar+=sideSection('Kontakt',contactItems.map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:4px;word-break:break-all;">${esc(c)}</div>`).join(''));
   const edu=(cv.education||[]);
-  if(edu.length) sidebar+=sideSection('Bildungsweg',edu.map(e=>{const degree=[e.degree,e.field].filter(Boolean).join(' ');const period=`${e.start||''}${e.end?' – '+e.end:''}`;return `<div style="margin-bottom:10px;"><div style="font-size:9pt;font-weight:700;color:#fff;line-height:1.3;">${esc(degree)}</div><div style="font-size:8pt;color:#bfdbfe;">${esc(e.institution||'')}</div>${period?`<div style="font-size:7.5pt;color:#93c5fd;">${esc(period)}</div>`:''}</div>`;}).join(''));
+  if(edu.length) sidebar+=sideSection('Bildungsweg',edu.map(e=>{const degree=[e.degree,e.field].filter(Boolean).join(' ');const period=`${e.start||''}${e.end?' – '+e.end:''}`;return `<div style="margin-bottom:10px;"><div style="font-size:9pt;font-weight:700;color:#fff;line-height:1.3;">${esc(degree)}</div><div style="font-size:8pt;color:rgba(255,255,255,.75);">${esc(e.institution||'')}</div>${period?`<div style="font-size:7.5pt;color:rgba(255,255,255,.55);">${esc(period)}</div>`:''}</div>`;}).join(''));
   const skills=(cv.skills||[]).filter(Boolean);
-  if(skills.length) sidebar+=sideSection('Kompetenzen',skills.map(s=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:#e2e8f0;line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(s)}</div>`).join(''));
+  if(skills.length) sidebar+=sideSection('Kompetenzen',skills.map(s=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:rgba(255,255,255,.85);line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(s)}</div>`).join(''));
   const langs=(cv.languages||[]).filter(l=>l.lang);
-  if(langs.length) sidebar+=sideSection('Sprachen',langs.map(l=>`<div style="font-size:8.5pt;margin-bottom:4px;"><strong style="color:#fff;">${esc(l.lang)}</strong><span style="color:#bfdbfe;"> ${esc(l.level||'')}</span></div>`).join(''));
+  if(langs.length) sidebar+=sideSection('Sprachen',langs.map(l=>`<div style="font-size:8.5pt;margin-bottom:4px;"><strong style="color:#fff;">${esc(l.lang)}</strong><span style="color:rgba(255,255,255,.65);"> ${esc(l.level||'')}</span></div>`).join(''));
   const hobbys=(cv.hobbys||[]).filter(Boolean);
-  if(hobbys.length) sidebar+=sideSection('Hobbys',hobbys.map(h=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:#e2e8f0;line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(h)}</div>`).join(''));
+  if(hobbys.length) sidebar+=sideSection('Hobbys',hobbys.map(h=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:8.5pt;color:rgba(255,255,255,.85);line-height:1.3;"><span style="flex-shrink:0;">▪</span>${esc(h)}</div>`).join(''));
   sidebar+='</div>';
   function mainSection(title,inner){ return `<div style="margin-bottom:18px;"><p style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:${NAVY};margin:0 0 3px;">${title}</p><div style="border-top:2px solid ${NAVY};margin-bottom:10px;"></div>${inner}</div>`; }
   let main=`<div style="flex:1;padding:28px 20px;background:#fff;font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;line-height:1.55;box-sizing:border-box;min-width:0;">`;
@@ -51,19 +51,19 @@ function tplKlassisch(cv){ const p=cv.personal||{}; const NAVY='#1e3a5f';
 }
 
 /* ── MODERN ── */
-function tplModern(cv){ const p=cv.personal||{}; const NAVY='#1e3a5f'; const lines=[];
+function tplModern(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'#1e3a5f'; const lines=[];
   lines.push(`<div style="font-family:'Segoe UI',Arial,sans-serif;display:flex;min-height:297mm;font-size:9.5pt;">`);
   lines.push(`<div style="width:62mm;background:${NAVY};color:#fff;padding:28px 18px;flex-shrink:0;">`);
   lines.push(`<div style="font-size:16pt;font-weight:700;line-height:1.2;margin-bottom:4px;color:#fff;">${esc(p.name||'')}</div>`);
-  if(cv.summary) lines.push(`<div style="font-size:8pt;color:#93c5fd;margin-bottom:16px;line-height:1.4;">${esc(cv.summary)}</div>`);
-  function sideSection(t,html){ lines.push(`<div style="margin-bottom:14px;"><div style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin-bottom:6px;">${t}</div>${html}</div>`); }
+  if(cv.summary) lines.push(`<div style="font-size:8pt;color:rgba(255,255,255,.75);margin-bottom:16px;line-height:1.4;">${esc(cv.summary)}</div>`);
+  function sideSection(t,html){ lines.push(`<div style="margin-bottom:14px;"><div style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.65);margin-bottom:6px;">${t}</div>${html}</div>`); }
   const contacts=[[p.email,'✉'],[p.phone,'☎'],[p.city,'⌖'],[p.linkedin,'🔗']].filter(([v])=>v);
-  if(contacts.length) sideSection('Kontakt',contacts.map(([v,i])=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;">${i} ${esc(v)}</div>`).join(''));
-  if((cv.skills||[]).length) sideSection('Fähigkeiten',cv.skills.filter(Boolean).map(s=>`<div style="background:rgba(255,255,255,.12);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:3px;display:inline-block;margin-right:3px;">${esc(s)}</div>`).join(''));
-  if((cv.languages||[]).filter(l=>l.lang).length) sideSection('Sprachen',(cv.languages||[]).filter(l=>l.lang).map(l=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;">${esc(l.lang)}<span style="color:#93c5fd;"> · ${esc(l.level||'')}</span></div>`).join(''));
-  if((cv.certifications||[]).filter(c=>c.name).length) sideSection('Zertifikate',(cv.certifications||[]).filter(c=>c.name).map(c=>`<div style="font-size:8pt;color:#e2e8f0;margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
+  if(contacts.length) sideSection('Kontakt',contacts.map(([v,i])=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">${i} ${esc(v)}</div>`).join(''));
+  if((cv.skills||[]).length) sideSection('Fähigkeiten',cv.skills.filter(Boolean).map(s=>`<div style="background:rgba(255,255,255,.15);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:3px;display:inline-block;margin-right:3px;color:#fff;">${esc(s)}</div>`).join(''));
+  if((cv.languages||[]).filter(l=>l.lang).length) sideSection('Sprachen',(cv.languages||[]).filter(l=>l.lang).map(l=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">${esc(l.lang)}<span style="color:rgba(255,255,255,.55);"> · ${esc(l.level||'')}</span></div>`).join(''));
+  if((cv.certifications||[]).filter(c=>c.name).length) sideSection('Zertifikate',(cv.certifications||[]).filter(c=>c.name).map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
   const modernHobbys=(cv.hobbys||[]).filter(Boolean);
-  if(modernHobbys.length) sideSection('Hobbys',modernHobbys.map(h=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;">▪ ${esc(h)}</div>`).join(''));
+  if(modernHobbys.length) sideSection('Hobbys',modernHobbys.map(h=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">▪ ${esc(h)}</div>`).join(''));
   lines.push('</div>');
   lines.push(`<div style="flex:1;padding:28px 24px;background:#fff;">`);
   function mainSection(t,html){ lines.push(`<div style="margin-bottom:16px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:3px;height:14px;background:#06b6d4;border-radius:2px;"></div><span style="font-size:10pt;font-weight:700;color:${NAVY};">${t}</span></div><div style="border-top:1px solid #e2e8f0;margin-bottom:10px;"></div>${html}</div>`); }
@@ -76,15 +76,15 @@ function tplModern(cv){ const p=cv.personal||{}; const NAVY='#1e3a5f'; const lin
   lines.push('</div></div>'); return lines.join(''); }
 
 /* ── MINIMAL ── */
-function tplMinimal(cv){ const p=cv.personal||{}; const lines=[];
+function tplMinimal(cv){ const p=cv.personal||{}; const ACC=cv.accentColor||'#0891b2'; const lines=[];
   lines.push(`<div style="font-family:'Helvetica Neue',Arial,sans-serif;padding:44px 52px;color:#0f172a;font-size:10pt;">`);
-  lines.push(`<div style="width:56px;height:4px;background:#0891b2;border-radius:2px;margin-bottom:24px;"></div>`);
+  lines.push(`<div style="width:56px;height:4px;background:${ACC};border-radius:2px;margin-bottom:24px;"></div>`);
   lines.push(`<h1 style="font-size:26pt;font-weight:300;letter-spacing:-.02em;margin-bottom:4px;">${esc(p.name||'')}</h1>`);
   const contact=[p.email,p.phone,p.city,p.linkedin].filter(Boolean).map(v=>esc(v)).join(' · ');
   if(contact) lines.push(`<p style="font-size:8.5pt;color:#64748b;margin-bottom:${cv.summary?'8px':'24px'};">${contact}</p>`);
   if(cv.summary) lines.push(`<p style="font-size:9.5pt;color:#475569;margin-bottom:24px;max-width:500px;line-height:1.6;font-style:italic;">${esc(cv.summary)}</p>`);
   lines.push(`<div style="border-top:1px solid #e2e8f0;margin-bottom:24px;"></div>`);
-  function section(title,content){ if(!content)return; lines.push(`<div style="margin-bottom:22px;"><p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#0891b2;margin-bottom:10px;">${title}</p>${content}</div>`); }
+  function section(title,content){ if(!content)return; lines.push(`<div style="margin-bottom:22px;"><p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:${ACC};margin-bottom:10px;">${title}</p>${content}</div>`); }
   const expHtml=(cv.experience||[]).map(e=>{const period=e.current?`${esc(e.start||'')} – heute`:`${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;const loc=e.location?`, ${esc(e.location)}`:'';const bullets=(e.bullets||[]).filter(Boolean).map(b=>`<li style="color:#374151;margin-bottom:2px;">${esc(b)}</li>`).join('');return `<div style="display:grid;grid-template-columns:1fr 90pt;margin-bottom:12px;gap:8px;"><div><strong style="font-size:10.5pt;">${esc(e.role||'')}</strong><br><span style="font-size:9pt;color:#64748b;">${esc(e.company||'')}${loc}</span>${bullets?`<ul style="margin:5px 0 0 16px;padding:0;font-size:9pt;">${bullets}</ul>`:''}</div><div style="font-size:8pt;color:#94a3b8;text-align:right;padding-top:1pt;">${period}</div></div>`;}).join('');
   section('Berufserfahrung',expHtml);
   const eduHtml=(cv.education||[]).map(e=>{const degree=[e.degree,e.field].filter(Boolean).join(', ');const period=`${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;return `<div style="display:grid;grid-template-columns:1fr 90pt;margin-bottom:10px;gap:8px;"><div><strong>${esc(degree)}</strong><br><span style="font-size:9pt;color:#64748b;">${esc(e.institution||'')}${e.grade?' · Note: '+esc(e.grade):''}</span></div><div style="font-size:8pt;color:#94a3b8;text-align:right;padding-top:1pt;">${period}</div></div>`;}).join('');
