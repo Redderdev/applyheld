@@ -42,7 +42,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172
 <tr>
 
   {# ─── SIDEBAR (inline background-color required by xhtml2pdf) ─── #}
-  <td style="width:57mm;background-color:{{ acc }};color:white;padding:28pt 14pt;vertical-align:top;">
+  <td style="width:57mm;background-color:{{ acc }};color:white;padding:28pt 14pt 500pt 14pt;vertical-align:top;">
 
     {# Name #}
     {% set words = ((p.name or '')|trim).split() %}
