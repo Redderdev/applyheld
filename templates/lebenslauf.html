@@ -1,345 +1,283 @@
 {% extends "base.html" %}
-
 {% block title %}Lebenslauf — BewerbungsKI{% endblock %}
 {% block page_title %}Lebenslauf{% endblock %}
 
 {% block topbar_actions %}
+  <span id="autosave-indicator" style="font-size:12px;color:var(--ink-400);"></span>
   <button class="btn btn-ghost btn-sm" onclick="saveCV()">Speichern</button>
-  <button class="btn btn-primary btn-sm" onclick="switchTab('vorlage')" style="gap:6px;">
+  <button class="btn btn-primary btn-sm" onclick="exportPDF()" style="display:flex;align-items:center;gap:6px;">
     <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
     </svg>
-    PDF exportieren
+    PDF herunterladen
   </button>
 {% endblock %}
 
 {% block content %}
-<div style="max-width:1080px;margin:0 auto;">
+<style>
+/* Break out of .page max-width for full-bleed split layout */
+.page { max-width: none !important; }
+.main { padding: 0 !important; overflow: hidden !important; }
 
-  <!-- ── Upload / Status Bar ────────────────────────────────────────────── -->
-  <div class="card" style="margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-    {% if cv_text %}
-      <svg style="width:36px;height:36px;color:var(--danger);flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-      </svg>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:15px;color:var(--ink-700);">{{ cv_filename or 'Lebenslauf' }}</div>
-        <div style="font-size:13px;color:var(--ink-400);">{{ cv_text|length }} Zeichen extrahiert</div>
-      </div>
-      <div id="parse-section" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        {% if cv_json %}
-          <span class="badge badge-accepted" style="font-size:12px;">
-            <span class="badge-dot" style="background:var(--success);"></span>KI-Analyse vorhanden
-          </span>
-        {% endif %}
-        <button class="btn btn-primary btn-sm" id="parseBtn" onclick="parseCV()">
-          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/>
-          </svg>
-          {% if cv_json %}Neu analysieren{% else %}KI Analyse starten{% endif %}
-        </button>
+#cv-builder {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: calc(100vh - var(--topbar-h, 60px));
+  overflow: hidden;
+}
+#cv-form-panel {
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+}
+#cv-preview-panel {
+  overflow-y: auto;
+  background: #d1d5db;
+  display: flex;
+  flex-direction: column;
+}
+.cv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.cv-section-header:hover { background: var(--bg-soft); }
+.cv-section-body { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.cv-entry-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  background: var(--bg-soft);
+}
+.cv-entry-card .remove-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--ink-400); font-size: 18px; line-height: 1; padding: 2px;
+}
+.cv-entry-card .remove-btn:hover { color: var(--danger); }
+/* Paper */
+#cv-paper {
+  background: #fff;
+  max-width: 650px;
+  margin: 24px auto;
+  box-shadow: 0 4px 24px rgba(0,0,0,.22);
+  min-height: 918px; /* ~297mm at 96dpi/pt */
+  overflow: hidden;
+}
+/* Template tabs */
+#tpl-tabs { display: flex; gap: 0; padding: 12px 16px 0; background: #b0b8c1; border-bottom: 1px solid #9ca3af; }
+.tpl-tab {
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  background: rgba(255,255,255,.4);
+  margin-right: 4px;
+  font-family: var(--font);
+}
+.tpl-tab.active { background: #fff; color: #1e3a5f; border-color: #9ca3af; }
+.tpl-tab:hover:not(.active) { background: rgba(255,255,255,.65); }
+
+@media (max-width: 900px) {
+  #cv-builder { grid-template-columns: 1fr; height: auto; overflow: visible; }
+  #cv-form-panel { height: auto; overflow: visible; }
+  #cv-preview-panel { display: none; }
+}
+</style>
+
+<div id="cv-builder">
+
+  <!-- ══════════════ LEFT: FORM PANEL ══════════════ -->
+  <div id="cv-form-panel">
+
+    <!-- Upload bar -->
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg-soft);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      {% if cv_text %}
+        <svg style="width:20px;height:20px;color:var(--danger);flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg>
+        <span style="font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cv_filename or 'Lebenslauf' }}</span>
+        <button class="btn btn-primary btn-sm" id="parseBtn" onclick="parseCV()">KI-Analyse</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('cv-upload').click()">Ersetzen</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="deleteCV()">Löschen</button>
+      {% else %}
+        <svg style="width:20px;height:20px;color:var(--ink-400);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span style="font-size:13px;color:var(--ink-500);flex:1;">PDF hochladen für KI-Analyse</span>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('cv-upload').click()">Hochladen</button>
+      {% endif %}
+    </div>
+
+    <!-- ── Persönliche Daten ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('personal')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Persönliche Daten</span>
+        <svg id="chev-personal" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;transform:rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-    {% else %}
-      <svg style="width:36px;height:36px;color:var(--accent-500);flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-      </svg>
-      <div style="flex:1;">
-        <div style="font-weight:600;font-size:15px;color:var(--ink-700);">Kein Lebenslauf hochgeladen</div>
-        <div style="font-size:13px;color:var(--ink-400);">Lade zuerst deinen Lebenslauf hoch, dann kann die KI ihn analysieren.</div>
+      <div class="cv-section-body" id="body-personal">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin:0;grid-column:span 2;">
+            <label>Vor- und Nachname</label>
+            <input type="text" id="p-name" placeholder="Max Mustermann" oninput="schedulePreview()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>E-Mail</label>
+            <input type="email" id="p-email" placeholder="max@beispiel.de" oninput="schedulePreview()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Telefon</label>
+            <input type="text" id="p-phone" placeholder="+49 123 456789" oninput="schedulePreview()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Stadt / PLZ</label>
+            <input type="text" id="p-city" placeholder="10115 Berlin" oninput="schedulePreview()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Straße &amp; Nr.</label>
+            <input type="text" id="p-address" placeholder="Musterstraße 1" oninput="schedulePreview()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>LinkedIn <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
+            <input type="text" id="p-linkedin" placeholder="linkedin.com/in/max" oninput="schedulePreview()">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Website <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
+            <input type="text" id="p-website" placeholder="www.max.de" oninput="schedulePreview()">
+          </div>
+        </div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="document.getElementById('cv-upload').click()">
-        Lebenslauf hochladen
-      </button>
-    {% endif %}
+    </div>
+
+    <!-- ── Profil ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('summary')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Profil / Zusammenfassung</span>
+        <svg id="chev-summary" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="cv-section-body" id="body-summary" style="display:none;">
+        <div class="form-group" style="margin:0;">
+          <textarea id="cv-summary" rows="3" style="resize:vertical;font-size:13px;"
+            placeholder="2–4 Sätze: Stärken, Erfahrung, Ziel..." oninput="schedulePreview()"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Berufserfahrung ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('experience')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Berufserfahrung</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 10px;" onclick="event.stopPropagation();addExperience()">+ Hinzufügen</button>
+          <svg id="chev-experience" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;transform:rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="cv-section-body" id="body-experience">
+        <div id="experience-list">
+          <div id="exp-empty" style="text-align:center;padding:16px;color:var(--ink-400);font-size:13px;">Noch keine Einträge.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Ausbildung ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('education')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Ausbildung</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 10px;" onclick="event.stopPropagation();addEducation()">+ Hinzufügen</button>
+          <svg id="chev-education" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;transform:rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="cv-section-body" id="body-education">
+        <div id="education-list">
+          <div id="edu-empty" style="text-align:center;padding:16px;color:var(--ink-400);font-size:13px;">Noch keine Einträge.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Fähigkeiten ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('skills')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Kenntnisse &amp; Fähigkeiten</span>
+        <svg id="chev-skills" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;transform:rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="cv-section-body" id="body-skills">
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="font-size:12px;color:var(--ink-500);">Kommagetrennt eingeben</label>
+          <textarea id="skills-input" rows="3" style="resize:vertical;font-size:13px;"
+            placeholder="Python, SQL, Projektmanagement, Scrum..." oninput="renderSkillTags();schedulePreview()"></textarea>
+        </div>
+        <div id="skills-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+      </div>
+    </div>
+
+    <!-- ── Sprachen ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('languages')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Sprachen</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 10px;" onclick="event.stopPropagation();addLanguage()">+ Sprache</button>
+          <svg id="chev-languages" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;transform:rotate(180deg);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="cv-section-body" id="body-languages">
+        <div id="languages-list">
+          <div id="lang-empty" style="text-align:center;padding:16px;color:var(--ink-400);font-size:13px;">Noch keine Sprachen.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Zertifikate ── -->
+    <div>
+      <div class="cv-section-header" onclick="toggleSection('certifications')">
+        <span style="font-size:14px;font-weight:700;color:var(--ink-800);">Zertifikate &amp; Kurse</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 10px;" onclick="event.stopPropagation();addCertification()">+ Hinzufügen</button>
+          <svg id="chev-certifications" style="width:16px;height:16px;color:var(--ink-400);transition:transform .2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="cv-section-body" id="body-certifications" style="display:none;">
+        <div id="certifications-list">
+          <div id="cert-empty" style="text-align:center;padding:16px;color:var(--ink-400);font-size:13px;">Optional — z.B. AWS, Google Analytics.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:48px;"></div>
+  </div><!-- /form panel -->
+
+  <!-- ══════════════ RIGHT: PREVIEW PANEL ══════════════ -->
+  <div id="cv-preview-panel">
+    <!-- Template tabs -->
+    <div id="tpl-tabs">
+      <button class="tpl-tab active" id="tab-klassisch" onclick="selectTemplate('klassisch')">Klassisch</button>
+      <button class="tpl-tab" id="tab-modern" onclick="selectTemplate('modern')">Modern</button>
+      <button class="tpl-tab" id="tab-minimal" onclick="selectTemplate('minimal')">Minimal</button>
+    </div>
+    <!-- A4 Paper -->
+    <div style="padding:0 24px 32px;">
+      <div id="cv-paper"></div>
+    </div>
   </div>
 
-  <!-- ── Tab Bar ──────────────────────────────────────────────────────────── -->
-  <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);">
-    <button class="cv-tab active" id="tab-btn-inhalt" onclick="switchTab('inhalt')" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;border-bottom:2px solid var(--primary);margin-bottom:-2px;font-family:inherit;">
-      Inhalt bearbeiten
-    </button>
-    <button class="cv-tab" id="tab-btn-vorlage" onclick="switchTab('vorlage')" style="padding:10px 20px;border:none;background:none;font-size:14px;font-weight:600;color:var(--ink-400);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;">
-      Vorlage &amp; Export
-    </button>
-  </div>
-
-  <!-- ── Tab: Inhalt ──────────────────────────────────────────────────────── -->
-  <div id="tab-inhalt">
-
-    <!-- Personal -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Persönliche Daten</h3>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group">
-          <label>Vor- und Nachname</label>
-          <input type="text" id="p-name" placeholder="Max Mustermann">
-        </div>
-        <div class="form-group">
-          <label>E-Mail</label>
-          <input type="email" id="p-email" placeholder="max@beispiel.de">
-        </div>
-        <div class="form-group">
-          <label>Telefon</label>
-          <input type="text" id="p-phone" placeholder="+49 123 456789">
-        </div>
-        <div class="form-group">
-          <label>Stadt / PLZ</label>
-          <input type="text" id="p-city" placeholder="10115 Berlin">
-        </div>
-        <div class="form-group">
-          <label>Straße &amp; Hausnummer</label>
-          <input type="text" id="p-address" placeholder="Musterstraße 1">
-        </div>
-        <div class="form-group">
-          <label>LinkedIn (optional)</label>
-          <input type="text" id="p-linkedin" placeholder="linkedin.com/in/max">
-        </div>
-        <div class="form-group">
-          <label>Website (optional)</label>
-          <input type="text" id="p-website" placeholder="www.max-mustermann.de">
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Profil / Zusammenfassung</h3>
-        <span style="font-size:12px;color:var(--ink-400);">Optional</span>
-      </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <textarea id="cv-summary" rows="4" placeholder="Kurzes Profil (2–4 Sätze über deine Stärken und Ziele)..." style="resize:vertical;min-height:100px;"></textarea>
-      </div>
-    </div>
-
-    <!-- Experience -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Berufserfahrung</h3>
-        <button class="btn btn-secondary btn-sm" onclick="addExperience()">+ Hinzufügen</button>
-      </div>
-      <div id="experience-list">
-        <div style="text-align:center;padding:24px;color:var(--ink-400);font-size:14px;" id="exp-empty">
-          Noch keine Einträge. Klicke auf "+ Hinzufügen" oder starte die KI-Analyse.
-        </div>
-      </div>
-    </div>
-
-    <!-- Education -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Ausbildung</h3>
-        <button class="btn btn-secondary btn-sm" onclick="addEducation()">+ Hinzufügen</button>
-      </div>
-      <div id="education-list">
-        <div style="text-align:center;padding:24px;color:var(--ink-400);font-size:14px;" id="edu-empty">
-          Noch keine Einträge.
-        </div>
-      </div>
-    </div>
-
-    <!-- Skills -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Kenntnisse &amp; Fähigkeiten</h3>
-        <span style="font-size:12px;color:var(--ink-400);">Kommagetrennt eingeben</span>
-      </div>
-      <div class="form-group" style="margin-bottom:8px;">
-        <textarea id="skills-input" rows="3" placeholder="Python, SQL, Projektmanagement, MS Office, Scrum, Adobe Photoshop..." style="resize:vertical;"></textarea>
-      </div>
-      <div id="skills-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
-    </div>
-
-    <!-- Languages -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Sprachen</h3>
-        <button class="btn btn-secondary btn-sm" onclick="addLanguage()">+ Sprache</button>
-      </div>
-      <div id="languages-list">
-        <div style="text-align:center;padding:16px;color:var(--ink-400);font-size:14px;" id="lang-empty">Noch keine Sprachen eingetragen.</div>
-      </div>
-    </div>
-
-    <!-- Certifications -->
-    <div class="card" style="margin-bottom:24px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink-700);">Zertifikate &amp; Kurse</h3>
-        <button class="btn btn-secondary btn-sm" onclick="addCertification()">+ Hinzufügen</button>
-      </div>
-      <div id="certifications-list">
-        <div style="text-align:center;padding:16px;color:var(--ink-400);font-size:14px;" id="cert-empty">Optional — z.B. AWS, Google Analytics, SCRUM Master.</div>
-      </div>
-    </div>
-
-    <!-- Save Bar -->
-    <div style="position:sticky;bottom:calc(var(--bottomnav-h, 0px) + 12px);z-index:10;display:flex;gap:12px;justify-content:flex-end;background:linear-gradient(to top,var(--bg) 70%,transparent);padding-top:12px;">
-      <button class="btn btn-primary" onclick="saveCV()" style="min-width:160px;">
-        <svg style="width:15px;height:15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-        </svg>
-        Speichern
-      </button>
-    </div>
-
-  </div><!-- /tab-inhalt -->
-
-  <!-- ── Tab: Vorlage ──────────────────────────────────────────────────────── -->
-  <div id="tab-vorlage" style="display:none;">
-
-    <p style="font-size:14px;color:var(--ink-500);margin-bottom:20px;">
-      Wähle eine Designvorlage für deinen Lebenslauf. Bitte erst Inhalt speichern, dann exportieren.
-    </p>
-
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
-
-      <!-- Klassisch -->
-      <div class="template-card" id="tpl-klassisch" onclick="selectTemplate('klassisch')"
-           style="border:2px solid var(--border);border-radius:var(--r-lg);padding:0;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden;">
-        <div style="background:#fff;border-bottom:1px solid var(--border);padding:20px 16px;aspect-ratio:0.71;">
-          <!-- Preview: Klassisch -->
-          <div style="text-align:center;margin-bottom:10px;">
-            <div style="height:12px;background:#1e3a5f;border-radius:2px;width:60%;margin:0 auto 4px;"></div>
-            <div style="height:7px;background:#94a3b8;border-radius:2px;width:80%;margin:0 auto;"></div>
-          </div>
-          <div style="height:1px;background:#1e3a5f;margin:8px 0;"></div>
-          <div style="height:6px;background:#1e3a5f;border-radius:1px;width:40%;margin-bottom:6px;"></div>
-          <div style="height:1px;background:#1e3a5f;margin-bottom:8px;"></div>
-          <div style="display:grid;grid-template-columns:28px 1fr;gap:4px;margin-bottom:4px;">
-            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-top:2px;"></div>
-            <div>
-              <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:3px;width:70%;"></div>
-              <div style="height:5px;background:#94a3b8;border-radius:1px;width:50%;"></div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:28px 1fr;gap:4px;margin-bottom:8px;">
-            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-top:2px;"></div>
-            <div>
-              <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:3px;width:80%;"></div>
-              <div style="height:5px;background:#94a3b8;border-radius:1px;width:60%;"></div>
-            </div>
-          </div>
-          <div style="height:6px;background:#1e3a5f;border-radius:1px;width:30%;margin-bottom:4px;"></div>
-          <div style="height:1px;background:#1e3a5f;margin-bottom:6px;"></div>
-          <div style="height:5px;background:#334155;border-radius:1px;margin-bottom:3px;width:90%;"></div>
-          <div style="height:5px;background:#94a3b8;border-radius:1px;width:70%;"></div>
-        </div>
-        <div style="padding:12px 16px;background:var(--bg-soft);">
-          <div style="font-weight:700;font-size:14px;color:var(--ink-700);">Klassisch</div>
-          <div style="font-size:12px;color:var(--ink-400);">Traditionell, professionell, Schwarz/Weiß</div>
-        </div>
-      </div>
-
-      <!-- Modern -->
-      <div class="template-card" id="tpl-modern" onclick="selectTemplate('modern')"
-           style="border:2px solid var(--border);border-radius:var(--r-lg);padding:0;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden;">
-        <div style="background:#fff;border-bottom:1px solid var(--border);padding:0;aspect-ratio:0.71;display:flex;flex-direction:column;">
-          <!-- Navy Header -->
-          <div style="background:#1e3a5f;padding:14px 16px 12px;">
-            <div style="height:10px;background:rgba(255,255,255,0.9);border-radius:2px;width:55%;margin-bottom:4px;"></div>
-            <div style="height:6px;background:rgba(148,163,184,0.8);border-radius:1px;width:75%;"></div>
-          </div>
-          <div style="padding:12px 16px;flex:1;">
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-              <div style="width:3px;height:12px;background:#06b6d4;border-radius:1px;flex-shrink:0;"></div>
-              <div style="height:6px;background:#1e3a5f;border-radius:1px;width:45%;"></div>
-            </div>
-            <div style="height:1px;background:#e2e8f0;margin-bottom:8px;"></div>
-            <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:3px;width:70%;"></div>
-            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-bottom:8px;width:50%;"></div>
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-              <div style="width:3px;height:12px;background:#06b6d4;border-radius:1px;flex-shrink:0;"></div>
-              <div style="height:6px;background:#1e3a5f;border-radius:1px;width:35%;"></div>
-            </div>
-            <div style="height:1px;background:#e2e8f0;margin-bottom:8px;"></div>
-            <div style="height:5px;background:#334155;border-radius:1px;margin-bottom:3px;width:85%;"></div>
-            <div style="height:5px;background:#94a3b8;border-radius:1px;width:60%;"></div>
-          </div>
-        </div>
-        <div style="padding:12px 16px;background:var(--bg-soft);">
-          <div style="font-weight:700;font-size:14px;color:var(--ink-700);">Modern</div>
-          <div style="font-size:12px;color:var(--ink-400);">Navy-Header, Cyan-Akzente, zeitgemäß</div>
-        </div>
-      </div>
-
-      <!-- Minimal -->
-      <div class="template-card" id="tpl-minimal" onclick="selectTemplate('minimal')"
-           style="border:2px solid var(--border);border-radius:var(--r-lg);padding:0;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden;">
-        <div style="background:#fff;border-bottom:1px solid var(--border);padding:16px;aspect-ratio:0.71;">
-          <div style="height:3px;background:#06b6d4;border-radius:2px;margin-bottom:14px;"></div>
-          <div style="height:14px;background:#0f172a;border-radius:2px;width:65%;margin-bottom:6px;"></div>
-          <div style="height:6px;background:#94a3b8;border-radius:1px;width:85%;margin-bottom:16px;"></div>
-          <div style="height:1px;background:#e2e8f0;margin-bottom:12px;"></div>
-          <div style="height:7px;background:#1e3a5f;border-radius:1px;width:40%;margin-bottom:10px;"></div>
-          <div style="display:grid;grid-template-columns:32px 1fr;gap:6px;margin-bottom:6px;">
-            <div style="height:5px;background:#94a3b8;border-radius:1px;margin-top:2px;"></div>
-            <div>
-              <div style="height:6px;background:#334155;border-radius:1px;margin-bottom:4px;width:75%;"></div>
-              <div style="height:5px;background:#cbd5e1;border-radius:1px;width:55%;"></div>
-            </div>
-          </div>
-          <div style="height:7px;background:#1e3a5f;border-radius:1px;width:35%;margin-top:10px;margin-bottom:10px;"></div>
-          <div style="height:5px;background:#334155;border-radius:1px;margin-bottom:4px;width:80%;"></div>
-        </div>
-        <div style="padding:12px 16px;background:var(--bg-soft);">
-          <div style="font-weight:700;font-size:14px;color:var(--ink-700);">Minimal</div>
-          <div style="font-size:12px;color:var(--ink-400);">Clean, viel Weißraum, elegant</div>
-        </div>
-      </div>
-
-    </div><!-- /template grid -->
-
-    <!-- Export Card -->
-    <div class="card" style="text-align:center;padding:32px;">
-      <svg style="width:40px;height:40px;color:var(--accent-500);margin-bottom:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-      </svg>
-      <h3 style="margin:0 0 8px;font-size:17px;font-weight:700;color:var(--ink-700);">Als PDF herunterladen</h3>
-      <p style="color:var(--ink-500);font-size:14px;margin:0 0 20px;max-width:360px;margin-left:auto;margin-right:auto;">
-        Vorlage: <strong id="selected-template-name">Klassisch</strong> — Bitte zuerst Inhalt speichern, dann exportieren.
-      </p>
-      <button class="btn btn-primary" onclick="exportPDF()" style="min-width:200px;font-size:15px;padding:10px 24px;">
-        <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        PDF herunterladen
-      </button>
-    </div>
-
-  </div><!-- /tab-vorlage -->
-
-</div><!-- /max-width wrapper -->
-
-<!-- Toast -->
-<div id="cv-toast" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-900);color:#fff;padding:10px 20px;border-radius:var(--r-full);font-size:13px;font-weight:600;z-index:9999;transition:transform .25s ease;pointer-events:none;">
-  Gespeichert
-</div>
+</div><!-- /cv-builder -->
 
 <!-- Hidden file input -->
 <input type="file" id="cv-upload" style="display:none;" accept=".pdf,.docx" onchange="uploadCV(event)">
 
-<style>
-.template-card.selected {
-  border-color: var(--accent-500) !important;
-  box-shadow: 0 0 0 3px rgba(6,182,212,.18);
-}
-.template-card:hover:not(.selected) {
-  border-color: var(--primary) !important;
-}
-.cv-tab:focus { outline: none; }
-@media (max-width: 700px) {
-  div[style*="grid-template-columns: repeat(3"] {
-    grid-template-columns: 1fr !important;
-  }
-  div[style*="grid-template-columns: 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
-}
-</style>
+<!-- Toast -->
+<div id="cv-toast" style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-900);color:#fff;padding:9px 20px;border-radius:var(--r-full);font-size:13px;font-weight:600;z-index:9999;transition:transform .25s;pointer-events:none;">
+  Gespeichert
+</div>
 
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -354,17 +292,15 @@ const CV_EMPTY = {
   certifications: []
 };
 
-let CV = JSON.parse(JSON.stringify(CV_EMPTY));
+let CV       = JSON.parse(JSON.stringify(CV_EMPTY));
 let TEMPLATE = 'klassisch';
-let EXP_COUNTER = 0;
-let EDU_COUNTER = 0;
-let LANG_COUNTER = 0;
-let CERT_COUNTER = 0;
+let _previewTimer = null;
+let _saveTimer    = null;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 (function init() {
-  const serverData = {{ cv_json | tojson if cv_json else '{}' }};
+  const serverData     = {{ cv_json | tojson if cv_json else '{}' }};
   const serverTemplate = '{{ cv_template or "klassisch" }}';
 
   if (serverData && Object.keys(serverData).length > 0) {
@@ -374,21 +310,46 @@ let CERT_COUNTER = 0;
 
   renderAll();
   selectTemplate(TEMPLATE, false);
+  renderPreview();
 })();
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Section accordion ──────────────────────────────────────────────────────────
 
-function renderAll() {
-  renderPersonal();
-  renderSummary();
-  renderExperience();
-  renderEducation();
-  renderSkills();
-  renderLanguages();
-  renderCertifications();
+function toggleSection(name) {
+  const body  = document.getElementById('body-' + name);
+  const chev  = document.getElementById('chev-' + name);
+  const open  = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
 }
 
-function renderPersonal() {
+// ── Template selection ──────────────────────────────────────────────────────────
+
+function selectTemplate(t, doPreview = true) {
+  TEMPLATE = t;
+  document.querySelectorAll('.tpl-tab').forEach(el => el.classList.remove('active'));
+  const tab = document.getElementById('tab-' + t);
+  if (tab) tab.classList.add('active');
+  if (doPreview) renderPreview();
+}
+
+// ── Live preview scheduling ───────────────────────────────────────────────────
+
+function schedulePreview() {
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(renderPreview, 120);
+  scheduleAutoSave();
+}
+
+function scheduleAutoSave() {
+  clearTimeout(_saveTimer);
+  document.getElementById('autosave-indicator').textContent = 'Ungespeichert…';
+  _saveTimer = setTimeout(() => saveCV(true), 2000);
+}
+
+// ── Render form → DOM ─────────────────────────────────────────────────────────
+
+function renderAll() {
   const p = CV.personal || {};
   document.getElementById('p-name').value    = p.name    || '';
   document.getElementById('p-email').value   = p.email   || '';
@@ -397,76 +358,59 @@ function renderPersonal() {
   document.getElementById('p-city').value    = p.city    || '';
   document.getElementById('p-linkedin').value = p.linkedin || '';
   document.getElementById('p-website').value  = p.website  || '';
-}
-
-function renderSummary() {
   document.getElementById('cv-summary').value = CV.summary || '';
+  renderExperience();
+  renderEducation();
+  document.getElementById('skills-input').value = (CV.skills || []).join(', ');
+  renderSkillTags();
+  renderLanguages();
+  renderCertifications();
 }
 
 function renderExperience() {
   const list = document.getElementById('experience-list');
-  const empty = document.getElementById('exp-empty');
-  const items = CV.experience || [];
-
-  // Remove old rendered cards
   list.querySelectorAll('.cv-exp-card').forEach(el => el.remove());
-
-  if (items.length === 0) {
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-
-  items.forEach((exp, idx) => {
-    const id = ++EXP_COUNTER;
+  const items = CV.experience || [];
+  document.getElementById('exp-empty').style.display = items.length ? 'none' : 'block';
+  items.forEach((exp) => {
     const card = document.createElement('div');
-    card.className = 'cv-exp-card';
-    card.dataset.idx = idx;
-    card.style.cssText = 'border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;position:relative;';
-
-    const bullets = (exp.bullets || []).map(b =>
-      `<div style="display:flex;gap:6px;align-items:start;margin-bottom:6px;">
-        <textarea rows="2" data-field="bullet" style="flex:1;resize:vertical;font-size:13px;min-height:36px;">${esc(b)}</textarea>
-        <button type="button" onclick="removeBullet(this)" style="color:var(--danger);background:none;border:none;cursor:pointer;padding:4px;margin-top:2px;font-size:16px;line-height:1;">×</button>
-      </div>`
-    ).join('');
-
+    card.className = 'cv-entry-card cv-exp-card';
+    const bullets = (exp.bullets || ['']).map(b =>
+      `<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:5px;">
+        <textarea rows="2" data-field="bullet" style="flex:1;resize:vertical;font-size:12px;" oninput="schedulePreview()">${esc(b)}</textarea>
+        <button type="button" onclick="this.closest('div').remove();schedulePreview();" style="color:var(--danger);background:none;border:none;cursor:pointer;font-size:16px;padding:2px;margin-top:2px;">×</button>
+      </div>`).join('');
     card.innerHTML = `
-      <button type="button" onclick="removeExp(this)" title="Entfernen"
-        style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--ink-400);font-size:18px;line-height:1;">×</button>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <button type="button" class="remove-btn" onclick="removeEntry(this,'.cv-exp-card','exp-empty');">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Berufsbezeichnung *</label>
-          <input type="text" data-field="role" value="${esc(exp.role||'')}" placeholder="Senior Developer">
+          <label style="font-size:11.5px;">Position *</label>
+          <input type="text" data-field="role" value="${esc(exp.role||'')}" placeholder="Senior Developer" oninput="schedulePreview()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Unternehmen *</label>
-          <input type="text" data-field="company" value="${esc(exp.company||'')}" placeholder="Firma GmbH">
+          <label style="font-size:11.5px;">Unternehmen *</label>
+          <input type="text" data-field="company" value="${esc(exp.company||'')}" placeholder="Firma GmbH" oninput="schedulePreview()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Ort</label>
-          <input type="text" data-field="location" value="${esc(exp.location||'')}" placeholder="Berlin">
+          <label style="font-size:11.5px;">Ort</label>
+          <input type="text" data-field="location" value="${esc(exp.location||'')}" placeholder="Berlin" oninput="schedulePreview()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
-            Zeitraum
+          <label style="font-size:11.5px;display:flex;align-items:center;gap:8px;">Zeitraum
             <label style="font-weight:400;display:flex;align-items:center;gap:4px;cursor:pointer;">
-              <input type="checkbox" data-field="current" ${exp.current?'checked':''} onchange="toggleCurrent(this)"> Aktuell
+              <input type="checkbox" data-field="current" ${exp.current?'checked':''} onchange="toggleCurrent(this);schedulePreview()"> Aktuell
             </label>
           </label>
-          <div style="display:flex;gap:8px;">
-            <input type="text" data-field="start" value="${esc(exp.start||'')}" placeholder="MM/YYYY" style="flex:1;">
-            <input type="text" data-field="end" value="${esc(exp.end||'')}" placeholder="MM/YYYY" style="flex:1;" ${exp.current?'disabled':''}>
+          <div style="display:flex;gap:6px;">
+            <input type="text" data-field="start" value="${esc(exp.start||'')}" placeholder="MM/YYYY" style="flex:1;" oninput="schedulePreview()">
+            <input type="text" data-field="end"   value="${esc(exp.end||'')}"   placeholder="MM/YYYY" style="flex:1;" ${exp.current?'disabled':''} oninput="schedulePreview()">
           </div>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:8px;">
-        <label style="font-size:12px;">Aufgaben &amp; Erfolge (Bullets)</label>
+      <div class="form-group" style="margin-bottom:4px;">
+        <label style="font-size:11.5px;">Aufgaben &amp; Erfolge</label>
         <div class="bullets-container">${bullets}</div>
-        <button type="button" onclick="addBullet(this)"
-          style="margin-top:6px;font-size:12px;color:var(--primary);background:none;border:none;cursor:pointer;padding:4px 0;">
-          + Bullet hinzufügen
-        </button>
+        <button type="button" onclick="addBullet(this)" style="font-size:12px;color:var(--primary);background:none;border:none;cursor:pointer;margin-top:4px;padding:0;">+ Bullet hinzufügen</button>
       </div>
     `;
     list.appendChild(card);
@@ -475,48 +419,37 @@ function renderExperience() {
 
 function renderEducation() {
   const list = document.getElementById('education-list');
-  const empty = document.getElementById('edu-empty');
-  const items = CV.education || [];
-
   list.querySelectorAll('.cv-edu-card').forEach(el => el.remove());
-
-  if (items.length === 0) {
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-
-  items.forEach((edu, idx) => {
+  const items = CV.education || [];
+  document.getElementById('edu-empty').style.display = items.length ? 'none' : 'block';
+  items.forEach((edu) => {
     const card = document.createElement('div');
-    card.className = 'cv-edu-card';
-    card.dataset.idx = idx;
-    card.style.cssText = 'border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;position:relative;';
+    card.className = 'cv-entry-card cv-edu-card';
     card.innerHTML = `
-      <button type="button" onclick="removeEdu(this)" title="Entfernen"
-        style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--ink-400);font-size:18px;line-height:1;">×</button>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <button type="button" class="remove-btn" onclick="removeEntry(this,'.cv-edu-card','edu-empty');">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Abschluss</label>
-          <input type="text" data-field="degree" value="${esc(edu.degree||'')}" placeholder="B.Sc., M.A., Abitur">
+          <label style="font-size:11.5px;">Abschluss</label>
+          <input type="text" data-field="degree" value="${esc(edu.degree||'')}" placeholder="B.Sc., M.A., Abitur" oninput="schedulePreview()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Fachrichtung</label>
-          <input type="text" data-field="field" value="${esc(edu.field||'')}" placeholder="Informatik, BWL...">
+          <label style="font-size:11.5px;">Fachrichtung</label>
+          <input type="text" data-field="field" value="${esc(edu.field||'')}" placeholder="Informatik, BWL" oninput="schedulePreview()">
         </div>
         <div class="form-group" style="margin:0;grid-column:span 2;">
-          <label style="font-size:12px;">Schule / Hochschule</label>
-          <input type="text" data-field="institution" value="${esc(edu.institution||'')}" placeholder="TU Berlin">
+          <label style="font-size:11.5px;">Schule / Hochschule</label>
+          <input type="text" data-field="institution" value="${esc(edu.institution||'')}" placeholder="TU Berlin" oninput="schedulePreview()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Zeitraum</label>
-          <div style="display:flex;gap:8px;">
-            <input type="text" data-field="start" value="${esc(edu.start||'')}" placeholder="YYYY" style="flex:1;">
-            <input type="text" data-field="end" value="${esc(edu.end||'')}" placeholder="YYYY" style="flex:1;">
+          <label style="font-size:11.5px;">Zeitraum</label>
+          <div style="display:flex;gap:6px;">
+            <input type="text" data-field="start" value="${esc(edu.start||'')}" placeholder="YYYY" style="flex:1;" oninput="schedulePreview()">
+            <input type="text" data-field="end"   value="${esc(edu.end||'')}"   placeholder="YYYY" style="flex:1;" oninput="schedulePreview()">
           </div>
         </div>
         <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Note (optional)</label>
-          <input type="text" data-field="grade" value="${esc(edu.grade||'')}" placeholder="1,8">
+          <label style="font-size:11.5px;">Note <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
+          <input type="text" data-field="grade" value="${esc(edu.grade||'')}" placeholder="1,8" oninput="schedulePreview()">
         </div>
       </div>
     `;
@@ -524,55 +457,32 @@ function renderEducation() {
   });
 }
 
-function renderSkills() {
-  const skills = CV.skills || [];
-  document.getElementById('skills-input').value = skills.join(', ');
-  renderSkillTags(skills);
-}
-
-function renderSkillTags(skills) {
-  const container = document.getElementById('skills-tags');
-  container.innerHTML = skills.filter(s => s.trim()).map(s =>
-    `<span style="background:var(--navy-50);border:1px solid var(--border);border-radius:var(--r-full);padding:3px 10px;font-size:12px;color:var(--ink-700);">${esc(s.trim())}</span>`
+function renderSkillTags() {
+  const skills = document.getElementById('skills-input').value.split(',').map(s=>s.trim()).filter(Boolean);
+  document.getElementById('skills-tags').innerHTML = skills.map(s =>
+    `<span style="background:var(--navy-50);border:1px solid var(--border);border-radius:var(--r-full);padding:2px 9px;font-size:12px;color:var(--ink-700);">${esc(s)}</span>`
   ).join('');
 }
 
-document.getElementById('skills-input').addEventListener('input', function() {
-  const skills = this.value.split(',').map(s => s.trim()).filter(Boolean);
-  renderSkillTags(skills);
-});
-
 function renderLanguages() {
   const list = document.getElementById('languages-list');
-  const empty = document.getElementById('lang-empty');
-  const items = CV.languages || [];
-
   list.querySelectorAll('.cv-lang-row').forEach(el => el.remove());
-
-  if (items.length === 0) {
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-
-  items.forEach((lang, idx) => {
+  const items = CV.languages || [];
+  document.getElementById('lang-empty').style.display = items.length ? 'none' : 'block';
+  items.forEach(lang => {
     const row = document.createElement('div');
     row.className = 'cv-lang-row';
-    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 36px;gap:10px;margin-bottom:8px;align-items:end;';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 34px;gap:8px;margin-bottom:8px;align-items:end;';
     row.innerHTML = `
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:12px;">Sprache</label>
-        <input type="text" data-field="lang" value="${esc(lang.lang||'')}" placeholder="Deutsch">
+      <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Sprache</label>
+        <input type="text" data-field="lang" value="${esc(lang.lang||'')}" placeholder="Deutsch" oninput="schedulePreview()">
       </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:12px;">Niveau</label>
-        <select data-field="level" style="height:40px;">
-          ${['Muttersprache','C2','C1','B2','B1','A2','A1','Grundkenntnisse'].map(l =>
-            `<option ${(lang.level||'') === l ? 'selected' : ''}>${l}</option>`
-          ).join('')}
+      <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Niveau</label>
+        <select data-field="level" style="height:40px;" onchange="schedulePreview()">
+          ${['Muttersprache','C2','C1','B2','B1','A2','A1','Grundkenntnisse'].map(l=>`<option ${(lang.level||''===l)?'selected':''}>${l}</option>`).join('')}
         </select>
       </div>
-      <button type="button" onclick="this.closest('.cv-lang-row').remove(); checkLangEmpty();"
+      <button type="button" onclick="this.closest('.cv-lang-row').remove();checkEmpty('lang-empty','.cv-lang-row');schedulePreview();"
         style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
     `;
     list.appendChild(row);
@@ -581,154 +491,118 @@ function renderLanguages() {
 
 function renderCertifications() {
   const list = document.getElementById('certifications-list');
-  const empty = document.getElementById('cert-empty');
-  const items = CV.certifications || [];
-
   list.querySelectorAll('.cv-cert-card').forEach(el => el.remove());
-
-  if (items.length === 0) {
-    if (empty) empty.style.display = 'block';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-
-  items.forEach((cert, idx) => {
+  const items = CV.certifications || [];
+  document.getElementById('cert-empty').style.display = items.length ? 'none' : 'block';
+  items.forEach(cert => {
     const card = document.createElement('div');
-    card.className = 'cv-cert-card';
-    card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px 36px;gap:10px;margin-bottom:8px;align-items:end;';
+    card.className = 'cv-entry-card cv-cert-card';
     card.innerHTML = `
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:12px;">Zertifikat</label>
-        <input type="text" data-field="name" value="${esc(cert.name||'')}" placeholder="AWS Solutions Architect">
+      <button type="button" class="remove-btn" onclick="removeEntry(this,'.cv-cert-card','cert-empty');">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;">
+        <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Zertifikat</label>
+          <input type="text" data-field="name" value="${esc(cert.name||'')}" placeholder="AWS Solutions Architect" oninput="schedulePreview()">
+        </div>
+        <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Aussteller</label>
+          <input type="text" data-field="issuer" value="${esc(cert.issuer||'')}" placeholder="Amazon" oninput="schedulePreview()">
+        </div>
+        <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Jahr</label>
+          <input type="text" data-field="year" value="${esc(cert.year||'')}" placeholder="2023" oninput="schedulePreview()">
+        </div>
       </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:12px;">Aussteller</label>
-        <input type="text" data-field="issuer" value="${esc(cert.issuer||'')}" placeholder="Amazon">
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:12px;">Jahr</label>
-        <input type="text" data-field="year" value="${esc(cert.year||'')}" placeholder="2023">
-      </div>
-      <button type="button" onclick="this.closest('.cv-cert-card').remove(); checkCertEmpty();"
-        style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
     `;
     list.appendChild(card);
   });
 }
 
-// ── Add / Remove helpers ──────────────────────────────────────────────────────
+// ── Add / Remove ──────────────────────────────────────────────────────────────
 
 function addExperience() {
   CV.experience.push({company:'',role:'',location:'',start:'',end:'',current:false,bullets:['']});
-  renderExperience();
+  renderExperience(); schedulePreview();
+  document.getElementById('body-experience').style.display = 'block';
+  document.getElementById('chev-experience').style.transform = 'rotate(180deg)';
 }
-function removeExp(btn) {
-  btn.closest('.cv-exp-card').remove();
-  checkExpEmpty();
-}
-function checkExpEmpty() {
-  const empty = document.getElementById('exp-empty');
-  const hasCards = document.querySelectorAll('.cv-exp-card').length > 0;
-  if (empty) empty.style.display = hasCards ? 'none' : 'block';
-}
-
 function addEducation() {
   CV.education.push({institution:'',degree:'',field:'',start:'',end:'',grade:''});
-  renderEducation();
+  renderEducation(); schedulePreview();
+  document.getElementById('body-education').style.display = 'block';
+  document.getElementById('chev-education').style.transform = 'rotate(180deg)';
 }
-function removeEdu(btn) {
-  btn.closest('.cv-edu-card').remove();
-  const empty = document.getElementById('edu-empty');
-  const hasCards = document.querySelectorAll('.cv-edu-card').length > 0;
-  if (empty) empty.style.display = hasCards ? 'none' : 'block';
-}
-
 function addLanguage() {
-  const empty = document.getElementById('lang-empty');
-  if (empty) empty.style.display = 'none';
   const list = document.getElementById('languages-list');
+  document.getElementById('lang-empty').style.display = 'none';
   const row = document.createElement('div');
   row.className = 'cv-lang-row';
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 36px;gap:10px;margin-bottom:8px;align-items:end;';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 34px;gap:8px;margin-bottom:8px;align-items:end;';
   row.innerHTML = `
-    <div class="form-group" style="margin:0;">
-      <label style="font-size:12px;">Sprache</label>
-      <input type="text" data-field="lang" placeholder="Deutsch">
+    <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Sprache</label>
+      <input type="text" data-field="lang" placeholder="Deutsch" oninput="schedulePreview()">
     </div>
-    <div class="form-group" style="margin:0;">
-      <label style="font-size:12px;">Niveau</label>
-      <select data-field="level" style="height:40px;">
-        ${['Muttersprache','C2','C1','B2','B1','A2','A1','Grundkenntnisse'].map(l =>
-          `<option>${l}</option>`
-        ).join('')}
+    <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Niveau</label>
+      <select data-field="level" style="height:40px;" onchange="schedulePreview()">
+        ${['Muttersprache','C2','C1','B2','B1','A2','A1','Grundkenntnisse'].map(l=>`<option>${l}</option>`).join('')}
       </select>
     </div>
-    <button type="button" onclick="this.closest('.cv-lang-row').remove(); checkLangEmpty();"
+    <button type="button" onclick="this.closest('.cv-lang-row').remove();checkEmpty('lang-empty','.cv-lang-row');schedulePreview();"
       style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
   `;
   list.appendChild(row);
 }
-function checkLangEmpty() {
-  const empty = document.getElementById('lang-empty');
-  const hasRows = document.querySelectorAll('.cv-lang-row').length > 0;
-  if (empty) empty.style.display = hasRows ? 'none' : 'block';
-}
-
 function addCertification() {
-  const empty = document.getElementById('cert-empty');
-  if (empty) empty.style.display = 'none';
   const list = document.getElementById('certifications-list');
+  document.getElementById('cert-empty').style.display = 'none';
+  document.getElementById('body-certifications').style.display = 'block';
+  document.getElementById('chev-certifications').style.transform = 'rotate(180deg)';
   const card = document.createElement('div');
-  card.className = 'cv-cert-card';
-  card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px 36px;gap:10px;margin-bottom:8px;align-items:end;';
+  card.className = 'cv-entry-card cv-cert-card';
   card.innerHTML = `
-    <div class="form-group" style="margin:0;">
-      <label style="font-size:12px;">Zertifikat</label>
-      <input type="text" data-field="name" placeholder="AWS Solutions Architect">
+    <button type="button" class="remove-btn" onclick="removeEntry(this,'.cv-cert-card','cert-empty');">×</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;">
+      <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Zertifikat</label>
+        <input type="text" data-field="name" placeholder="AWS Solutions Architect" oninput="schedulePreview()">
+      </div>
+      <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Aussteller</label>
+        <input type="text" data-field="issuer" placeholder="Amazon" oninput="schedulePreview()">
+      </div>
+      <div class="form-group" style="margin:0;"><label style="font-size:11.5px;">Jahr</label>
+        <input type="text" data-field="year" placeholder="2023" oninput="schedulePreview()">
+      </div>
     </div>
-    <div class="form-group" style="margin:0;">
-      <label style="font-size:12px;">Aussteller</label>
-      <input type="text" data-field="issuer" placeholder="Amazon">
-    </div>
-    <div class="form-group" style="margin:0;">
-      <label style="font-size:12px;">Jahr</label>
-      <input type="text" data-field="year" placeholder="2023">
-    </div>
-    <button type="button" onclick="this.closest('.cv-cert-card').remove(); checkCertEmpty();"
-      style="height:40px;background:none;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;color:var(--danger);font-size:16px;">×</button>
   `;
   list.appendChild(card);
 }
-function checkCertEmpty() {
-  const empty = document.getElementById('cert-empty');
-  const hasCards = document.querySelectorAll('.cv-cert-card').length > 0;
-  if (empty) empty.style.display = hasCards ? 'none' : 'block';
-}
-
 function addBullet(btn) {
   const container = btn.previousElementSibling;
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:6px;align-items:start;margin-bottom:6px;';
+  row.style.cssText = 'display:flex;gap:6px;align-items:flex-start;margin-bottom:5px;';
   row.innerHTML = `
-    <textarea rows="2" data-field="bullet" style="flex:1;resize:vertical;font-size:13px;min-height:36px;"></textarea>
-    <button type="button" onclick="removeBullet(this)" style="color:var(--danger);background:none;border:none;cursor:pointer;padding:4px;margin-top:2px;font-size:16px;line-height:1;">×</button>
+    <textarea rows="2" data-field="bullet" style="flex:1;resize:vertical;font-size:12px;" oninput="schedulePreview()"></textarea>
+    <button type="button" onclick="this.closest('div').remove();schedulePreview();" style="color:var(--danger);background:none;border:none;cursor:pointer;font-size:16px;padding:2px;margin-top:2px;">×</button>
   `;
   container.appendChild(row);
 }
-function removeBullet(btn) {
-  btn.closest('div').remove();
+function removeEntry(btn, selector, emptyId) {
+  btn.closest('.cv-entry-card').remove();
+  checkEmpty(emptyId, selector);
+  schedulePreview();
+}
+function checkEmpty(emptyId, selector) {
+  document.getElementById(emptyId).style.display =
+    document.querySelectorAll(selector).length ? 'none' : 'block';
 }
 function toggleCurrent(cb) {
   const card = cb.closest('.cv-exp-card');
-  const endInput = card.querySelector('[data-field="end"]');
-  if (endInput) endInput.disabled = cb.checked;
+  if (card) {
+    const end = card.querySelector('[data-field="end"]');
+    if (end) end.disabled = cb.checked;
+  }
 }
 
 // ── Collect from DOM ──────────────────────────────────────────────────────────
 
 function collectCV() {
   const cv = JSON.parse(JSON.stringify(CV_EMPTY));
-
   cv.personal = {
     name:     document.getElementById('p-name').value.trim(),
     email:    document.getElementById('p-email').value.trim(),
@@ -738,177 +612,301 @@ function collectCV() {
     linkedin: document.getElementById('p-linkedin').value.trim(),
     website:  document.getElementById('p-website').value.trim(),
   };
-
   cv.summary = document.getElementById('cv-summary').value.trim();
-
-  cv.skills = document.getElementById('skills-input').value
-    .split(',').map(s => s.trim()).filter(Boolean);
-
+  cv.skills = document.getElementById('skills-input').value.split(',').map(s=>s.trim()).filter(Boolean);
   document.querySelectorAll('.cv-exp-card').forEach(card => {
-    const get = f => (card.querySelector(`[data-field="${f}"]`) || {}).value || '';
-    const bullets = Array.from(card.querySelectorAll('[data-field="bullet"]'))
-      .map(ta => ta.value.trim()).filter(Boolean);
+    const get = f => (card.querySelector(`[data-field="${f}"]`)||{}).value || '';
     cv.experience.push({
-      company:  get('company'),
       role:     get('role'),
+      company:  get('company'),
       location: get('location'),
       start:    get('start'),
       end:      get('end'),
-      current:  (card.querySelector('[data-field="current"]') || {}).checked || false,
-      bullets,
+      current:  (card.querySelector('[data-field="current"]')||{}).checked||false,
+      bullets:  Array.from(card.querySelectorAll('[data-field="bullet"]')).map(t=>t.value.trim()).filter(Boolean),
     });
   });
-
   document.querySelectorAll('.cv-edu-card').forEach(card => {
-    const get = f => (card.querySelector(`[data-field="${f}"]`) || {}).value || '';
-    cv.education.push({
-      institution: get('institution'),
-      degree:      get('degree'),
-      field:       get('field'),
-      start:       get('start'),
-      end:         get('end'),
-      grade:       get('grade'),
-    });
+    const get = f => (card.querySelector(`[data-field="${f}"]`)||{}).value || '';
+    cv.education.push({ institution:get('institution'), degree:get('degree'), field:get('field'), start:get('start'), end:get('end'), grade:get('grade') });
   });
-
   document.querySelectorAll('.cv-lang-row').forEach(row => {
-    const lang  = (row.querySelector('[data-field="lang"]') || {}).value || '';
-    const level = (row.querySelector('[data-field="level"]') || {}).value || '';
-    if (lang.trim()) cv.languages.push({lang: lang.trim(), level});
+    const lang  = (row.querySelector('[data-field="lang"]')||{}).value||'';
+    const level = (row.querySelector('[data-field="level"]')||{}).value||'';
+    if (lang.trim()) cv.languages.push({lang:lang.trim(), level});
   });
-
   document.querySelectorAll('.cv-cert-card').forEach(card => {
-    const get = f => (card.querySelector(`[data-field="${f}"]`) || {}).value || '';
-    if (get('name').trim()) cv.certifications.push({
-      name:   get('name'),
-      issuer: get('issuer'),
-      year:   get('year'),
-    });
+    const get = f => (card.querySelector(`[data-field="${f}"]`)||{}).value||'';
+    if (get('name').trim()) cv.certifications.push({name:get('name'), issuer:get('issuer'), year:get('year')});
   });
-
   return cv;
 }
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 
-async function saveCV() {
+async function saveCV(silent = false) {
+  clearTimeout(_saveTimer);
   CV = collectCV();
   try {
     const res = await fetch('/api/cv-data', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({data: CV, template: TEMPLATE})
     });
     const d = await res.json();
     if (d.success) {
-      showToast('Gespeichert');
+      document.getElementById('autosave-indicator').textContent = 'Gespeichert ✓';
+      setTimeout(() => document.getElementById('autosave-indicator').textContent = '', 3000);
+      if (!silent) showToast('Gespeichert');
     } else {
-      alert('Fehler beim Speichern: ' + (d.error || ''));
+      document.getElementById('autosave-indicator').textContent = 'Fehler';
+      if (!silent) alert('Fehler: ' + (d.error||''));
     }
-  } catch (e) {
-    alert('Fehler: ' + e.message);
+  } catch(e) {
+    document.getElementById('autosave-indicator').textContent = 'Netzwerkfehler';
   }
+}
+
+// ── Export PDF ─────────────────────────────────────────────────────────────────
+
+async function exportPDF() {
+  await saveCV(true);
+  window.open('/lebenslauf/drucken', '_blank');
 }
 
 // ── KI Parse ─────────────────────────────────────────────────────────────────
 
 async function parseCV() {
   const btn = document.getElementById('parseBtn');
-  const origText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span style="opacity:.6;">KI analysiert...</span>';
-
+  const orig = btn.innerHTML;
+  btn.disabled = true; btn.textContent = 'Analysiert…';
   try {
-    const res = await fetch('/api/parse-cv', {method: 'POST'});
+    const res = await fetch('/api/parse-cv', {method:'POST'});
     const d = await res.json();
     if (d.success && d.data) {
       CV = Object.assign(JSON.parse(JSON.stringify(CV_EMPTY)), d.data);
-      renderAll();
-      showToast('KI-Analyse abgeschlossen — Inhalt wurde befüllt');
-    } else {
-      alert('Fehler: ' + (d.error || 'Unbekannter Fehler'));
-    }
-  } catch (e) {
-    alert('Fehler: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = origText;
-  }
-}
-
-// ── Template ──────────────────────────────────────────────────────────────────
-
-function selectTemplate(t, save = true) {
-  TEMPLATE = t;
-  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
-  const el = document.getElementById('tpl-' + t);
-  if (el) el.classList.add('selected');
-  const names = {klassisch:'Klassisch', modern:'Modern', minimal:'Minimal'};
-  const nameEl = document.getElementById('selected-template-name');
-  if (nameEl) nameEl.textContent = names[t] || t;
-}
-
-// ── Export PDF ────────────────────────────────────────────────────────────────
-
-function exportPDF() {
-  window.location.href = '/cv/pdf/' + TEMPLATE;
-}
-
-// ── Upload / Delete ───────────────────────────────────────────────────────────
-
-async function deleteCV() {
-  if (!confirm('Lebenslauf wirklich löschen? Auch die KI-Analyse wird gelöscht.')) return;
-  const res = await fetch('{{ url_for("delete_cv") }}', {method: 'POST'});
-  const d = await res.json();
-  if (d.success) location.reload();
+      renderAll(); renderPreview();
+      showToast('KI-Analyse abgeschlossen ✓');
+    } else { alert('Fehler: ' + (d.error||'Unbekannter Fehler')); }
+  } catch(e) { alert('Fehler: ' + e.message); }
+  finally { btn.disabled = false; btn.innerHTML = orig; }
 }
 
 async function uploadCV(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const formData = new FormData();
-  formData.append('cv', file);
-  try {
-    const res = await fetch('{{ url_for("upload_cv") }}', {method: 'POST', body: formData});
-    const d = await res.json();
-    if (d.success) {
-      location.reload();
-    } else {
-      alert('Fehler: ' + d.error);
-    }
-  } catch (e) {
-    alert('Upload fehlgeschlagen: ' + e.message);
-  }
+  const fd = new FormData();
+  fd.append('cv', file);
+  const res = await fetch('{{ url_for("upload_cv") }}', {method:'POST', body:fd});
+  const d = await res.json();
+  if (d.success) location.reload();
+  else alert('Fehler: ' + d.error);
 }
 
-// ── Tab switch ────────────────────────────────────────────────────────────────
+// ── Live Preview ──────────────────────────────────────────────────────────────
 
-function switchTab(tab) {
-  const tabs = ['inhalt', 'vorlage'];
-  tabs.forEach(t => {
-    const content = document.getElementById('tab-' + t);
-    const btn = document.getElementById('tab-btn-' + t);
-    if (t === tab) {
-      if (content) content.style.display = 'block';
-      if (btn) {
-        btn.style.color = 'var(--primary)';
-        btn.style.borderBottomColor = 'var(--primary)';
-      }
-    } else {
-      if (content) content.style.display = 'none';
-      if (btn) {
-        btn.style.color = 'var(--ink-400)';
-        btn.style.borderBottomColor = 'transparent';
-      }
-    }
-  });
+function renderPreview() {
+  const cv = collectCV();
+  const renderers = { klassisch: tplKlassisch, modern: tplModern, minimal: tplMinimal };
+  const render = renderers[TEMPLATE] || tplKlassisch;
+  document.getElementById('cv-paper').innerHTML = render(cv);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Template Renderers ────────────────────────────────────────────────────────
 
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+function tplKlassisch(cv) {
+  const p = cv.personal||{};
+  const contact = [p.email, p.phone, p.city].filter(Boolean).join(' · ');
+  const linkedin = p.linkedin ? ` · <a href="${esc(p.linkedin)}" style="color:#1e3a5f;">${esc(p.linkedin)}</a>` : '';
+  let html = `<div style="font-family:Arial,Helvetica,sans-serif;padding:36px 44px;color:#1a1a1a;font-size:10pt;line-height:1.55;">`;
+  html += `<h1 style="font-size:22pt;font-weight:700;margin:0 0 4px;color:#0f172a;">${esc(p.name||'')}</h1>`;
+  if (contact) html += `<p style="font-size:9.5pt;color:#555;margin:0 0 ${cv.summary?'6px':'14px'};">${contact}${linkedin}</p>`;
+  if (cv.summary) html += `<p style="font-size:9.5pt;color:#374151;margin:0 0 14px;font-style:italic;line-height:1.6;">${esc(cv.summary)}</p>`;
+  html += `<div style="border-top:2.5px solid #1e3a5f;margin-bottom:20px;"></div>`;
+
+  function klassSection(title, inner) {
+    if (!inner) return '';
+    return `<div style="margin-bottom:18px;">
+      <p style="font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#1e3a5f;margin:0 0 3px;">${title}</p>
+      <div style="border-top:1px solid #1e3a5f;margin-bottom:10px;"></div>
+      ${inner}
+    </div>`;
+  }
+
+  const expHtml = (cv.experience||[]).map(e => {
+    const period = e.current ? `${esc(e.start||'')} – heute` : `${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;
+    const loc = e.location ? `, ${esc(e.location)}` : '';
+    const bullets = (e.bullets||[]).filter(Boolean).map(b=>`<li style="margin-bottom:2px;">${esc(b)}</li>`).join('');
+    return `<div style="display:grid;grid-template-columns:86pt 1fr;gap:8pt;margin-bottom:10pt;">
+      <div style="font-size:8.5pt;color:#6b7280;padding-top:1pt;">${period}</div>
+      <div>
+        <strong style="font-size:10pt;">${esc(e.role||'')}</strong><br>
+        <span style="font-size:9pt;color:#555;">${esc(e.company||'')}${loc}</span>
+        ${bullets ? `<ul style="margin:4pt 0 0 14pt;padding:0;font-size:9pt;">${bullets}</ul>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const eduHtml = (cv.education||[]).map(e => {
+    const period = `${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;
+    const degree = [e.degree, e.field].filter(Boolean).join(', ');
+    return `<div style="display:grid;grid-template-columns:86pt 1fr;gap:8pt;margin-bottom:8pt;">
+      <div style="font-size:8.5pt;color:#6b7280;padding-top:1pt;">${period}</div>
+      <div>
+        <strong style="font-size:10pt;">${esc(degree)}</strong><br>
+        <span style="font-size:9pt;color:#555;">${esc(e.institution||'')}${e.grade?' · Note: '+esc(e.grade):''}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const skills = (cv.skills||[]).filter(Boolean).join(' · ');
+  const langHtml = (cv.languages||[]).filter(l=>l.lang).map(l=>`${esc(l.lang)} <span style="color:#6b7280;">(${esc(l.level||'')})</span>`).join(' · ');
+  const certHtml = (cv.certifications||[]).filter(c=>c.name).map(c=>`${esc(c.name)}${c.issuer?' · '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}`).join('<br>');
+
+  html += klassSection('Berufserfahrung', expHtml);
+  html += klassSection('Ausbildung', eduHtml);
+  if (skills) html += klassSection('Kenntnisse &amp; Fähigkeiten', `<p style="font-size:9.5pt;">${skills}</p>`);
+  if (langHtml) html += klassSection('Sprachen', `<p style="font-size:9.5pt;">${langHtml}</p>`);
+  if (certHtml) html += klassSection('Zertifikate &amp; Kurse', `<p style="font-size:9.5pt;">${certHtml}</p>`);
+  html += `</div>`;
+  return html;
+}
+
+function tplModern(cv) {
+  const p = cv.personal||{};
+  const NAVY = '#1e3a5f';
+  let sidebar = `<div style="width:195px;background:${NAVY};color:#fff;padding:28px 18px;flex-shrink:0;min-height:918px;">`;
+  sidebar += `<div style="font-size:16pt;font-weight:700;line-height:1.2;margin-bottom:${cv.summary?'8px':'20px'};color:#fff;">${esc(p.name||'')}</div>`;
+  if (cv.summary) sidebar += `<div style="font-size:8pt;color:#bfdbfe;margin-bottom:20px;line-height:1.5;">${esc(cv.summary)}</div>`;
+
+  function sideBlock(title, inner) {
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#93c5fd;margin-bottom:7px;">${title}</div>
+      ${inner}
+    </div>`;
+  }
+
+  const contacts = [[p.email,'✉'],[p.phone,'☎'],[p.city,'⌖'],[p.linkedin,'in']].filter(([v])=>v);
+  if (contacts.length) sidebar += sideBlock('Kontakt', contacts.map(([v,i])=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;word-break:break-all;">${i} ${esc(v)}</div>`).join(''));
+
+  const skills = (cv.skills||[]).filter(Boolean);
+  if (skills.length) sidebar += sideBlock('Fähigkeiten', skills.map(s=>`<div style="background:rgba(255,255,255,.12);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:4px;display:inline-block;margin-right:3px;">${esc(s)}</div>`).join(''));
+
+  const langs = (cv.languages||[]).filter(l=>l.lang);
+  if (langs.length) sidebar += sideBlock('Sprachen', langs.map(l=>`<div style="font-size:8.5pt;color:#e2e8f0;margin-bottom:3px;">${esc(l.lang)} <span style="color:#93c5fd;">· ${esc(l.level||'')}</span></div>`).join(''));
+
+  const certs = (cv.certifications||[]).filter(c=>c.name);
+  if (certs.length) sidebar += sideBlock('Zertifikate', certs.map(c=>`<div style="font-size:8pt;color:#e2e8f0;margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
+  sidebar += '</div>';
+
+  function mainSection(title, inner) {
+    return `<div style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="width:3px;height:15px;background:#06b6d4;border-radius:2px;"></div>
+        <span style="font-size:10.5pt;font-weight:700;color:${NAVY};">${title}</span>
+      </div>
+      <div style="border-top:1px solid #e2e8f0;margin-bottom:10px;"></div>
+      ${inner}
+    </div>`;
+  }
+
+  let main = `<div style="flex:1;padding:28px 22px;background:#fff;font-family:'Segoe UI',Arial,sans-serif;font-size:9.5pt;">`;
+
+  const expHtml = (cv.experience||[]).map(e => {
+    const period = e.current ? `${esc(e.start||'')} – heute` : `${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;
+    const loc = e.location ? `, ${esc(e.location)}` : '';
+    const bullets = (e.bullets||[]).filter(Boolean).map(b=>`<li>${esc(b)}</li>`).join('');
+    return `<div style="margin-bottom:11px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <strong style="font-size:10pt;">${esc(e.role||'')}</strong>
+        <span style="font-size:8pt;color:#6b7280;flex-shrink:0;margin-left:8px;">${period}</span>
+      </div>
+      <div style="font-size:9pt;color:#555;margin-bottom:3px;">${esc(e.company||'')}${loc}</div>
+      ${bullets ? `<ul style="margin:3px 0 0 15px;padding:0;font-size:9pt;">${bullets}</ul>` : ''}
+    </div>`;
+  }).join('');
+  if (expHtml) main += mainSection('Berufserfahrung', expHtml);
+
+  const eduHtml = (cv.education||[]).map(e => {
+    const period = `${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;
+    const degree = [e.degree, e.field].filter(Boolean).join(', ');
+    return `<div style="margin-bottom:9px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <strong style="font-size:10pt;">${esc(degree)}</strong>
+        <span style="font-size:8pt;color:#6b7280;">${period}</span>
+      </div>
+      <div style="font-size:9pt;color:#555;">${esc(e.institution||'')}${e.grade?' · Note: '+esc(e.grade):''}</div>
+    </div>`;
+  }).join('');
+  if (eduHtml) main += mainSection('Ausbildung', eduHtml);
+
+  main += '</div>';
+  return `<div style="font-family:'Segoe UI',Arial,sans-serif;display:flex;min-height:918px;">${sidebar}${main}</div>`;
+}
+
+function tplMinimal(cv) {
+  const p = cv.personal||{};
+  const contact = [p.email, p.phone, p.city, p.linkedin].filter(Boolean).map(v=>esc(v)).join(' · ');
+  let html = `<div style="font-family:'Helvetica Neue',Arial,sans-serif;padding:44px 52px;color:#0f172a;font-size:10pt;line-height:1.55;">`;
+  html += `<div style="width:52px;height:4px;background:#0891b2;border-radius:2px;margin-bottom:22px;"></div>`;
+  html += `<h1 style="font-size:26pt;font-weight:300;letter-spacing:-.025em;margin:0 0 5px;">${esc(p.name||'')}</h1>`;
+  if (contact) html += `<p style="font-size:8.5pt;color:#64748b;margin:0 0 ${cv.summary?'10px':'22px'};">${contact}</p>`;
+  if (cv.summary) html += `<p style="font-size:9.5pt;color:#475569;margin:0 0 22px;max-width:480px;line-height:1.65;font-style:italic;">${esc(cv.summary)}</p>`;
+  html += `<div style="border-top:1px solid #e2e8f0;margin-bottom:22px;"></div>`;
+
+  function minSection(title, inner) {
+    return `<div style="margin-bottom:22px;">
+      <p style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#0891b2;margin:0 0 10px;">${title}</p>
+      ${inner}
+    </div>`;
+  }
+
+  const expHtml = (cv.experience||[]).map(e => {
+    const period = e.current ? `${esc(e.start||'')} – heute` : `${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;
+    const loc = e.location ? `, ${esc(e.location)}` : '';
+    const bullets = (e.bullets||[]).filter(Boolean).map(b=>`<li style="color:#374151;margin-bottom:2px;">${esc(b)}</li>`).join('');
+    return `<div style="display:grid;grid-template-columns:1fr 86pt;gap:8pt;margin-bottom:12px;">
+      <div>
+        <strong style="font-size:10.5pt;">${esc(e.role||'')}</strong><br>
+        <span style="font-size:9pt;color:#64748b;">${esc(e.company||'')}${loc}</span>
+        ${bullets ? `<ul style="margin:5pt 0 0 16pt;padding:0;font-size:9pt;">${bullets}</ul>` : ''}
+      </div>
+      <div style="font-size:8pt;color:#94a3b8;text-align:right;padding-top:2pt;">${period}</div>
+    </div>`;
+  }).join('');
+  if (expHtml) html += minSection('Berufserfahrung', expHtml);
+
+  const eduHtml = (cv.education||[]).map(e => {
+    const period = `${esc(e.start||'')}${e.end?' – '+esc(e.end):''}`;
+    const degree = [e.degree, e.field].filter(Boolean).join(', ');
+    return `<div style="display:grid;grid-template-columns:1fr 86pt;gap:8pt;margin-bottom:10px;">
+      <div>
+        <strong>${esc(degree)}</strong><br>
+        <span style="font-size:9pt;color:#64748b;">${esc(e.institution||'')}${e.grade?' · Note: '+esc(e.grade):''}</span>
+      </div>
+      <div style="font-size:8pt;color:#94a3b8;text-align:right;padding-top:2pt;">${period}</div>
+    </div>`;
+  }).join('');
+  if (eduHtml) html += minSection('Ausbildung', eduHtml);
+
+  const skills = (cv.skills||[]).filter(Boolean);
+  if (skills.length) html += minSection('Kenntnisse', skills.map(s=>`<span style="background:#f1f5f9;border-radius:3px;padding:2px 8px;font-size:9pt;margin:0 4px 4px 0;display:inline-block;">${esc(s)}</span>`).join(''));
+
+  const langs = (cv.languages||[]).filter(l=>l.lang);
+  if (langs.length) html += minSection('Sprachen', `<p style="font-size:9.5pt;">${langs.map(l=>`${esc(l.lang)} <span style="color:#64748b;">(${esc(l.level||'')})</span>`).join(' · ')}</p>`);
+
+  const certs = (cv.certifications||[]).filter(c=>c.name);
+  if (certs.length) html += minSection('Zertifikate', certs.map(c=>`<p style="margin-bottom:3px;font-size:9.5pt;">${esc(c.name)}${c.issuer?' – '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}</p>`).join(''));
+
+  html += '</div>';
+  return html;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
 
 function showToast(msg) {
   const t = document.getElementById('cv-toast');

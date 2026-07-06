@@ -1203,6 +1203,13 @@ def cv_data_api():
     return jsonify({'success': True})
 
 
+@app.route('/lebenslauf/drucken')
+@login_required
+def lebenslauf_drucken():
+    cv_json, cv_template = _get_cv_json()
+    return render_template('lebenslauf_print.html', cv_json=cv_json, cv_template=cv_template)
+
+
 @app.route('/cv/pdf/<template>')
 @login_required
 def cv_pdf(template):
