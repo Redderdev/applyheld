@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}Neue Bewerbung — BewerbungsKI{% endblock %}
 {% block page_title %}Neue Bewerbung{% endblock %}
 
@@ -8,94 +7,259 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width:720px;margin:0 auto;">
+<style>
+/* ── Split layout ───────────────────────────────────────── */
+.nb-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  max-width: 1060px;
+  margin: 0 auto;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .nb-layout { grid-template-columns: 1fr; }
+  .nb-right   { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 28px; margin-top: 8px; }
+}
+.nb-left  { padding-right: 44px; }
+.nb-right { padding-left: 44px; border-left: 1px solid var(--border); }
 
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px;font-size:13px;">
-    <a href="{{ url_for('index') }}" style="color:var(--ink-500);text-decoration:none;">Dashboard</a>
-    <span style="color:var(--ink-400);">›</span>
-    <span style="color:var(--ink-700);font-weight:600;">Neue Bewerbung</span>
-  </div>
+/* ── Header ─────────────────────────────────────────────── */
+.nb-hd { margin-bottom: 30px; }
+.nb-hd-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  color: var(--ink-900);
+  margin-bottom: 4px;
+}
+.nb-hd-sub { font-size: 13px; color: var(--ink-500); }
 
-  <div class="card">
-    <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
-      <h2 style="font-size:16px;font-weight:650;color:var(--ink-900);margin:0;">Bewerbung tracken</h2>
-      <p style="font-size:13.5px;color:var(--ink-500);margin:4px 0 0;">Details ausfüllen, Anschreiben einfügen — fertig.</p>
-    </div>
+/* ── Field label ─────────────────────────────────────────── */
+.nb-lbl {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  margin-bottom: 7px;
+}
+.nb-lbl-opt {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  color: var(--ink-400);
+  margin-left: 4px;
+}
 
-    <form style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;" onsubmit="saveBewerbung(event)">
+/* ── Field containers ───────────────────────────────────── */
+.nb-field { margin-bottom: 20px; }
+.nb-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.nb-row2  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 
-      <!-- Firma + Stelle -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group" style="margin:0;">
-          <label for="firma">Unternehmen *</label>
-          <input type="text" id="firma" placeholder="z.B. Google GmbH"
-                 required autocomplete="organization" style="height:40px;">
+/* ── Input base ─────────────────────────────────────────── */
+.nb-input, .nb-sel, .nb-ta {
+  width: 100%;
+  font-family: inherit;
+  color: var(--ink-900);
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r);
+  transition: border-color .13s, box-shadow .13s;
+}
+.nb-input:focus, .nb-sel:focus, .nb-ta:focus {
+  outline: none;
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 3px rgba(6,182,212,.11);
+}
+.nb-input::placeholder, .nb-ta::placeholder { color: var(--ink-400); }
+
+.nb-input {
+  height: 42px;
+  padding: 0 14px;
+  font-size: 14.5px;
+}
+.nb-sel {
+  height: 42px;
+  padding: 0 36px 0 14px;
+  font-size: 14px;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d9ab8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.nb-ta {
+  padding: 11px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* ── Anschreiben area ───────────────────────────────────── */
+.nb-cover-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.nb-cover-title { font-size: 14px; font-weight: 650; color: var(--ink-900); }
+.nb-cover-hint  { font-size: 12px; color: var(--ink-400); }
+.nb-cover-ta {
+  width: 100%;
+  min-height: 440px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-900);
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r);
+  padding: 16px;
+  resize: vertical;
+  transition: border-color .13s, box-shadow .13s;
+}
+.nb-cover-ta:focus {
+  outline: none;
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 3px rgba(6,182,212,.11);
+}
+.nb-cover-ta::placeholder { color: var(--ink-400); }
+
+/* ── Action buttons ─────────────────────────────────────── */
+.nb-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 26px; }
+
+.nb-save {
+  height: 46px; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; border-radius: var(--r);
+  font-family: inherit; font-size: 14.5px; font-weight: 650;
+  cursor: pointer;
+  background: var(--navy-700); color: #fff;
+  transition: background .14s, transform .1s, box-shadow .14s;
+}
+.nb-save:hover:not(:disabled) {
+  background: var(--navy-800);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(30,58,95,.3);
+}
+.nb-save:active:not(:disabled) { transform: translateY(0); }
+.nb-save:disabled { opacity: .55; cursor: not-allowed; }
+
+.nb-only {
+  height: 40px; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--border-strong); border-radius: var(--r);
+  font-family: inherit; font-size: 14px; font-weight: 500;
+  cursor: pointer; background: transparent; color: var(--ink-500);
+  transition: background .13s, color .13s, border-color .13s;
+}
+.nb-only:hover:not(:disabled) {
+  background: var(--bg-soft); color: var(--ink-700);
+}
+.nb-only:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Breadcrumb ─────────────────────────────────────────── */
+.nb-crumb {
+  display: flex; gap: 7px; align-items: center;
+  margin-bottom: 24px; font-size: 13px;
+}
+.nb-crumb a { color: var(--ink-400); text-decoration: none; }
+.nb-crumb a:hover { color: var(--ink-700); }
+.nb-crumb-sep { color: var(--ink-300); }
+.nb-crumb-cur { color: var(--ink-700); font-weight: 600; }
+</style>
+
+<div class="nb-crumb">
+  <a href="{{ url_for('index') }}">Dashboard</a>
+  <span class="nb-crumb-sep">›</span>
+  <span class="nb-crumb-cur">Neue Bewerbung</span>
+</div>
+
+<form onsubmit="saveBewerbung(event)">
+  <div class="nb-layout">
+
+    <!-- ── LEFT: form fields ─────────────────────────── -->
+    <div class="nb-left">
+
+      <div class="nb-hd">
+        <h2 class="nb-hd-title">Für welche Stelle?</h2>
+        <p class="nb-hd-sub">Details eintragen und sofort tracken.</p>
+      </div>
+
+      <div class="nb-row">
+        <div>
+          <label class="nb-lbl" for="firma">Unternehmen *</label>
+          <input class="nb-input" type="text" id="firma"
+                 placeholder="Google GmbH" required autocomplete="organization">
         </div>
-        <div class="form-group" style="margin:0;">
-          <label for="stelle">Stelle *</label>
-          <input type="text" id="stelle" placeholder="z.B. Frontend Developer"
-                 required style="height:40px;">
+        <div>
+          <label class="nb-lbl" for="stelle">Stelle *</label>
+          <input class="nb-input" type="text" id="stelle"
+                 placeholder="Frontend Developer" required>
         </div>
       </div>
 
-      <!-- URL -->
-      <div class="form-group" style="margin:0;">
-        <label for="url">Stellen-URL <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
-        <input type="url" id="url" placeholder="https://..." style="height:40px;">
+      <div class="nb-field">
+        <label class="nb-lbl" for="url">
+          Stellen-URL <span class="nb-lbl-opt">(optional)</span>
+        </label>
+        <input class="nb-input" type="url" id="url" placeholder="https://…">
       </div>
 
-      <!-- Status + Datum -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="form-group" style="margin:0;">
-          <label for="status">Status</label>
-          <select id="status" style="height:40px;padding:0 12px;">
+      <div class="nb-row2">
+        <div>
+          <label class="nb-lbl" for="status">Status</label>
+          <select class="nb-sel" id="status">
             {% for opt in status_options %}
             <option value="{{ opt }}" {% if opt == 'Entwurf' %}selected{% endif %}>{{ opt }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="form-group" style="margin:0;">
-          <label for="datum_gesendet">Beworben am</label>
-          <input type="date" id="datum_gesendet" style="height:40px;">
+        <div>
+          <label class="nb-lbl" for="datum_gesendet">Beworben am</label>
+          <input class="nb-input" type="date" id="datum_gesendet">
         </div>
       </div>
 
-      <!-- Notizen -->
-      <div class="form-group" style="margin:0;">
-        <label for="notizen">Notizen <span style="font-weight:400;color:var(--ink-400);">(optional)</span></label>
-        <textarea id="notizen" rows="3"
-          placeholder="Kontaktperson, Gehaltsvorstellung, nächste Schritte..."
-          style="resize:vertical;font-size:14px;"></textarea>
+      <div class="nb-field">
+        <label class="nb-lbl" for="notizen">
+          Notizen <span class="nb-lbl-opt">(optional)</span>
+        </label>
+        <textarea class="nb-ta" id="notizen" rows="3"
+          placeholder="Kontaktperson, Gehaltsvorstellung, nächste Schritte…"></textarea>
       </div>
 
-      <!-- Anschreiben -->
-      <div style="border-top:1px solid var(--border);padding-top:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <label for="anschreiben" style="margin:0;font-size:13.5px;font-weight:600;color:var(--ink-700);">
-            Anschreiben <span style="font-weight:400;color:var(--ink-400);">(optional)</span>
-          </label>
-        </div>
-        <textarea id="anschreiben" rows="14"
-          placeholder="Kopiere hier dein Anschreiben — es wird direkt ins PDF übernommen..."
-          style="resize:vertical;font-size:14px;line-height:1.6;font-family:inherit;"></textarea>
-      </div>
-
-      <div style="padding-top:4px;display:flex;flex-direction:column;gap:10px;">
-        <button type="submit" id="savePdfBtn" class="btn btn-primary" style="width:100%;height:44px;font-size:15px;">
+      <div class="nb-actions">
+        <button type="submit" id="savePdfBtn" class="nb-save">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Speichern &amp; PDF herunterladen
         </button>
-        <button type="submit" id="saveBtn" class="btn btn-ghost" style="width:100%;height:40px;font-size:14px;">
-          Nur speichern
-        </button>
+        <button type="submit" id="saveBtn" class="nb-only">Nur speichern</button>
       </div>
-    </form>
+
+    </div>
+
+    <!-- ── RIGHT: cover letter ───────────────────────── -->
+    <div class="nb-right">
+      <div class="nb-cover-head">
+        <span class="nb-cover-title">Anschreiben</span>
+        <span class="nb-cover-hint">optional · wird ins PDF übernommen</span>
+      </div>
+      <textarea class="nb-cover-ta" id="anschreiben"
+        placeholder="Sehr geehrte Damen und Herren,
+
+ich bewerbe mich auf die ausgeschriebene Stelle als …"></textarea>
+    </div>
+
   </div>
-</div>
+</form>
 
 <script>
 let _downloadPdf = false;
 
-// Prefill from sessionStorage (set by Jobs page "Speichern"-Button)
 (function() {
   try {
     const pending = JSON.parse(sessionStorage.getItem('pending_job') || 'null');
@@ -107,7 +271,6 @@ let _downloadPdf = false;
       return;
     }
   } catch(e) {}
-  // URL params fallback
   const p = new URLSearchParams(window.location.search);
   if (p.get('firma'))  document.getElementById('firma').value  = decodeURIComponent(p.get('firma'));
   if (p.get('stelle')) document.getElementById('stelle').value = decodeURIComponent(p.get('stelle'));
@@ -119,9 +282,9 @@ document.getElementById('saveBtn').addEventListener('click',    () => { _downloa
 
 async function saveBewerbung(e) {
   e.preventDefault();
-  const wantPdf = _downloadPdf;
+  const wantPdf   = _downloadPdf;
   const activeBtn = wantPdf ? document.getElementById('savePdfBtn') : document.getElementById('saveBtn');
-  const otherBtn  = wantPdf ? document.getElementById('saveBtn') : document.getElementById('savePdfBtn');
+  const otherBtn  = wantPdf ? document.getElementById('saveBtn')    : document.getElementById('savePdfBtn');
   activeBtn.disabled = true;
   activeBtn.textContent = 'Speichert…';
   otherBtn.disabled = true;
@@ -140,13 +303,12 @@ async function saveBewerbung(e) {
   try {
     const res  = await fetch('{{ url_for("save") }}', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (data.success) {
       if (wantPdf && payload.anschreiben) {
-        // Go to edit page; the ?pdf=1 param auto-triggers the download there
         window.location.href = '/bewerbung/' + data.id + '?pdf=1';
       } else {
         window.location.href = '/bewerbung/' + data.id;
@@ -154,13 +316,13 @@ async function saveBewerbung(e) {
     } else {
       alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
       activeBtn.disabled = false;
-      otherBtn.disabled = false;
+      otherBtn.disabled  = false;
       activeBtn.textContent = wantPdf ? 'Speichern & PDF herunterladen' : 'Nur speichern';
     }
   } catch(err) {
     alert('Netzwerkfehler');
     activeBtn.disabled = false;
-    otherBtn.disabled = false;
+    otherBtn.disabled  = false;
     activeBtn.textContent = wantPdf ? 'Speichern & PDF herunterladen' : 'Nur speichern';
   }
 }

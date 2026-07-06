@@ -4,114 +4,374 @@
 
 {% block topbar_actions %}
   <a href="{{ url_for('lebenslauf_neu') }}" class="btn btn-primary btn-sm" style="display:flex;align-items:center;gap:6px;">
-    <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     Neuer Lebenslauf
   </a>
 {% endblock %}
 
 {% block content %}
 <style>
+/* ── CV card ─────────────────────────────────────────────── */
+.cv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
 .cv-card {
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  background: var(--bg);
-  padding: 0;
+  background: var(--surface);
+  border-radius: var(--r-lg);
   overflow: hidden;
   cursor: pointer;
-  transition: box-shadow .15s, transform .15s;
-  position: relative;
+  /* shadow-ring: no separate 1px border */
+  box-shadow: var(--sh-ring);
+  transition: box-shadow .16s, transform .16s;
+  display: flex;
+  flex-direction: column;
 }
-.cv-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-1px); }
-.cv-card-bar { height: 5px; }
-.cv-card-bar.klassisch { background: #1e3a5f; }
-.cv-card-bar.modern    { background: linear-gradient(90deg,#1e3a5f 60%,#06b6d4); }
-.cv-card-bar.minimal   { background: #0891b2; }
-.cv-card-body { padding: 18px 20px 14px; }
-.cv-card-actions {
+.cv-card:hover {
+  box-shadow: 0 0 0 1px rgba(14,34,70,.11), 0 8px 24px rgba(14,34,70,.12);
+  transform: translateY(-2px);
+}
+.cv-card:focus-visible {
+  outline: 2px solid var(--accent-500);
+  outline-offset: 2px;
+}
+
+/* ── Document thumbnail ──────────────────────────────────── */
+.cv-thumb {
+  width: 100%;
+  background: #f0f4fa;
+  padding: 14px 14px 0;
+  display: flex;
+  justify-content: center;
+}
+.cv-thumb svg {
+  width: 100%;
+  max-width: 200px;
+  border-radius: 3px 3px 0 0;
+  display: block;
+  /* subtle drop shadow on the paper */
+  filter: drop-shadow(0 2px 6px rgba(14,34,70,.13));
+}
+
+/* ── Card body ───────────────────────────────────────────── */
+.cv-body {
+  padding: 16px 18px 12px;
+  flex: 1;
+}
+.cv-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink-900);
+  letter-spacing: -.01em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+.cv-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+.cv-tpl-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.cv-tpl-dot.klassisch { background: var(--navy-700); }
+.cv-tpl-dot.modern    { background: var(--accent-600); }
+.cv-tpl-dot.minimal   { background: #0891b2; }
+
+.cv-tpl-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.cv-tpl-name.klassisch { color: var(--navy-700); }
+.cv-tpl-name.modern    { color: var(--accent-600); }
+.cv-tpl-name.minimal   { color: #0891b2; }
+
+.cv-date {
+  font-size: 11.5px;
+  color: var(--ink-400);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Card actions ────────────────────────────────────────── */
+.cv-actions {
+  display: flex;
+  align-items: center;
   padding: 10px 14px;
   border-top: 1px solid var(--border);
-  background: var(--bg-soft);
+  gap: 4px;
 }
-.tpl-badge {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: var(--r-full);
-  font-size: 11px;
+.cv-edit {
+  flex: 1;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: .02em;
+  color: var(--ink-700);
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  transition: background .13s, color .13s;
+  padding: 0 10px;
 }
-.tpl-badge.klassisch { background:#e8eef6;color:#1e3a5f; }
-.tpl-badge.modern    { background:#e0f2fe;color:#0369a1; }
-.tpl-badge.minimal   { background:#e0f9fe;color:#0891b2; }
+.cv-edit:hover { background: var(--bg-soft); color: var(--ink-900); }
+
+.cv-icon-btn {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: none;
+  border-radius: var(--r-sm);
+  color: var(--ink-400);
+  cursor: pointer;
+  transition: background .13s, color .13s;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.cv-icon-btn:hover { background: var(--bg-soft); color: var(--ink-700); }
+.cv-icon-btn.danger:hover { background: #fef2f2; color: #b91c1c; }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.cv-empty {
+  max-width: 400px;
+  margin: 80px auto;
+  text-align: center;
+}
+.cv-empty-icon {
+  width: 56px; height: 56px;
+  margin: 0 auto 20px;
+  background: var(--navy-50);
+  border-radius: var(--r-xl);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--navy-500);
+}
+.cv-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-900);
+  letter-spacing: -.015em;
+  margin-bottom: 8px;
+}
+.cv-empty-sub {
+  font-size: 13.5px;
+  color: var(--ink-500);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
 </style>
 
-<div style="max-width:900px;margin:0 auto;">
+{# ── SVG thumbnail macros ──────────────────────────────── #}
+{% macro thumb_klassisch(accent) %}
+<svg viewBox="0 0 200 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="200" height="128" fill="#ffffff"/>
+  <!-- left sidebar -->
+  <rect x="0" y="0" width="58" height="128" fill="{{ accent or '#1e3a5f' }}"/>
+  <!-- name -->
+  <rect x="9" y="13" width="30" height="3.5" fill="rgba(255,255,255,.55)" rx="1.5"/>
+  <rect x="9" y="20" width="40" height="5"   fill="rgba(255,255,255,.85)" rx="1.5"/>
+  <!-- sidebar sections -->
+  <rect x="9" y="36" width="18" height="2.5" fill="rgba(255,255,255,.45)" rx="1"/>
+  <rect x="9" y="41" width="40" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="46" width="34" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="51" width="38" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="62" width="18" height="2.5" fill="rgba(255,255,255,.45)" rx="1"/>
+  <rect x="9" y="67" width="40" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="72" width="30" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="82" width="18" height="2.5" fill="rgba(255,255,255,.45)" rx="1"/>
+  <rect x="9" y="87" width="36" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="92" width="28" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="9" y="97" width="32" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <!-- main content -->
+  <rect x="70" y="12" width="32" height="2.5" fill="{{ accent or '#1e3a5f' }}" rx="1" opacity=".7"/>
+  <rect x="70" y="17" width="118" height="1"   fill="{{ accent or '#1e3a5f' }}" rx=".5" opacity=".15"/>
+  <rect x="70" y="22" width="96"  height="3"   fill="#cbd5e1" rx="1"/>
+  <rect x="70" y="29" width="72"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="35" width="84"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="41" width="60"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="52" width="40"  height="2.5" fill="{{ accent or '#1e3a5f' }}" rx="1" opacity=".7"/>
+  <rect x="70" y="57" width="118" height="1"   fill="{{ accent or '#1e3a5f' }}" rx=".5" opacity=".15"/>
+  <rect x="70" y="62" width="88"  height="3"   fill="#cbd5e1" rx="1"/>
+  <rect x="70" y="69" width="64"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="75" width="100" height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="81" width="76"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="87" width="88"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="98" width="40"  height="2.5" fill="{{ accent or '#1e3a5f' }}" rx="1" opacity=".7"/>
+  <rect x="70" y="103" width="118" height="1"  fill="{{ accent or '#1e3a5f' }}" rx=".5" opacity=".15"/>
+  <rect x="70" y="108" width="76"  height="2.5" fill="#e2e8f0" rx="1"/>
+  <rect x="70" y="114" width="60"  height="2.5" fill="#e2e8f0" rx="1"/>
+</svg>
+{% endmacro %}
 
-  {% if versions %}
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
-    {% for v in versions %}
-    <div class="cv-card" onclick="window.location='{{ url_for('lebenslauf_edit', cv_id=v.id) }}'">
-      <div class="cv-card-bar {{ v.cv_template or 'klassisch' }}"></div>
-      <div class="cv-card-body">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
-          <div style="font-size:15px;font-weight:700;color:var(--ink-900);line-height:1.3;word-break:break-word;">
-            {{ v.name or 'Lebenslauf' }}
-          </div>
-          <span class="tpl-badge {{ v.cv_template or 'klassisch' }}" style="flex-shrink:0;">
-            {{ {'klassisch':'Klassisch','modern':'Modern','minimal':'Minimal'}.get(v.cv_template,'Klassisch') }}
-          </span>
-        </div>
-        <div style="font-size:12px;color:var(--ink-400);">
-          Zuletzt gespeichert: {{ (v.updated_at or '')[:16] or '—' }}
-        </div>
-      </div>
-      <div class="cv-card-actions">
-        <a href="{{ url_for('lebenslauf_edit', cv_id=v.id) }}"
-           onclick="event.stopPropagation();"
-           class="btn btn-ghost btn-sm" style="flex:1;text-align:center;font-size:12px;">
-          Bearbeiten
-        </a>
-        <a href="{{ url_for('lebenslauf_pdf', cv_id=v.id) }}"
-           onclick="event.stopPropagation();"
-           class="btn btn-ghost btn-sm" style="font-size:12px;"
-           title="Als PDF herunterladen">
-          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </a>
-        <button class="btn btn-ghost btn-sm" style="font-size:12px;color:var(--danger);"
-                onclick="event.stopPropagation();deleteCV({{ v.id }}, this)"
-                title="Löschen">
-          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/>
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-        </button>
+{% macro thumb_modern(accent) %}
+<svg viewBox="0 0 200 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="200" height="128" fill="#ffffff"/>
+  <!-- sidebar -->
+  <rect x="0"  y="0" width="52" height="128" fill="#0f2440"/>
+  <!-- top accent stripe -->
+  <rect x="0"  y="0" width="52" height="4"   fill="{{ accent or '#06b6d4' }}"/>
+  <!-- name -->
+  <rect x="8"  y="14" width="36" height="5.5" fill="rgba(255,255,255,.85)" rx="1.5"/>
+  <!-- summary lines -->
+  <rect x="8"  y="24" width="38" height="2"   fill="rgba(255,255,255,.3)" rx="1"/>
+  <rect x="8"  y="29" width="34" height="2"   fill="rgba(255,255,255,.3)" rx="1"/>
+  <!-- contact label -->
+  <rect x="8"  y="40" width="20" height="2"   fill="{{ accent or '#06b6d4' }}" rx="1" opacity=".8"/>
+  <rect x="8"  y="46" width="40" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="8"  y="51" width="34" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="8"  y="56" width="38" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <!-- skills label -->
+  <rect x="8"  y="68" width="16" height="2"   fill="{{ accent or '#06b6d4' }}" rx="1" opacity=".8"/>
+  <rect x="8"  y="74" width="40" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="8"  y="79" width="30" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="8"  y="84" width="36" height="2"   fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="8"  y="95" width="18" height="2"   fill="{{ accent or '#06b6d4' }}" rx="1" opacity=".8"/>
+  <rect x="8"  y="101" width="38" height="2"  fill="rgba(255,255,255,.28)" rx="1"/>
+  <rect x="8"  y="106" width="28" height="2"  fill="rgba(255,255,255,.28)" rx="1"/>
+  <!-- main content -->
+  <rect x="62" y="10" width="36" height="3"   fill="#0f2440" rx="1" opacity=".65"/>
+  <rect x="62" y="16" width="126" height="1"  fill="#e2e8f0" rx=".5"/>
+  <rect x="62" y="21" width="92"  height="3.5" fill="#334155" rx="1"/>
+  <rect x="62" y="28" width="64"  height="2.5" fill="#94a3b8" rx="1"/>
+  <rect x="62" y="34" width="124" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="62" y="39" width="104" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="62" y="44" width="112" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="62" y="55" width="36"  height="3"  fill="#0f2440" rx="1" opacity=".65"/>
+  <rect x="62" y="61" width="126" height="1"  fill="#e2e8f0" rx=".5"/>
+  <rect x="62" y="66" width="80"  height="3.5" fill="#334155" rx="1"/>
+  <rect x="62" y="73" width="60"  height="2.5" fill="#94a3b8" rx="1"/>
+  <rect x="62" y="79" width="120" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="62" y="84" width="96"  height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="62" y="96" width="36"  height="3"  fill="#0f2440" rx="1" opacity=".65"/>
+  <rect x="62" y="102" width="126" height="1" fill="#e2e8f0" rx=".5"/>
+  <rect x="62" y="107" width="76"  height="2.5" fill="#cbd5e1" rx="1"/>
+  <rect x="62" y="113" width="56"  height="2.5" fill="#e2e8f0" rx="1"/>
+</svg>
+{% endmacro %}
+
+{% macro thumb_minimal(accent) %}
+<svg viewBox="0 0 200 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="200" height="128" fill="#ffffff"/>
+  <!-- accent bar -->
+  <rect x="18" y="14" width="28" height="3.5" fill="{{ accent or '#0891b2' }}" rx="1.5"/>
+  <!-- name -->
+  <rect x="18" y="22" width="100" height="6.5" fill="#0e1729" rx="1.5"/>
+  <!-- contact row -->
+  <rect x="18" y="33" width="72"  height="2"   fill="#8d9ab8" rx="1"/>
+  <!-- horizontal rule -->
+  <rect x="18" y="43" width="164" height="1"   fill="#e2e8f0"/>
+  <!-- section label -->
+  <rect x="18" y="49" width="26"  height="2.5" fill="{{ accent or '#0891b2' }}" rx="1"/>
+  <rect x="18" y="56" width="160" height="2"   fill="#cbd5e1" rx="1"/>
+  <rect x="18" y="61" width="140" height="2"   fill="#e2e8f0" rx="1"/>
+  <rect x="18" y="66" width="152" height="2"   fill="#e2e8f0" rx="1"/>
+  <!-- horizontal rule -->
+  <rect x="18" y="74" width="164" height="1"   fill="#e2e8f0"/>
+  <!-- section label -->
+  <rect x="18" y="80" width="38"  height="2.5" fill="{{ accent or '#0891b2' }}" rx="1"/>
+  <!-- job entry -->
+  <rect x="18" y="87" width="112" height="3.5" fill="#334155" rx="1"/>
+  <rect x="18" y="94" width="80"  height="2.5" fill="#94a3b8" rx="1"/>
+  <rect x="18" y="100" width="148" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="18" y="105" width="124" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="18" y="110" width="136" height="2"  fill="#e2e8f0" rx="1"/>
+  <rect x="18" y="116" width="100" height="2"  fill="#e2e8f0" rx="1"/>
+</svg>
+{% endmacro %}
+
+<div style="max-width:960px;margin:0 auto;">
+
+{% if versions %}
+<div class="cv-grid">
+  {% for v in versions %}
+  {% set tpl = v.cv_template or 'klassisch' %}
+  {% set accent = '#1e3a5f' if tpl == 'klassisch' else ('#06b6d4' if tpl == 'modern' else '#0891b2') %}
+
+  <article class="cv-card"
+           role="button" tabindex="0"
+           onclick="window.location='{{ url_for('lebenslauf_edit', cv_id=v.id) }}'"
+           onkeydown="if(event.key==='Enter')window.location='{{ url_for('lebenslauf_edit', cv_id=v.id) }}'">
+
+    <!-- Document thumbnail -->
+    <div class="cv-thumb">
+      {% if tpl == 'modern' %}
+        {{ thumb_modern(accent) }}
+      {% elif tpl == 'minimal' %}
+        {{ thumb_minimal(accent) }}
+      {% else %}
+        {{ thumb_klassisch(accent) }}
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="cv-body">
+      <div class="cv-name">{{ v.name or 'Lebenslauf' }}</div>
+      <div class="cv-meta">
+        <span class="cv-tpl-dot {{ tpl }}"></span>
+        <span class="cv-tpl-name {{ tpl }}">{{ {'klassisch':'Klassisch','modern':'Modern','minimal':'Minimal'}.get(tpl,'Klassisch') }}</span>
+        <span class="cv-date">{{ (v.updated_at or '')[:10] or '—' }}</span>
       </div>
     </div>
-    {% endfor %}
-  </div>
 
-  {% else %}
-  <div style="text-align:center;padding:80px 24px;">
-    <svg style="width:52px;height:52px;color:var(--ink-300);margin-bottom:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25">
+    <!-- Actions -->
+    <div class="cv-actions">
+      <a href="{{ url_for('lebenslauf_edit', cv_id=v.id) }}"
+         onclick="event.stopPropagation();"
+         class="cv-edit">Bearbeiten</a>
+
+      <a href="{{ url_for('lebenslauf_pdf', cv_id=v.id) }}"
+         onclick="event.stopPropagation();"
+         class="cv-icon-btn" title="Als PDF herunterladen">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </a>
+
+      <button class="cv-icon-btn danger"
+              onclick="event.stopPropagation();deleteCV({{ v.id }}, this)"
+              title="Löschen">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/><path d="M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
+    </div>
+
+  </article>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="cv-empty">
+  <div class="cv-empty-icon">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
       <polyline points="13 2 13 9 20 9"/>
     </svg>
-    <h2 style="font-size:18px;font-weight:700;color:var(--ink-700);margin-bottom:8px;">Noch kein Lebenslauf</h2>
-    <p style="font-size:14px;color:var(--ink-400);margin-bottom:24px;">Erstelle deinen ersten Lebenslauf und wähle aus 3 professionellen Vorlagen.</p>
-    <a href="{{ url_for('lebenslauf_neu') }}" class="btn btn-primary" style="padding:10px 28px;font-size:15px;">
-      Ersten Lebenslauf erstellen
-    </a>
   </div>
-  {% endif %}
+  <h2 class="cv-empty-title">Noch kein Lebenslauf</h2>
+  <p class="cv-empty-sub">Erstelle deinen ersten Lebenslauf und wähle aus drei professionellen Vorlagen.</p>
+  <a href="{{ url_for('lebenslauf_neu') }}" class="btn btn-primary" style="font-size:14.5px;padding:0 28px;">
+    Ersten Lebenslauf erstellen
+  </a>
+</div>
+{% endif %}
 
 </div>
 
@@ -119,11 +379,11 @@
 async function deleteCV(id, btn) {
   if (!confirm('Lebenslauf wirklich löschen?')) return;
   btn.disabled = true;
-  const res = await fetch(`/api/cv/${id}/delete`, {method:'POST'});
-  const d = await res.json();
+  const res = await fetch(`/api/cv/${id}/delete`, { method: 'POST' });
+  const d   = await res.json();
   if (d.success) {
     btn.closest('.cv-card').remove();
-    const grid = document.querySelector('[style*="grid-template-columns"]');
+    const grid = document.querySelector('.cv-grid');
     if (grid && !grid.querySelector('.cv-card')) location.reload();
   } else {
     alert('Fehler beim Löschen');
