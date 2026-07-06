@@ -90,17 +90,11 @@
           <span id="word-count" style="font-size:12px;color:var(--ink-400);"></span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Kopieren">
+          <button class="btn btn-ghost btn-sm" onclick="copyAnschreiben()" title="Text kopieren">
             <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
-          <a href="/bewerbung/{{ b.id }}/pdf" class="btn btn-ghost btn-sm" title="PDF">
-            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </a>
         </div>
       </div>
 
@@ -108,10 +102,23 @@
       <textarea id="anschreiben"
         style="flex:1;padding:24px 28px;border:none;outline:none;font-family:var(--font);font-size:15px;line-height:1.75;resize:none;color:var(--ink-900);background:#fff;min-height:360px;"
         placeholder="Anschreiben hier eingeben oder mit KI generieren..."
-        oninput="updateWordCount()">{{ b.anschreiben or '' }}</textarea>
+        oninput="updateWordCount(); markDirty()">{{ b.anschreiben or '' }}</textarea>
 
-      <div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <span style="font-size:12px;color:var(--ink-400);" id="auto-save-hint"></span>
+        <div style="display:flex;gap:8px;">
+          <button id="save-only-btn" class="btn btn-ghost btn-sm" onclick="saveAnschreiben(false)">
+            Speichern
+          </button>
+          <button id="save-pdf-btn" class="btn btn-primary btn-sm" onclick="saveAnschreiben(true)"
+            style="display:flex;align-items:center;gap:6px;">
+            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Speichern &amp; PDF
+          </button>
+        </div>
       </div>
     </div>
 
@@ -257,6 +264,65 @@ function updateWordCount() {
   document.getElementById('word-count').textContent = w ? `${w} Wörter` : '';
 }
 
+let _dirty = false;
+function markDirty() {
+  if (!_dirty) {
+    _dirty = true;
+    document.getElementById('auto-save-hint').textContent = 'Ungespeicherte Änderungen';
+  }
+}
+
+async function saveAnschreiben(downloadPdf) {
+  const saveOnlyBtn = document.getElementById('save-only-btn');
+  const savePdfBtn  = document.getElementById('save-pdf-btn');
+  savePdfBtn.disabled  = true;
+  saveOnlyBtn.disabled = true;
+  const origPdf  = savePdfBtn.innerHTML;
+  savePdfBtn.textContent = 'Speichert…';
+
+  const stellenanzeige = document.getElementById('stellenanzeige-input')
+    ? document.getElementById('stellenanzeige-input').value
+    : PAGE.stellenanzeige;
+
+  const payload = {
+    firma:          PAGE.firma,
+    stelle:         PAGE.stelle,
+    url:            PAGE.url,
+    stellenanzeige: stellenanzeige,
+    anschreiben:    document.getElementById('anschreiben').value,
+    status:         document.getElementById('status-select').value,
+    datum_gesendet: document.getElementById('datum_gesendet').value || null,
+    notizen:        document.getElementById('notizen').value,
+  };
+
+  try {
+    const res  = await fetch(`/api/update/${BID}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) {
+      _dirty = false;
+      document.getElementById('auto-save-hint').textContent = '';
+      if (downloadPdf) {
+        showToast('Gespeichert — PDF wird heruntergeladen…');
+        setTimeout(() => { window.location.href = `/bewerbung/${BID}/pdf`; }, 400);
+      } else {
+        showToast('Gespeichert ✓');
+      }
+    } else {
+      showToast('Fehler: ' + (data.error || 'unbekannt'));
+    }
+  } catch (err) {
+    showToast('Netzwerkfehler');
+  }
+
+  savePdfBtn.disabled  = false;
+  saveOnlyBtn.disabled = false;
+  savePdfBtn.innerHTML = origPdf;
+}
+
 // ── Collapsible KI panel ──
 function toggleKI() {
   const panel   = document.getElementById('ki-panel');
@@ -308,6 +374,8 @@ async function saveAll(btn) {
     const data = await res.json();
     const el   = document.getElementById('save-status');
     if (data.success) {
+      _dirty = false;
+      document.getElementById('auto-save-hint').textContent = '';
       el.innerHTML = '<span style="color:var(--success)">✓ Gespeichert</span>';
       setTimeout(() => el.innerHTML = '', 3000);
     } else {
@@ -368,7 +436,8 @@ async function generateMitKI() {
     } else {
       ta.value = data.anschreiben;
       updateWordCount();
-      showToast('Anschreiben generiert ✓');
+      markDirty();
+      showToast('Anschreiben generiert — bitte speichern');
     }
   } catch(e) {
     showToast('Netzwerkfehler');
@@ -430,8 +499,7 @@ async function sendChat() {
       if (data.updated_anschreiben) {
         document.getElementById('anschreiben').value = data.updated_anschreiben;
         updateWordCount();
-        document.getElementById('auto-save-hint').textContent = 'Anschreiben aktualisiert ✓';
-        setTimeout(() => document.getElementById('auto-save-hint').textContent = '', 3000);
+        markDirty();
       }
     }
   } catch(e) {
