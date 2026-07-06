@@ -1705,11 +1705,17 @@ def _build_pdf(b, s):
     # ── Body ───────────────────────────────────────────────────────────────────
     anschreiben_text = (b.get('anschreiben') or '').strip()
     if anschreiben_text:
-        for para in anschreiben_text.split('\n\n'):
-            para = para.strip()
-            if para:
-                story.append(Paragraph(para.replace('\n', '<br/>'), P))
-                story.append(Spacer(1, 0.3*cm))
+        # Split on 2+ consecutive newlines, keeping the separator to measure blank lines
+        parts = re.split(r'(\n{2,})', anschreiben_text)
+        for i, part in enumerate(parts):
+            if i % 2 == 0:          # text block
+                text = part.strip('\n')
+                if text:
+                    story.append(Paragraph(text.replace('\n', '<br/>'), P))
+            else:                    # blank-line separator
+                # \n\n = 1 blank line → 0.5cm; each extra \n adds 0.5cm
+                extra_lines = len(part) - 2
+                story.append(Spacer(1, (0.5 + extra_lines * 0.5) * cm))
     else:
         story.append(Paragraph('<i>Kein Anschreiben hinterlegt.</i>',
                                _style('PI', textColor=GREY, fontSize=11)))
