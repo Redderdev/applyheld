@@ -461,13 +461,15 @@ function loadMore() { search(currentPage + 1); currentPage++; }
 
 // ── Render compact job cards ──────────────────────────────────────────────────
 
+function jobId(job) { return job.ref_nr || job.url || (job.title + '|' + job.company); }
+
 function renderJobs(jobs) {
   const list    = document.getElementById('jobs-list');
   const pending = loadPendingJobs();
 
   jobs.forEach(job => {
-    const seen      = hasSeenJob(job.url);
-    const isPending = pending.has(job.url);
+    const seen      = hasSeenJob(jobId(job));
+    const isPending = pending.has(jobId(job));
     const card      = document.createElement('div');
 
     let cls = 'job-card';
@@ -505,7 +507,7 @@ function selectJob(card, job) {
   activeJob    = job;
   card.classList.add('job-card--active');
 
-  markJobSeen(job.url);
+  markJobSeen(jobId(job));
   if (!card.classList.contains('job-card--pending')) {
     card.classList.add('job-card--seen');
   }
@@ -604,7 +606,7 @@ function renderDetailActions(job, showingPrompt) {
         <button class="btn btn-ghost btn-sm" id="d-dismiss-btn" style="color:var(--ink-400);">Nein ✕</button>
       </div>`;
     document.getElementById('d-confirm-btn').onclick = () => {
-      removePendingJob(job.url);
+      removePendingJob(jobId(job));
       if (activeCardEl) {
         activeCardEl.classList.remove('job-card--pending');
         activeCardEl.querySelector('.pending-dot')?.remove();
@@ -612,7 +614,7 @@ function renderDetailActions(job, showingPrompt) {
       applyDirect(job.company, job.title, job.url, job.full_desc || '');
     };
     document.getElementById('d-dismiss-btn').onclick = () => {
-      removePendingJob(job.url);
+      removePendingJob(jobId(job));
       if (activeCardEl) {
         activeCardEl.classList.remove('job-card--pending');
         activeCardEl.querySelector('.pending-dot')?.remove();
@@ -623,7 +625,7 @@ function renderDetailActions(job, showingPrompt) {
       renderDetailActions(job, false);
     };
   } else {
-    const isPending = loadPendingJobs().has(job.url);
+    const isPending = loadPendingJobs().has(jobId(job));
     wrap.innerHTML = `
       <div class="detail-actions">
         <button class="btn btn-primary btn-sm" id="d-track-btn">
@@ -641,8 +643,10 @@ function renderDetailActions(job, showingPrompt) {
     };
     const openBtn = document.getElementById('d-open-btn');
     if (openBtn) {
-      openBtn.addEventListener('click', () => {
-        addPendingJob(job.url);
+      openBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.open(job.url, '_blank', 'noopener,noreferrer');
+        addPendingJob(jobId(job));
         if (activeCardEl) {
           activeCardEl.classList.add('job-card--pending');
           activeCardEl.classList.remove('job-card--seen');
@@ -740,8 +744,8 @@ function _loadSeen() {
 function _saveSeen(s) {
   try { let a=[...s]; if(a.length>SEEN_MAX) a=a.slice(a.length-SEEN_MAX); localStorage.setItem(SEEN_KEY,JSON.stringify(a)); } catch(e){}
 }
-function hasSeenJob(url)  { return _loadSeen().has(url); }
-function markJobSeen(url) { const s=_loadSeen(); s.add(url); _saveSeen(s); }
+function hasSeenJob(id)  { return _loadSeen().has(id); }
+function markJobSeen(id) { const s=_loadSeen(); s.add(id); _saveSeen(s); }
 
 // ── Pending-track (sessionStorage) ───────────────────────────────────────────
 
@@ -750,8 +754,8 @@ const PENDING_KEY = 'jobs_pending_track';
 function loadPendingJobs() {
   try { return new Set(JSON.parse(sessionStorage.getItem(PENDING_KEY)||'[]')); } catch(e) { return new Set(); }
 }
-function addPendingJob(url)    { const s=loadPendingJobs(); s.add(url);    try{sessionStorage.setItem(PENDING_KEY,JSON.stringify([...s]));}catch(e){} }
-function removePendingJob(url) { const s=loadPendingJobs(); s.delete(url); try{sessionStorage.setItem(PENDING_KEY,JSON.stringify([...s]));}catch(e){} }
+function addPendingJob(id)    { const s=loadPendingJobs(); s.add(id);    try{sessionStorage.setItem(PENDING_KEY,JSON.stringify([...s]));}catch(e){} }
+function removePendingJob(id) { const s=loadPendingJobs(); s.delete(id); try{sessionStorage.setItem(PENDING_KEY,JSON.stringify([...s]));}catch(e){} }
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 
