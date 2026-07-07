@@ -470,9 +470,9 @@ async function search(page = 1) {
     setState('results');
     renderJobs(data.jobs);
 
-    const shown = (page - 1) * 50 + data.jobs.length;
+    const shown = document.querySelectorAll('#jobs-list .job-card').length;
     document.getElementById('load-more-wrap').style.display =
-      (shown < totalResults && data.jobs.length === 50) ? 'block' : 'none';
+      (shown < totalResults && data.jobs.length > 0) ? 'block' : 'none';
 
   } catch(e) {
     setState('error');
@@ -480,7 +480,7 @@ async function search(page = 1) {
   }
 }
 
-function loadMore() { search(currentPage + 1); currentPage++; }
+function loadMore() { search(currentPage + 1); }
 
 // ── Render compact job cards ──────────────────────────────────────────────────
 
@@ -840,7 +840,7 @@ function loadFromCache(stelle, ort, umkreis, alter, sortierung, quelle) {
     setState('results');
     renderJobs(cached.jobs||[]);
     const shown = cached.jobs ? cached.jobs.length : 0;
-    if (shown < totalResults && shown === 50) document.getElementById('load-more-wrap').style.display = 'block';
+    if (shown < totalResults && shown > 0) document.getElementById('load-more-wrap').style.display = 'block';
     updateQuickLinks(stelle, ort);
     return;
   }

@@ -718,8 +718,8 @@ def jobs_search_ba():
 
     params = {
         'was':  stelle,
-        'page': page,        # v6 is 1-based
-        'size': 25,
+        'page': page,
+        'size': 50,
     }
     if ort:
         params['wo'] = ort
