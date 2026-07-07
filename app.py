@@ -368,7 +368,10 @@ def index():
 def neue_bewerbung():
     has_cv  = bool(get_setting('cv_text'))
     has_api = bool(os.environ.get('ANTHROPIC_API_KEY'))
-    return render_template('neue_bewerbung.html', has_cv=has_cv, has_api=has_api)
+    return render_template('neue_bewerbung.html',
+                           has_cv=has_cv, has_api=has_api,
+                           profile_name=get_setting('name', ''),
+                           profile_ort=get_setting('ort', ''))
 
 
 @app.route('/bewerbung/<int:bid>')

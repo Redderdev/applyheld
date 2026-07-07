@@ -154,9 +154,9 @@
 
 /* ── Anschreiben right panel ─────────────────────────────── */
 .nb-cov-head {
-  display: flex; align-items: baseline;
+  display: flex; align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .nb-cov-title {
   font-family: 'Inter Tight', 'Inter', sans-serif;
@@ -168,37 +168,91 @@
   letter-spacing: .10em; text-transform: uppercase;
   color: #9A9A93;
 }
-/* subtle top toolbar strip — just a visual label bar */
-.nb-cov-bar {
-  display: flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 13px;
-  background: #F5F5F2;
-  border: 1px solid #E2E2DC;
-  border-bottom: none;
-  border-radius: 9px 9px 0 0;
-  gap: 6px;
+.nb-cov-tabs {
+  display: flex; gap: 2px;
+  background: #F0F0EC; border-radius: 7px; padding: 3px;
 }
-.nb-cov-bar-dot { width: 7px; height: 7px; border-radius: 50%; }
+.nb-cov-tab {
+  height: 26px; padding: 0 12px;
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+  border: none; border-radius: 5px; cursor: pointer;
+  background: transparent; color: #75756F;
+  transition: background .12s, color .12s;
+}
+.nb-cov-tab.active { background: #FFFFFF; color: #0A0A0B; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+/* Edit textarea */
 .nb-cov-area {
-  width: 100%;
-  min-height: 420px;
+  width: 100%; min-height: 480px;
   font-family: 'Inter', sans-serif;
-  font-size: 14px; line-height: 1.75; color: #0A0A0B;
-  background: #FFFFFF;
-  border: 1px solid #E2E2DC;
-  border-radius: 0 0 9px 9px;
-  padding: 16px 14px;
-  resize: vertical;
+  font-size: 13.5px; line-height: 1.75; color: #0A0A0B;
+  background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 9px;
+  padding: 16px 14px; resize: vertical;
   transition: border-color .13s, box-shadow .13s;
 }
-.nb-cov-area:focus {
-  outline: none;
-  border-color: #4F46E5;
-  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
-}
+.nb-cov-area:focus { outline: none; border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
 .nb-cov-area::placeholder { color: #9A9A93; }
+
+/* ── Document preview ────────────────────────────────────── */
+.nb-doc-wrap {
+  background: #E8E8E4;
+  border-radius: 8px;
+  padding: 20px 16px;
+  min-height: 480px;
+  display: flex;
+  justify-content: center;
+}
+.nb-doc-page {
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.12);
+  border-radius: 2px;
+  padding: 40px 44px 48px;
+  font-family: 'Times New Roman', Georgia, 'DejaVu Serif', serif;
+  font-size: 11pt;
+  line-height: 1.55;
+  color: #1A1A1A;
+}
+.nb-doc-sender {
+  font-size: 9pt;
+  color: #555;
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+.nb-doc-sender strong { font-size: 10.5pt; color: #111; font-weight: bold; }
+.nb-doc-date {
+  text-align: right;
+  font-size: 10pt;
+  color: #333;
+  margin-bottom: 20px;
+}
+.nb-doc-recipient {
+  font-size: 10pt;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.nb-doc-subject {
+  font-weight: bold;
+  font-size: 11pt;
+  margin-bottom: 18px;
+  color: #111;
+}
+.nb-doc-body {
+  white-space: pre-wrap;
+  font-size: 10.5pt;
+  line-height: 1.6;
+  color: #1A1A1A;
+  min-height: 120px;
+}
+.nb-doc-placeholder {
+  color: #BCBCB4;
+  font-style: italic;
+}
+.nb-doc-sig {
+  margin-top: 28px;
+  font-size: 10.5pt;
+}
 
 /* ── Buttons ─────────────────────────────────────────────── */
 .nb-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 26px; }
@@ -322,24 +376,53 @@
     <div class="nb-right">
       <div class="nb-cov-head">
         <span class="nb-cov-title">Anschreiben</span>
-        <span class="nb-cov-hint">optional · wird ins PDF übernommen</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="nb-cov-tabs">
+            <button type="button" class="nb-cov-tab active" id="tab-preview" onclick="setCovMode('preview')">Vorschau</button>
+            <button type="button" class="nb-cov-tab" id="tab-edit" onclick="setCovMode('edit')">Bearbeiten</button>
+          </div>
+          <span class="nb-cov-hint">→ PDF</span>
+        </div>
       </div>
-      <!-- subtle toolbar strip -->
-      <div class="nb-cov-bar" aria-hidden="true">
-        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
-        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
-        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
-      </div>
-      <textarea class="nb-cov-area" id="anschreiben"
-        placeholder="Sehr geehrte Damen und Herren,
 
-ich bewerbe mich auf die ausgeschriebene Stelle als …"></textarea>
+      <!-- Textarea (edit mode) -->
+      <div id="cov-edit-wrap" style="display:none;">
+        <textarea class="nb-cov-area" id="anschreiben"
+          placeholder="Sehr geehrte Damen und Herren,
+
+ich bewerbe mich auf die ausgeschriebene Stelle als …"
+          oninput="updatePreview()"></textarea>
+      </div>
+
+      <!-- Document preview (default) -->
+      <div id="cov-preview-wrap" class="nb-doc-wrap">
+        <div class="nb-doc-page">
+          <div class="nb-doc-sender">
+            <strong id="prev-name">{{ profile_name or 'Ihr Name' }}</strong><br>
+            <span id="prev-ort">{{ profile_ort or 'Ihre Stadt' }}</span>
+          </div>
+          <div class="nb-doc-date" id="prev-date"></div>
+          <div class="nb-doc-recipient" id="prev-recipient">
+            <span style="color:#BCBCB4;font-style:italic;">Unternehmen &amp; Stelle ausfüllen…</span>
+          </div>
+          <div class="nb-doc-subject" id="prev-subject" style="display:none;"></div>
+          <div class="nb-doc-body" id="prev-body">
+            <span class="nb-doc-placeholder">Anschreiben hier eingeben oder per KI generieren…</span>
+          </div>
+          <div class="nb-doc-sig" id="prev-sig" style="display:none;">
+            Mit freundlichen Grüßen<br><br>
+            <span id="prev-sig-name">{{ profile_name or '' }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
 </form>
 
 <script>
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 /* ── Status dot color map ─────────────────────────────────── */
 const STATUS_COLORS = {
   'Entwurf':               '#A16207',
@@ -379,6 +462,65 @@ let _downloadPdf = false;
 
 document.getElementById('savePdfBtn').addEventListener('click', () => { _downloadPdf = true; });
 document.getElementById('saveBtn').addEventListener('click',    () => { _downloadPdf = false; });
+
+/* ── Live document preview ────────────────────────────────── */
+function setCovMode(mode) {
+  const isPreview = mode === 'preview';
+  document.getElementById('cov-preview-wrap').style.display = isPreview ? '' : 'none';
+  document.getElementById('cov-edit-wrap').style.display    = isPreview ? 'none' : '';
+  document.getElementById('tab-preview').classList.toggle('active', isPreview);
+  document.getElementById('tab-edit').classList.toggle('active', !isPreview);
+  if (isPreview) updatePreview();
+}
+
+function updatePreview() {
+  const text     = (document.getElementById('anschreiben').value || '').trim();
+  const firma    = document.getElementById('firma').value.trim();
+  const stelle   = document.getElementById('stelle').value.trim();
+  const bodyEl   = document.getElementById('prev-body');
+  const recip    = document.getElementById('prev-recipient');
+  const subj     = document.getElementById('prev-subject');
+  const sig      = document.getElementById('prev-sig');
+
+  // Date
+  document.getElementById('prev-date').textContent =
+    new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Recipient block
+  if (firma || stelle) {
+    recip.innerHTML = (firma ? `<strong>${esc(firma)}</strong><br>` : '') +
+                      (stelle ? `z. Hd. Personalabteilung` : '');
+    recip.style.fontStyle = 'normal'; recip.style.color = '';
+  } else {
+    recip.innerHTML = '<span style="color:#BCBCB4;font-style:italic;">Unternehmen & Stelle ausfüllen…</span>';
+  }
+
+  // Subject line
+  if (stelle) {
+    subj.textContent = 'Bewerbung als ' + stelle;
+    subj.style.display = '';
+  } else {
+    subj.style.display = 'none';
+  }
+
+  // Body
+  if (text) {
+    bodyEl.textContent = text;
+    bodyEl.style.color = '';
+    sig.style.display = '';
+  } else {
+    bodyEl.innerHTML = '<span class="nb-doc-placeholder">Anschreiben hier eingeben oder per KI generieren…</span>';
+    sig.style.display = 'none';
+  }
+}
+
+// Sync preview when left-side fields change
+['firma', 'stelle'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updatePreview)
+);
+
+// Init
+updatePreview();
 
 async function saveBewerbung(e) {
   e.preventDefault();
