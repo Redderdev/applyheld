@@ -152,53 +152,8 @@
   box-shadow: 0 0 0 3px rgba(79,70,229,.12);
 }
 
-/* ── Anschreiben right panel ─────────────────────────────── */
-.nb-cov-head {
-  display: flex; align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.nb-cov-title {
-  font-family: 'Inter Tight', 'Inter', sans-serif;
-  font-size: 14.5px; font-weight: 600; color: #0A0A0B;
-}
-.nb-cov-hint {
-  font-family: 'Geist Mono', 'Menlo', monospace;
-  font-size: 10px; font-weight: 500;
-  letter-spacing: .10em; text-transform: uppercase;
-  color: #9A9A93;
-}
-/* subtle top toolbar strip — just a visual label bar */
-.nb-cov-bar {
-  display: flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 13px;
-  background: #F5F5F2;
-  border: 1px solid #E2E2DC;
-  border-bottom: none;
-  border-radius: 9px 9px 0 0;
-  gap: 6px;
-}
-.nb-cov-bar-dot { width: 7px; height: 7px; border-radius: 50%; }
-.nb-cov-area {
-  width: 100%;
-  min-height: 420px;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px; line-height: 1.75; color: #0A0A0B;
-  background: #FFFFFF;
-  border: 1px solid #E2E2DC;
-  border-radius: 0 0 9px 9px;
-  padding: 16px 14px;
-  resize: vertical;
-  transition: border-color .13s, box-shadow .13s;
-}
-.nb-cov-area:focus {
-  outline: none;
-  border-color: #4F46E5;
-  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
-}
-.nb-cov-area::placeholder { color: #9A9A93; }
+/* ── right panel top bar ─────────────────────────────────── */
+.nb-right { min-width: 0; }
 
 /* ── Buttons ─────────────────────────────────────────────── */
 .nb-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 26px; }
@@ -318,22 +273,61 @@
 
     </div>
 
-    <!-- ── RIGHT ─────────────────────────────────────── -->
+    <!-- ── RIGHT: Paper Studio ──────────────────── -->
     <div class="nb-right">
-      <div class="nb-cov-head">
-        <span class="nb-cov-title">Anschreiben</span>
-        <span class="nb-cov-hint">optional · wird ins PDF übernommen</span>
-      </div>
-      <!-- subtle toolbar strip -->
-      <div class="nb-cov-bar" aria-hidden="true">
-        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
-        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
-        <span class="nb-cov-bar-dot" style="background:#ECECE8;"></span>
-      </div>
-      <textarea class="nb-cov-area" id="anschreiben"
-        placeholder="Sehr geehrte Damen und Herren,
 
-ich bewerbe mich auf die ausgeschriebene Stelle als …"></textarea>
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:#F5F5F2;border:1px solid #E2E2DC;border-bottom:none;border-radius:9px 9px 0 0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:13px;font-weight:600;color:#3A3A35;">Anschreiben</span>
+          <span id="word-count" style="font-size:12px;color:#9A9A93;"></span>
+        </div>
+        <span style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:#9A9A93;">optional · wird ins PDF übernommen</span>
+      </div>
+
+      <!-- Paper studio -->
+      <div style="background:#d1d5db;padding:24px 20px;border:1px solid #E2E2DC;border-radius:0 0 9px 9px;min-height:520px;">
+        <div style="background:#fff;max-width:100%;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.18);border-radius:2px;padding:36px 44px 44px;font-family:Georgia,serif;">
+
+          <!-- Letterhead -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <div style="font-size:12.5px;line-height:1.6;color:#111;">
+              {% if s.name %}<div style="font-weight:700;font-size:13.5px;color:#1a56db;">{{ s.name }}</div>{% endif %}
+              {% if s.strasse %}<div>{{ s.strasse }}</div>{% endif %}
+              {% if s.plz_ort %}<div>{{ s.plz_ort }}</div>{% endif %}
+            </div>
+            <div style="font-size:11.5px;line-height:1.8;color:#6b7280;text-align:right;">
+              {% if s.telefon %}<div>Tel: {{ s.telefon }}</div>{% endif %}
+              {% if s.email %}<div>{{ s.email }}</div>{% endif %}
+            </div>
+          </div>
+          {% if s.name or s.strasse %}
+          <div style="border-top:1.5px solid #1a56db;margin-bottom:18px;"></div>
+          {% else %}
+          <div style="border-top:1px solid #e5e7eb;margin-bottom:18px;"></div>
+          {% endif %}
+
+          <!-- Recipient + date -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+            <div style="font-size:12.5px;line-height:1.7;color:#111;">
+              <div id="prev-firma" style="font-weight:700;"></div>
+            </div>
+            <div style="font-size:12.5px;color:#374151;" id="prev-date"></div>
+          </div>
+
+          <!-- Subject -->
+          <div id="prev-subject" style="font-weight:700;font-size:13.5px;color:#111;margin-bottom:18px;display:none;"></div>
+
+          <!-- Editable textarea — transparent, sits directly on the paper -->
+          <textarea id="anschreiben"
+            style="width:100%;border:none;outline:none;font-family:Georgia,serif;font-size:13px;line-height:1.85;resize:none;color:#111;background:transparent;overflow:hidden;display:block;box-sizing:border-box;min-height:280px;"
+            placeholder="Sehr geehrte Damen und Herren,
+
+ich bewerbe mich auf die ausgeschriebene Stelle als …"
+            oninput="autoGrow(this); updateWordCount()"></textarea>
+
+        </div>
+      </div>
     </div>
 
   </div>
@@ -379,6 +373,37 @@ let _downloadPdf = false;
 
 document.getElementById('savePdfBtn').addEventListener('click', () => { _downloadPdf = true; });
 document.getElementById('saveBtn').addEventListener('click',    () => { _downloadPdf = false; });
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function updateWordCount() {
+  const t = document.getElementById('anschreiben').value;
+  const w = t.trim() ? t.trim().split(/\s+/).length : 0;
+  document.getElementById('word-count').textContent = w ? `${w} Wörter` : '';
+}
+
+function syncPaperFields() {
+  const firma  = document.getElementById('firma').value.trim();
+  const stelle = document.getElementById('stelle').value.trim();
+  document.getElementById('prev-firma').textContent = firma;
+  const subj = document.getElementById('prev-subject');
+  if (stelle) { subj.textContent = 'Bewerbung als ' + stelle; subj.style.display = ''; }
+  else          { subj.style.display = 'none'; }
+  document.getElementById('prev-date').textContent =
+    new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+['firma', 'stelle'].forEach(id =>
+  document.getElementById(id).addEventListener('input', syncPaperFields)
+);
+
+// Init
+syncPaperFields();
+autoGrow(document.getElementById('anschreiben'));
+updateWordCount();
 
 async function saveBewerbung(e) {
   e.preventDefault();
