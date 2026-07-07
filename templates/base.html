@@ -66,15 +66,7 @@
       <!-- Account Section -->
       <div class="nav-group">
         <div class="nav-label">Konto</div>
-        <a href="{{ url_for('profil') }}" class="nav-item {% if request.endpoint == 'profil' %}active{% endif %}">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          <span class="nav-text">Profil</span>
-        </a>
-        
-        <a href="{{ url_for('einstellungen') }}" class="nav-item {% if request.endpoint == 'einstellungen' %}active{% endif %}">
+        <a href="{{ url_for('einstellungen') }}" class="nav-item {% if request.endpoint in ('einstellungen', 'profil') %}active{% endif %}">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
             <circle cx="12" cy="12" r="3"/>
             <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/>
@@ -173,12 +165,12 @@
       </svg>
       <span>Jobs</span>
     </a>
-    <a href="{{ url_for('profil') }}" class="bottom-nav-item {% if request.endpoint == 'profil' %}active{% endif %}">
+    <a href="{{ url_for('einstellungen') }}" class="bottom-nav-item {% if request.endpoint in ('einstellungen', 'profil') %}active{% endif %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/>
       </svg>
-      <span>Profil</span>
+      <span>Einstellungen</span>
     </a>
   </nav>
 

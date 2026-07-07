@@ -434,10 +434,15 @@ async function saveBewerbung(e) {
     const data = await res.json();
     if (data.success) {
       if (wantPdf && payload.anschreiben) {
-        window.location.href = '/bewerbung/' + data.id + '?pdf=1';
-      } else {
-        window.location.href = '/bewerbung/' + data.id;
+        // Trigger PDF download (browser downloads without navigating away)
+        const a = document.createElement('a');
+        a.href = '/bewerbung/' + data.id + '/pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       }
+      // Always go to dashboard after saving
+      setTimeout(() => { window.location.href = '/'; }, 400);
     } else {
       alert('Fehler: ' + (data.error || 'Unbekannter Fehler'));
       activeBtn.disabled = false;

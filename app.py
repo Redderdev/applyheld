@@ -418,17 +418,9 @@ def lebenslauf_edit(cv_id):
                            cv_filename=get_setting('cv_filename'))
 
 
-@app.route('/profil', methods=['GET', 'POST'])
-@login_required
+@app.route('/profil')
 def profil():
-    if request.method == 'POST':
-        for field in ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']:
-            if field in request.form:
-                set_setting(field, request.form[field].strip())
-        flash('Profil gespeichert!', 'success')
-        return redirect(url_for('profil'))
-    s = {k: get_setting(k) for k in ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']}
-    return render_template('profil.html', s=s)
+    return redirect(url_for('einstellungen'), 301)
 
 
 @app.route('/einstellungen', methods=['GET', 'POST'])
