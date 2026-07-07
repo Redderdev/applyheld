@@ -696,7 +696,7 @@ def _format_job_age(iso_str):
 # ── Bundesagentur für Arbeit API ──────────────────────────────────────────────
 # Public API — no registration needed, fixed X-API-Key header.
 
-_BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs'
+_BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
 _BA_DETAIL_URL = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/{}'
 _BA_HEADERS    = {'X-API-Key': 'jobboerse-jobsuche', 'User-Agent': 'BewerbungsKI/1.0'}
 
@@ -744,8 +744,13 @@ def jobs_search_ba():
         app.logger.error('BA API request error: %s', e)
         return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
 
+    # v4/v6 both use 'stellenangebote'; log top-level keys if empty for debugging
+    items = raw.get('stellenangebote') or raw.get('stellenAngebote') or []
+    if not items:
+        app.logger.warning('BA API: no jobs in response. Keys: %s', list(raw.keys()))
+
     jobs_out = []
-    for r in raw.get('stellenangebote', []) or []:
+    for r in items:
         created  = r.get('aktuelleVeroeffentlichungsdatum', '')
         age, age_days = _format_job_age(created)
 
@@ -756,15 +761,18 @@ def jobs_search_ba():
         modelle  = r.get('arbeitszeitmodelle', []) or []
         contract = ', '.join(modelle) if modelle else ''
 
+        ref_nr  = r.get('refnr', '') or r.get('referenznummer', '')
         hash_id = r.get('hashId', '')
-        ref_nr  = r.get('refnr', '')
+
+        import base64
+        encoded_ref = base64.b64encode(ref_nr.encode()).decode() if ref_nr else ''
 
         jobs_out.append({
             'title':    r.get('titel', ''),
             'company':  r.get('arbeitgeber', ''),
             'location': location,
             'url':      f'https://www.arbeitsagentur.de/jobsuche/stelle/{hash_id}' if hash_id else '',
-            'hash_id':  hash_id,
+            'hash_id':  encoded_ref,   # base64(refnr) for detail endpoint
             'ref_nr':   ref_nr,
             'age':      age,
             'age_days': age_days,
