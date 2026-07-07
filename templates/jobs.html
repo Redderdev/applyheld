@@ -4,7 +4,7 @@
 {% block page_title %}Jobs finden{% endblock %}
 
 {% block content %}
-<div style="max-width:1400px;margin:0 auto;">
+<div style="max-width:1400px;margin:0 auto;height:calc(100vh - var(--topbar-h,60px) - 64px);display:flex;flex-direction:column;">
 
 {% if not has_adzuna %}
 <div class="card" style="text-align:center;padding:56px 32px;">
@@ -22,7 +22,7 @@
 {% else %}
 
   <!-- ── Suchmaske ──────────────────────────────────────────────────────────── -->
-  <div class="card" style="margin-bottom:16px;">
+  <div class="card" style="margin-bottom:16px;flex-shrink:0;">
     <div class="search-grid">
       <div class="form-group" style="margin:0;">
         <label>Stelle / Beruf</label>
@@ -112,7 +112,7 @@
   </div>
 
   <!-- ── Quick Links ────────────────────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;flex-shrink:0;">
     <span style="font-size:12px;color:var(--ink-400);flex-shrink:0;">Auch suchen auf:</span>
     <a id="link-stepstone" href="#" target="_blank" rel="noopener" class="ext-link" onclick="openExternal('stepstone',event)">StepStone ↗</a>
     <a id="link-indeed"    href="#" target="_blank" rel="noopener" class="ext-link" onclick="openExternal('indeed',event)">Indeed ↗</a>
@@ -239,20 +239,24 @@
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 16px;
-  align-items: start;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 .split-left {
   min-width: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 .split-right {
-  position: sticky;
-  top: calc(var(--topbar-h, 60px) + 16px);
-  height: calc(100vh - var(--topbar-h, 60px) - 32px);
+  height: 100%;
+  overflow-y: auto;
   min-height: 400px;
 }
 #detail-panel {
   padding: 0 !important;
   overflow: hidden;
+  height: 100%;
 }
 
 /* ── Compact job cards ── */
@@ -355,13 +359,21 @@
 /* ── Mobile ── */
 @media (max-width: 900px) {
   .search-grid { grid-template-columns: 1fr 1fr !important; }
-  .split-layout { grid-template-columns: 1fr !important; }
-  .split-right {
-    position: static !important;
+  /* On mobile: stack columns, allow page to scroll naturally */
+  div[style*="flex-direction:column"] {
     height: auto !important;
-    min-height: 300px;
   }
-  #detail-panel { min-height: 360px; }
+  .split-layout {
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .split-left, .split-right {
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+  .split-right { min-height: 300px; }
+  #detail-panel { min-height: 360px; height: auto !important; }
 }
 @media (max-width: 520px) {
   .search-grid { grid-template-columns: 1fr !important; }
