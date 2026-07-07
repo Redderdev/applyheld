@@ -694,39 +694,11 @@ def _format_job_age(iso_str):
 
 
 # ── Bundesagentur für Arbeit API ──────────────────────────────────────────────
+# Public API — no registration needed, fixed X-API-Key header.
 
-_BA_TOKEN_URL  = 'https://rest.arbeitsagentur.de/oauth/gettoken_cc'
-_BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
+_BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs'
 _BA_DETAIL_URL = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/{}'
-
-# Set BA_CLIENT_ID and BA_CLIENT_SECRET as environment variables in Railway.
-# Register at: developer.arbeitsagentur.de → API "Jobsuche"
-_BA_CLIENT_ID     = os.environ.get('BA_CLIENT_ID', '')
-_BA_CLIENT_SECRET = os.environ.get('BA_CLIENT_SECRET', '')
-
-_ba_token_cache = {'token': None, 'expires': 0.0}
-
-
-def _get_ba_token():
-    import time
-    now = time.time()
-    if _ba_token_cache['token'] and _ba_token_cache['expires'] > now + 60:
-        return _ba_token_cache['token']
-    resp = http_requests.post(
-        _BA_TOKEN_URL,
-        data={
-            'client_id':     _BA_CLIENT_ID,
-            'client_secret': _BA_CLIENT_SECRET,
-            'grant_type':    'client_credentials',
-        },
-        timeout=10,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    token = data['access_token']
-    _ba_token_cache['token']   = token
-    _ba_token_cache['expires'] = now + data.get('expires_in', 3600)
-    return token
+_BA_HEADERS    = {'X-API-Key': 'jobboerse-jobsuche', 'User-Agent': 'BewerbungsKI/1.0'}
 
 
 @app.route('/api/jobs/search-ba')
@@ -734,8 +706,6 @@ def _get_ba_token():
 def jobs_search_ba():
     if not SCRAPE_SUPPORT:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
-    if not _BA_CLIENT_ID or not _BA_CLIENT_SECRET:
-        return jsonify({'error': 'BA_NOT_CONFIGURED'}), 503
 
     stelle     = request.args.get('stelle', '').strip()
     ort        = request.args.get('ort', '').strip()
@@ -745,11 +715,6 @@ def jobs_search_ba():
 
     if not stelle:
         return jsonify({'error': 'Bitte eine Stelle eingeben.'}), 400
-
-    try:
-        token = _get_ba_token()
-    except Exception as e:
-        return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
 
     params = {
         'was':  stelle,
@@ -768,13 +733,8 @@ def jobs_search_ba():
         except ValueError:
             pass
 
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'User-Agent':    'BewerbungsKI/1.0',
-    }
-
     try:
-        resp = http_requests.get(_BA_JOBS_URL, params=params, headers=headers, timeout=12)
+        resp = http_requests.get(_BA_JOBS_URL, params=params, headers=_BA_HEADERS, timeout=12)
         resp.raise_for_status()
         raw = resp.json()
     except Exception as e:
@@ -835,23 +795,11 @@ def jobs_search_ba():
 def job_detail_ba(hash_id):
     if not SCRAPE_SUPPORT:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
-    if not _BA_CLIENT_ID or not _BA_CLIENT_SECRET:
-        return jsonify({'error': 'BA_NOT_CONFIGURED'}), 503
-
-    try:
-        token = _get_ba_token()
-    except Exception as e:
-        return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
-
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'User-Agent':    'BewerbungsKI/1.0',
-    }
 
     try:
         resp = http_requests.get(
             _BA_DETAIL_URL.format(hash_id),
-            headers=headers, timeout=12,
+            headers=_BA_HEADERS, timeout=12,
         )
         resp.raise_for_status()
         data = resp.json()
