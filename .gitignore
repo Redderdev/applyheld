@@ -5,3 +5,4 @@ uploads/
 .claude/settings.local.json
 *.log
 .env
+doc_BA.md

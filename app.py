@@ -763,14 +763,20 @@ def jobs_search_ba():
         contract = ', '.join(modelle) if modelle else ''
 
         ref_nr      = r.get('refnr', '') or r.get('referenznummer', '')
-        hash_id     = r.get('hashId', '')           # for arbeitsagentur.de portal URL
+        hash_id     = r.get('hashId', '')
+        externe_url = r.get('externeUrl', '')
         encoded_ref = _b64.b64encode(ref_nr.encode()).decode() if ref_nr else ''  # for detail API
+
+        # Build portal URL: prefer externeUrl, then hashId, then refnr directly
+        portal_url = (externe_url
+                      or (f'https://www.arbeitsagentur.de/jobsuche/stelle/{hash_id}' if hash_id else '')
+                      or (f'https://www.arbeitsagentur.de/jobsuche/stelle/{ref_nr}' if ref_nr else ''))
 
         jobs_out.append({
             'title':    r.get('titel', ''),
             'company':  r.get('arbeitgeber', ''),
             'location': location,
-            'url':      f'https://www.arbeitsagentur.de/jobsuche/stelle/{hash_id}' if hash_id else '',
+            'url':      portal_url,
             'hash_id':  encoded_ref,   # base64(refnr) → used by /api/jobs/detail-ba/<hash_id>
             'ref_nr':   ref_nr,
             'age':      age,
