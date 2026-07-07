@@ -767,14 +767,27 @@ def jobs_search_ba():
         externe_url = r.get('externeUrl', '')
         encoded_ref = _b64.b64encode(ref_nr.encode()).decode() if ref_nr else ''  # for detail API
 
-        # Only use externeUrl — BA-native jobs have no reliable portal deep-link
-        portal_url = externe_url or ''
+        # External jobs get their direct URL; BA-native jobs get a BA search fallback
+        if externe_url:
+            portal_url   = externe_url
+            portal_label = 'Original öffnen'
+        elif ref_nr:
+            import urllib.parse as _urlparse
+            portal_url   = ('https://www.arbeitsagentur.de/jobsuche/suche?'
+                            + _urlparse.urlencode({'angebotsart': '1',
+                                                   'was': r.get('titel', ''),
+                                                   'wo':  arbeitsort.get('ort', '')}))
+            portal_label = 'Auf BA.de suchen'
+        else:
+            portal_url   = ''
+            portal_label = ''
 
         jobs_out.append({
-            'title':    r.get('titel', ''),
-            'company':  r.get('arbeitgeber', ''),
-            'location': location,
-            'url':      portal_url,
+            'title':        r.get('titel', ''),
+            'company':      r.get('arbeitgeber', ''),
+            'location':     location,
+            'url':          portal_url,
+            'portal_label': portal_label,
             'hash_id':  encoded_ref,   # base64(refnr) → used by /api/jobs/detail-ba/<hash_id>
             'ref_nr':   ref_nr,
             'age':      age,

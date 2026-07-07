@@ -663,7 +663,7 @@ function renderDetailActions(job, showingPrompt) {
           Bewerbung tracken
         </button>
         ${job.url ? `<a id="d-open-btn" href="${esc(job.url)}" target="_blank" rel="noopener"
-           class="btn btn-secondary btn-sm">Original öffnen ↗</a>` : ''}
+           class="btn btn-secondary btn-sm">${esc(job.portal_label || 'Original öffnen')} ↗</a>` : ''}
         ${isPending ? '<span style="font-size:12px;color:var(--accent-600);">● noch nicht getracked</span>' : ''}
       </div>`;
     document.getElementById('d-track-btn').onclick = () => {
