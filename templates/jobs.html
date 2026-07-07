@@ -680,7 +680,6 @@ function setState(state) {
   document.getElementById('state-loading').style.display            = state === 'loading'            ? 'block' : 'none';
   document.getElementById('state-error').style.display              = state === 'error'              ? 'block' : 'none';
   document.getElementById('state-suggest').style.display            = state === 'suggest'            ? 'block' : 'none';
-  document.getElementById('state-ba-not-configured').style.display  = state === 'ba-not-configured'  ? 'block' : 'none';
   if (state === 'empty-results') {
     const el = document.getElementById('state-empty');
     el.style.display = 'block';
