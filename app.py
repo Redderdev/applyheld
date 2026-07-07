@@ -749,6 +749,7 @@ def jobs_search_ba():
     if not items:
         app.logger.warning('BA API: no jobs in response. Keys: %s', list(raw.keys()))
 
+    import base64 as _b64
     jobs_out = []
     for r in items:
         created  = r.get('aktuelleVeroeffentlichungsdatum', '')
@@ -761,18 +762,16 @@ def jobs_search_ba():
         modelle  = r.get('arbeitszeitmodelle', []) or []
         contract = ', '.join(modelle) if modelle else ''
 
-        ref_nr  = r.get('refnr', '') or r.get('referenznummer', '')
-        hash_id = r.get('hashId', '')
-
-        import base64
-        encoded_ref = base64.b64encode(ref_nr.encode()).decode() if ref_nr else ''
+        ref_nr      = r.get('refnr', '') or r.get('referenznummer', '')
+        hash_id     = r.get('hashId', '')           # for arbeitsagentur.de portal URL
+        encoded_ref = _b64.b64encode(ref_nr.encode()).decode() if ref_nr else ''  # for detail API
 
         jobs_out.append({
             'title':    r.get('titel', ''),
             'company':  r.get('arbeitgeber', ''),
             'location': location,
             'url':      f'https://www.arbeitsagentur.de/jobsuche/stelle/{hash_id}' if hash_id else '',
-            'hash_id':  encoded_ref,   # base64(refnr) for detail endpoint
+            'hash_id':  encoded_ref,   # base64(refnr) → used by /api/jobs/detail-ba/<hash_id>
             'ref_nr':   ref_nr,
             'age':      age,
             'age_days': age_days,
@@ -818,7 +817,9 @@ def job_detail_ba(hash_id):
     except Exception as e:
         return jsonify({'error': f'Detail konnte nicht geladen werden: {str(e)}'}), 502
 
-    raw_desc = data.get('stellenbeschreibung', '') or ''
+    raw_desc = (data.get('stellenangebotsBeschreibung')
+                or data.get('stellenbeschreibung')
+                or '')
     # Strip HTML tags if present
     clean = re.sub(r'<[^>]+>', '\n', raw_desc)
     clean = re.sub(r'&amp;',  '&',  clean)
