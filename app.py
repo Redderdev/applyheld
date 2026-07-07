@@ -767,10 +767,8 @@ def jobs_search_ba():
         externe_url = r.get('externeUrl', '')
         encoded_ref = _b64.b64encode(ref_nr.encode()).decode() if ref_nr else ''  # for detail API
 
-        # Build portal URL: prefer externeUrl, then hashId, then refnr directly
-        portal_url = (externe_url
-                      or (f'https://www.arbeitsagentur.de/jobsuche/stelle/{hash_id}' if hash_id else '')
-                      or (f'https://www.arbeitsagentur.de/jobsuche/stelle/{ref_nr}' if ref_nr else ''))
+        # Only use externeUrl — BA-native jobs have no reliable portal deep-link
+        portal_url = externe_url or ''
 
         jobs_out.append({
             'title':    r.get('titel', ''),

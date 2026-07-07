@@ -632,30 +632,30 @@ function renderDetailActions(job, showingPrompt) {
           </svg>
           Bewerbung tracken
         </button>
-        <a id="d-open-btn" href="${esc(job.url)}" target="_blank" rel="noopener"
-           class="btn btn-secondary btn-sm">
-          Original öffnen ↗
-        </a>
+        ${job.url ? `<a id="d-open-btn" href="${esc(job.url)}" target="_blank" rel="noopener"
+           class="btn btn-secondary btn-sm">Original öffnen ↗</a>` : ''}
         ${isPending ? '<span style="font-size:12px;color:var(--accent-600);">● noch nicht getracked</span>' : ''}
       </div>`;
     document.getElementById('d-track-btn').onclick = () => {
       applyDirect(job.company, job.title, job.url, job.full_desc || '');
     };
-    document.getElementById('d-open-btn').addEventListener('click', () => {
-      addPendingJob(job.url);
-      if (activeCardEl) {
-        activeCardEl.classList.add('job-card--pending');
-        activeCardEl.classList.remove('job-card--seen');
-        if (!activeCardEl.querySelector('.pending-dot')) {
-          const dot = document.createElement('span');
-          dot.className = 'pending-dot';
-          dot.title = 'Noch nicht getracked';
-          activeCardEl.querySelector('.job-title').insertAdjacentElement('afterend', dot);
+    const openBtn = document.getElementById('d-open-btn');
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        addPendingJob(job.url);
+        if (activeCardEl) {
+          activeCardEl.classList.add('job-card--pending');
+          activeCardEl.classList.remove('job-card--seen');
+          if (!activeCardEl.querySelector('.pending-dot')) {
+            const dot = document.createElement('span');
+            dot.className = 'pending-dot';
+            dot.title = 'Noch nicht getracked';
+            activeCardEl.querySelector('.job-title').insertAdjacentElement('afterend', dot);
+          }
         }
-      }
-      // Show track prompt after short delay (give browser time to open tab)
-      setTimeout(() => renderDetailActions(job, true), 400);
-    });
+        setTimeout(() => renderDetailActions(job, true), 400);
+      });
+    }
   }
 }
 
