@@ -824,20 +824,25 @@ def job_detail_ba(hash_id):
     raw_desc = (data.get('stellenangebotsBeschreibung')
                 or data.get('stellenbeschreibung')
                 or '')
-    # Strip HTML tags if present
-    clean = re.sub(r'<[^>]+>', '\n', raw_desc)
-    clean = re.sub(r'&amp;',  '&',  clean)
-    clean = re.sub(r'&lt;',   '<',  clean)
-    clean = re.sub(r'&gt;',   '>',  clean)
-    clean = re.sub(r'&nbsp;', ' ',  clean)
-    clean = re.sub(r'\n{3,}', '\n\n', clean).strip()
+
+    # Sanitize: remove dangerous blocks and event handlers, keep structure
+    desc = re.sub(r'<script[^>]*>.*?</script>', '', raw_desc, flags=re.DOTALL | re.IGNORECASE)
+    desc = re.sub(r'<style[^>]*>.*?</style>',   '', desc,    flags=re.DOTALL | re.IGNORECASE)
+    desc = re.sub(r'<iframe[^>]*>.*?</iframe>',  '', desc,    flags=re.DOTALL | re.IGNORECASE)
+    # Strip on* event attributes
+    desc = re.sub(r'\s+on\w+\s*=\s*(?:"[^"]*"|\'[^\']*\'|\S+)', '', desc, flags=re.IGNORECASE)
+    # Neutralise javascript: hrefs
+    desc = re.sub(r'(href\s*=\s*["\'])javascript:[^"\']*', r'\1#', desc, flags=re.IGNORECASE)
+
+    is_html = bool(re.search(r'<(p|ul|ol|li|br|h[1-6]|div|strong|b)\b', desc, re.IGNORECASE))
 
     # Enrich with salary if available
     verguetung = data.get('verguetung', '') or ''
 
     return jsonify({
         'success':     True,
-        'description': clean,
+        'description': desc.strip(),
+        'is_html':     is_html,
         'salary':      verguetung,
     })
 

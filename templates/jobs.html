@@ -378,6 +378,17 @@
 @media (max-width: 520px) {
   .search-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ── Job description HTML rendering ── */
+.job-desc-html { font-size: 13.5px; line-height: 1.65; color: var(--ink-700); }
+.job-desc-html p  { margin: 0 0 10px; }
+.job-desc-html ul, .job-desc-html ol { padding-left: 20px; margin: 0 0 10px; }
+.job-desc-html li { margin-bottom: 4px; }
+.job-desc-html h1, .job-desc-html h2 { font-size: 15px; font-weight: 650; color: var(--ink-900); margin: 18px 0 8px; }
+.job-desc-html h3, .job-desc-html h4 { font-size: 13.5px; font-weight: 650; color: var(--ink-900); margin: 14px 0 6px; }
+.job-desc-html strong, .job-desc-html b { font-weight: 600; color: var(--ink-900); }
+.job-desc-html br + br { display: none; }
+.job-desc-html a { color: var(--primary); text-decoration: underline; }
 </style>
 
 <script>
@@ -573,7 +584,12 @@ function showDetail(job) {
       .then(data => {
         if (activeJob && activeJob.hash_id !== capturedHash) return;
         if (data.description) {
-          descEl.textContent = data.description;
+          if (data.is_html) {
+            descEl.innerHTML = data.description;
+            descEl.classList.add('job-desc-html');
+          } else {
+            descEl.textContent = data.description;
+          }
           // Update salary if the detail has it
           if (data.salary) {
             const salaryEl = document.getElementById('d-salary');
