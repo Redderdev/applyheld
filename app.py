@@ -718,8 +718,8 @@ def jobs_search_ba():
 
     params = {
         'was':  stelle,
+        'page': page,        # v6 is 1-based
         'size': 25,
-        'page': page - 1,   # BA uses 0-based pages
     }
     if ort:
         params['wo'] = ort
@@ -734,11 +734,15 @@ def jobs_search_ba():
             pass
 
     try:
-        resp = http_requests.get(_BA_JOBS_URL, params=params, headers=_BA_HEADERS, timeout=12)
-        resp.raise_for_status()
+        resp = http_requests.get(_BA_JOBS_URL, params=params, headers=_BA_HEADERS, timeout=15)
+        if not resp.ok:
+            body = resp.text[:400]
+            app.logger.error('BA API %s: %s', resp.status_code, body)
+            return jsonify({'error': f'BA API {resp.status_code}: {body}'}), 502
         raw = resp.json()
     except Exception as e:
-        return jsonify({'error': f'BA API Fehler: {str(e)}'}), 502
+        app.logger.error('BA API request error: %s', e)
+        return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
 
     jobs_out = []
     for r in raw.get('stellenangebote', []) or []:
