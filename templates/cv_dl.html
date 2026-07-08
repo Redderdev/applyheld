@@ -23,7 +23,6 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172
 
 /* main content */
 .sec-label { font-size: 7pt; font-weight: bold; text-transform: uppercase; color: {{ acc }}; margin-bottom: 4pt; }
-.sec-rule  { border-bottom: 1.5pt solid {{ acc }}; margin-bottom: 8pt; }
 .sec-block { margin-bottom: 18pt; }
 .exp-table { width: 100%; border-collapse: collapse; margin-bottom: 4pt; }
 .exp-role  { font-size: 10pt; font-weight: bold; }
@@ -121,7 +120,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172
     {% if cv.summary %}
     <div class="sec-block">
       <p class="sec-label">Persönliches Profil</p>
-      <div class="sec-rule"></div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8pt;"><tr><td style="padding:0;height:1.5pt;background-color:{{ acc }};line-height:0;font-size:0;">&nbsp;</td></tr></table>
       <p style="font-size:9pt;line-height:1.6;color:#374151;">{{ cv.summary }}</p>
     </div>
     {% endif %}
@@ -130,7 +129,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172
     {% if exp_list %}
     <div class="sec-block">
       <p class="sec-label">Berufserfahrung</p>
-      <div class="sec-rule"></div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8pt;"><tr><td style="padding:0;height:1.5pt;background-color:{{ acc }};line-height:0;font-size:0;">&nbsp;</td></tr></table>
       {% for e in exp_list %}
       <table class="exp-table">
         <tr>
@@ -153,7 +152,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172
     {% if proj_list %}
     <div class="sec-block">
       <p class="sec-label">Projekte</p>
-      <div class="sec-rule"></div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8pt;"><tr><td style="padding:0;height:1.5pt;background-color:{{ acc }};line-height:0;font-size:0;">&nbsp;</td></tr></table>
       {% for pr in proj_list %}{% if pr.name %}
       <div style="margin-bottom:9pt;">
         <p class="proj-name">{{ pr.name }}</p>
@@ -167,7 +166,7 @@ body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #0f172
     {% if certs %}
     <div class="sec-block">
       <p class="sec-label">Zertifikate</p>
-      <div class="sec-rule"></div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8pt;"><tr><td style="padding:0;height:1.5pt;background-color:{{ acc }};line-height:0;font-size:0;">&nbsp;</td></tr></table>
       {% for c in certs %}{% if c.name %}
       <p style="font-size:9pt;margin-bottom:3pt;">{{ c.name }}{% if c.issuer %} – {{ c.issuer }}{% endif %}{% if c.year %} ({{ c.year }}){% endif %}</p>
       {% endif %}{% endfor %}
