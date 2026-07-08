@@ -24,8 +24,16 @@
 
     <!-- Meta Card -->
     <div class="card" style="padding:20px;">
-      <div style="font-size:17px;font-weight:700;color:var(--ink-900);margin-bottom:2px;">{{ b.firma }}</div>
-      <div style="font-size:14px;color:var(--ink-500);margin-bottom:16px;">{{ b.stelle or '–' }}</div>
+      <input id="firma-input" type="text" value="{{ b.firma }}" placeholder="Firmenname"
+        oninput="syncMeta(); markDirty();"
+        style="font-size:17px;font-weight:700;color:var(--ink-900);border:none;border-bottom:1px solid transparent;outline:none;background:transparent;width:100%;margin-bottom:2px;padding:2px 0;font-family:var(--font);transition:border-color .15s;"
+        onfocus="this.style.borderBottomColor='var(--border)'"
+        onblur="this.style.borderBottomColor='transparent'">
+      <input id="stelle-input" type="text" value="{{ b.stelle or '' }}" placeholder="Stellenbezeichnung"
+        oninput="syncMeta(); markDirty();"
+        style="font-size:14px;color:var(--ink-500);border:none;border-bottom:1px solid transparent;outline:none;background:transparent;width:100%;margin-bottom:16px;padding:2px 0;font-family:var(--font);transition:border-color .15s;"
+        onfocus="this.style.borderBottomColor='var(--border)'"
+        onblur="this.style.borderBottomColor='transparent'">
 
       <div class="form-group" style="margin-bottom:12px;">
         <label>Status</label>
@@ -125,7 +133,7 @@
         <!-- Recipient + date -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
           <div style="font-size:13px;line-height:1.7;color:#111;">
-            {% if b.firma %}<div style="font-weight:700;">{{ b.firma }}</div>{% endif %}
+            <div id="paper-firma" style="font-weight:700;">{{ b.firma }}</div>
           </div>
           <div style="font-size:13px;color:#374151;">
             {% if s.ort %}{{ s.ort }}, {% endif %}<span id="paper-date"></span>
@@ -133,9 +141,7 @@
         </div>
 
         <!-- Subject -->
-        {% if b.stelle %}
-        <div style="font-weight:700;font-size:14px;color:#111;margin-bottom:20px;">Bewerbung als {{ b.stelle }}</div>
-        {% endif %}
+        <div id="paper-stelle" style="font-weight:700;font-size:14px;color:#111;margin-bottom:20px;{% if not b.stelle %}display:none;{% endif %}">Bewerbung als {{ b.stelle }}</div>
 
         <!-- Editable body -->
         <textarea id="anschreiben"
@@ -316,6 +322,19 @@ function markDirty() {
   }
 }
 
+function syncMeta() {
+  const firma  = document.getElementById('firma-input').value;
+  const stelle = document.getElementById('stelle-input').value;
+  document.getElementById('paper-firma').textContent = firma;
+  const paperStelle = document.getElementById('paper-stelle');
+  if (stelle) {
+    paperStelle.textContent  = 'Bewerbung als ' + stelle;
+    paperStelle.style.display = '';
+  } else {
+    paperStelle.style.display = 'none';
+  }
+}
+
 async function saveAnschreiben(downloadPdf) {
   const saveOnlyBtn = document.getElementById('save-only-btn');
   const savePdfBtn  = document.getElementById('save-pdf-btn');
@@ -329,8 +348,8 @@ async function saveAnschreiben(downloadPdf) {
     : PAGE.stellenanzeige;
 
   const payload = {
-    firma:          PAGE.firma,
-    stelle:         PAGE.stelle,
+    firma:          document.getElementById('firma-input').value,
+    stelle:         document.getElementById('stelle-input').value,
     url:            PAGE.url,
     stellenanzeige: stellenanzeige,
     anschreiben:    document.getElementById('anschreiben').value,
@@ -399,8 +418,8 @@ async function saveAll(btn) {
     : PAGE.stellenanzeige;
 
   const payload = {
-    firma:          PAGE.firma,
-    stelle:         PAGE.stelle,
+    firma:          document.getElementById('firma-input').value,
+    stelle:         document.getElementById('stelle-input').value,
     url:            PAGE.url,
     stellenanzeige: stellenanzeige,
     anschreiben:    document.getElementById('anschreiben').value,
@@ -469,8 +488,8 @@ async function generateMitKI() {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        firma:          PAGE.firma,
-        stelle:         PAGE.stelle,
+        firma:          document.getElementById('firma-input').value,
+        stelle:         document.getElementById('stelle-input').value,
         stellenanzeige: stellenanzeige,
       }),
     });
