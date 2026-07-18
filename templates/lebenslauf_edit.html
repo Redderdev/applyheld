@@ -730,7 +730,7 @@ async function saveCV(silent = false) {
 async function exportPDF() {
   await saveCV(true);
   if (CV_ID) {
-    window.open(`/lebenslauf/${CV_ID}/drucken?autoprint=1`, '_blank');
+    window.open(`/lebenslauf/${CV_ID}/drucken`, '_blank');
   } else {
     alert('Bitte zuerst speichern.');
   }
