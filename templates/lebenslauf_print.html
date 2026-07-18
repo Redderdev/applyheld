@@ -80,7 +80,7 @@ function tplKlassisch(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'
   const nameParts=(p.name||'').trim().split(/\s+/);
   const lastName=nameParts.length>1?nameParts.slice(-1)[0]:'';
   const firstName=nameParts.length>1?nameParts.slice(0,-1).join(' '):nameParts[0]||'';
-  let sidebar=`<div style="width:57mm;background:${NAVY};color:#fff;padding:28px 16px;flex-shrink:0;min-height:297mm;font-family:Arial,sans-serif;box-sizing:border-box;">`;
+  let sidebar=`<div style="width:57mm;color:#fff;padding:28px 16px;flex-shrink:0;min-height:297mm;font-family:Arial,sans-serif;box-sizing:border-box;">`;
   sidebar+=`<div style="font-size:18pt;font-weight:700;line-height:1.2;margin-bottom:24px;color:#fff;">${esc(firstName)}<br>${esc(lastName)}</div>`;
   const contactItems=[p.address,p.city,p.phone,p.email].filter(Boolean);
   if(contactItems.length) sidebar+=sideSection('Kontakt',contactItems.map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:4px;word-break:break-all;">${esc(c)}</div>`).join(''));
@@ -103,13 +103,13 @@ function tplKlassisch(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'
   const certHtml=(cv.certifications||[]).filter(c=>c.name).map(c=>`${esc(c.name)}${c.issuer?' · '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}`).join('<br>');
   if(certHtml) main+=mainSection('Zertifikate &amp; Kurse',`<p style="font-size:9.5pt;">${certHtml}</p>`);
   main+='</div>';
-  return `<div style="display:flex;min-height:297mm;overflow:hidden;">${sidebar}${main}</div>`;
+  return `<div style="display:flex;min-height:297mm;overflow:hidden;background:linear-gradient(to right,${NAVY} 57mm,#ffffff 57mm);">${sidebar}${main}</div>`;
 }
 
 /* ── MODERN ── */
 function tplModern(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'#1e3a5f'; const lines=[];
-  lines.push(`<div style="font-family:'Segoe UI',Arial,sans-serif;display:flex;min-height:297mm;font-size:9.5pt;">`);
-  lines.push(`<div style="width:62mm;background:${NAVY};color:#fff;padding:28px 18px;flex-shrink:0;">`);
+  lines.push(`<div style="font-family:'Segoe UI',Arial,sans-serif;display:flex;min-height:297mm;font-size:9.5pt;background:linear-gradient(to right,${NAVY} 62mm,#ffffff 62mm);">`);
+  lines.push(`<div style="width:62mm;color:#fff;padding:28px 18px;flex-shrink:0;">`);
   lines.push(`<div style="font-size:16pt;font-weight:700;line-height:1.2;margin-bottom:4px;color:#fff;">${esc(p.name||'')}</div>`);
   if(cv.summary) lines.push(`<div style="font-size:8pt;color:rgba(255,255,255,.75);margin-bottom:16px;line-height:1.4;">${esc(cv.summary)}</div>`);
   function sideSection(t,html){ lines.push(`<div style="margin-bottom:14px;"><div style="font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.65);margin-bottom:6px;">${t}</div>${html}</div>`); }
