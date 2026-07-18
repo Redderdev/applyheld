@@ -160,6 +160,10 @@ function tplMinimal(cv){ const p=cv.personal||{}; const ACC=cv.accentColor||'#08
 const renderers = { klassisch: tplKlassisch, modern: tplModern, minimal: tplMinimal };
 const render = renderers[TEMPLATE] || tplKlassisch;
 document.getElementById('cv-root').innerHTML = render(CV);
+
+if (new URLSearchParams(window.location.search).get('autoprint') === '1') {
+  window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 600); });
+}
 </script>
 </body>
 </html>
