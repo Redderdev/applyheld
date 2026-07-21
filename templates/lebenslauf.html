@@ -27,13 +27,13 @@
   cursor: pointer;
   /* shadow-ring: no separate 1px border */
   box-shadow: var(--sh-ring);
-  transition: box-shadow .16s, transform .16s;
+  transition: box-shadow .28s ease, transform .28s ease;
   display: flex;
   flex-direction: column;
 }
 .cv-card:hover {
-  box-shadow: 0 0 0 1px rgba(14,34,70,.11), 0 8px 24px rgba(14,34,70,.12);
-  transform: translateY(-2px);
+  box-shadow: var(--sh-lift);
+  transform: translateY(-6px);
 }
 .cv-card:focus-visible {
   outline: 2px solid var(--accent-500);
