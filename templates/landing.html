@@ -2,434 +2,538 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BewerbungsKI — Anschreiben mit KI & Bewerbungs-Tracker</title>
-  <meta name="description" content="BewerbungsKI schreibt individuelle Anschreiben, die zur Stelle passen – und hält deinen gesamten Bewerbungsprozess organisiert. Kostenlos starten.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BewerbungsKI — Anschreiben schreiben & Bewerbungen verwalten</title>
+  <meta name="description" content="Individuelle Anschreiben, die zur Stelle passen – und ein Tracker, der deinen Bewerbungsprozess von der ersten Idee bis zur Zusage organisiert hält.">
+  <meta property="og:title" content="BewerbungsKI — Schluss mit dem leeren Blatt">
+  <meta property="og:description" content="Individuelle Anschreiben, die zur Stelle passen – und ein Tracker für deinen gesamten Bewerbungsprozess.">
+  <meta property="og:type" content="website">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', filename='design-tokens.css') }}?v=9">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
-    * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ═══ Brand system — override of skill default (navy + teal → app navy + cyan) ═══ */
+    :root {
+      --navy:        #0f2440;
+      --navy-mid:    #15314f;
+      --navy-deep:   #0a1a30;
+      --teal:        #22d3ee;
+      --teal-2:      #06b6d4;
+      --teal-glow:   rgba(34, 211, 238, 0.14);
+      --off-white:   #F7F7F2;
+      --text-muted:  rgba(247, 247, 242, 0.68);
+      --card-bg:     rgba(34, 211, 238, 0.06);
+      --card-border: rgba(34, 211, 238, 0.15);
+
+      /* light sections */
+      --light-bg:  #FAFAF9;
+      --surface:   #ffffff;
+      --ink-900:   #0e1729;
+      --ink-700:   #2d3a55;
+      --ink-500:   #5a6580;
+      --border:    rgba(14, 34, 70, .09);
+      --border-2:  rgba(14, 34, 70, .18);
+      --cyan-700:  #0e7490;
+      --green:     #047857;
+
+      --r: 10px;
+      --r-lg: 16px;
+      --r-full: 999px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Geist', 'Inter', -apple-system, sans-serif;
-      background: var(--bg); color: var(--ink-900);
-      -webkit-font-smoothing: antialiased; line-height: 1.5;
+      font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--navy);
+      color: var(--off-white);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      overflow-x: hidden;
     }
     a { text-decoration: none; color: inherit; }
-    .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
-    /* ── Buttons ── */
+    /* Accessibility: skip link */
+    .skip {
+      position: absolute; left: -9999px; top: 8px; z-index: 999;
+      background: var(--teal); color: var(--navy); padding: 10px 18px;
+      border-radius: var(--r); font-weight: 700;
+    }
+    .skip:focus { left: 16px; }
+    :focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; border-radius: 4px; }
+
+    /* ═══ Components ═══ */
+    .eyebrow {
+      font-size: 13px; font-weight: 500; letter-spacing: .2em;
+      text-transform: uppercase; color: var(--teal);
+    }
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      height: 44px; padding: 0 22px; border-radius: var(--r);
-      font-family: inherit; font-size: 15px; font-weight: 600; letter-spacing: -.01em;
-      cursor: pointer; border: 1px solid transparent; white-space: nowrap;
-      transition: transform .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      height: 52px; padding: 0 28px; border-radius: var(--r);
+      font-family: inherit; font-size: 18px; font-weight: 500; letter-spacing: -.01em;
+      border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+      transition: transform .25s ease, filter .25s ease, background .25s ease, border-color .25s ease;
     }
-    .btn svg { width: 18px; height: 18px; }
-    .btn-primary { background: var(--navy-700); color: #fff; box-shadow: var(--sh-xs); }
-    .btn-primary:hover { background: var(--navy-800); transform: translateY(-1px); box-shadow: var(--sh-navy); }
-    .btn-secondary { background: var(--surface); color: var(--ink-900); border-color: var(--border-strong); }
-    .btn-secondary:hover { background: var(--bg-soft); border-color: var(--ink-400); transform: translateY(-1px); }
-    .btn-ghost { background: transparent; color: var(--ink-700); }
-    .btn-ghost:hover { background: var(--bg-soft); color: var(--ink-900); }
-    .btn-white { background: #fff; color: var(--navy-800); }
-    .btn-white:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(0,0,0,.22); }
-    .btn-sm { height: 38px; padding: 0 16px; font-size: 14px; }
-    .btn-lg { height: 52px; padding: 0 28px; font-size: 16px; }
+    .btn svg { width: 19px; height: 19px; }
+    .btn-primary { background: var(--teal); color: var(--navy); font-weight: 600; }
+    .btn-primary:hover { transform: translateY(-3px); filter: brightness(1.1); }
+    .btn-outline { background: transparent; color: var(--off-white); border-color: rgba(247,247,242,.28); }
+    .btn-outline:hover { transform: translateY(-3px); border-color: var(--teal); color: var(--teal); }
+    .btn-dark { background: var(--navy); color: var(--off-white); font-weight: 600; }
+    .btn-dark:hover { transform: translateY(-3px); filter: brightness(1.35); }
+    .btn-light { background: var(--surface); color: var(--ink-900); border-color: var(--border-2); font-weight: 600; }
+    .btn-light:hover { transform: translateY(-3px); border-color: var(--ink-500); }
+    .btn-sm { height: 44px; padding: 0 18px; font-size: 15px; }
 
-    /* ── Nav ── */
+    /* ═══ Nav ═══ */
     .nav {
-      position: sticky; top: 0; z-index: 50;
-      background: rgba(250,250,249,.8); backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(15, 36, 64, .72); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(247,247,242,.08);
     }
-    .nav-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 10px; }
+    .nav-inner { height: 70px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 11px; }
     .brand-mark {
-      width: 32px; height: 32px; border-radius: 8px; background: var(--navy-700);
+      width: 34px; height: 34px; border-radius: 9px; background: var(--teal);
+      display: flex; align-items: center; justify-content: center; position: relative;
+      color: var(--navy); font-weight: 800; font-size: 19px; letter-spacing: -.04em;
+    }
+    .brand-text { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+    .nav-links { display: flex; gap: 6px; }
+    .nav-links a {
+      padding: 10px 14px; border-radius: var(--r); font-size: 15px; font-weight: 600;
+      color: var(--text-muted); transition: color .2s, background .2s;
+    }
+    .nav-links a:hover { color: var(--off-white); background: rgba(247,247,242,.07); }
+    .nav-cta { display: flex; align-items: center; gap: 10px; }
+
+    /* ═══ Section 1: HERO ═══ */
+    .hero {
+      position: relative; min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; font-size: 18px; letter-spacing: -.04em; position: relative;
+      text-align: center; padding: 120px 24px 100px; overflow: hidden;
     }
-    .brand-mark::after {
-      content: ''; position: absolute; top: -3px; right: -3px;
-      width: 10px; height: 10px; border-radius: 50%; background: var(--accent-500);
-      box-shadow: 0 0 0 2px var(--bg);
-    }
-    .brand-text { font-size: 18px; font-weight: 680; letter-spacing: -.02em; }
-    .brand-text b { color: var(--accent-600); font-weight: 680; }
-    .nav-links { display: flex; align-items: center; gap: 4px; }
-    .nav-link {
-      padding: 8px 12px; border-radius: var(--r); font-size: 14.5px; font-weight: 500;
-      color: var(--ink-600, var(--ink-700)); transition: background .14s, color .14s;
-    }
-    .nav-link:hover { background: var(--bg-soft); color: var(--ink-900); }
-    .nav-cta { display: flex; align-items: center; gap: 8px; }
-    @media (max-width: 860px) { .nav-links { display: none; } }
-    @media (max-width: 520px) { .nav-cta .hide-sm { display: none; } }
+    .hero-shapes-back, .hero-shapes-mid { position: absolute; inset: 0; pointer-events: none; }
+    .shape { position: absolute; border-radius: 50%; }
+    .hero-shapes-back .shape { filter: blur(70px); opacity: .5; }
+    .shape-a { width: 460px; height: 460px; background: var(--teal); top: -140px; right: -80px; animation: floatA 14s ease-in-out infinite; }
+    .shape-b { width: 380px; height: 380px; background: #3a6092; bottom: -120px; left: -90px; animation: floatB 18s ease-in-out infinite; }
+    .hero-shapes-mid .shape { filter: blur(22px); opacity: .28; }
+    .shape-c { width: 130px; height: 130px; background: var(--teal); top: 22%; left: 12%; animation: floatC 11s ease-in-out infinite; }
+    .shape-d { width: 90px; height: 90px; background: var(--teal-2); bottom: 24%; right: 15%; animation: floatA 13s ease-in-out infinite; }
 
-    /* ── Hero ── */
-    .hero { position: relative; overflow: hidden; }
-    .hero::before {
-      content: ''; position: absolute; inset: 0; pointer-events: none;
-      background:
-        radial-gradient(55% 60% at 78% -5%, rgba(6,182,212,.13), transparent 60%),
-        radial-gradient(45% 50% at 8% 5%, rgba(30,58,95,.07), transparent 55%);
-    }
-    .hero-inner { position: relative; padding: 80px 24px 72px; display: grid;
-      grid-template-columns: 1fr 1.02fr; gap: 56px; align-items: center; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 13px;
-      border-radius: var(--r-full); background: var(--accent-50); color: var(--accent-600);
-      border: 1px solid rgba(6,182,212,.3);
-      font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-      margin-bottom: 22px;
-    }
-    .badge svg { width: 14px; height: 14px; }
+    @keyframes floatA { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(22px,-32px) rotate(8deg); } }
+    @keyframes floatB { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(-26px,24px) rotate(-6deg); } }
+    @keyframes floatC { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(18px,26px) rotate(12deg); } }
+
+    .hero .container { position: relative; z-index: 2; }
     .hero h1 {
-      font-size: clamp(36px, 5.4vw, 58px); font-weight: 720; letter-spacing: -.035em;
-      line-height: 1.06; color: var(--navy-900); margin-bottom: 20px;
+      font-size: clamp(38px, 7.2vw, 76px); font-weight: 800; letter-spacing: -.04em;
+      line-height: 1.02; margin: 22px 0 24px;
     }
-    .hero h1 .grad {
-      background: linear-gradient(120deg, var(--navy-700), var(--accent-500));
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    .hero h1 .accent { color: var(--teal); }
+    .hero .subtitle {
+      font-size: 19px; line-height: 1.62; color: var(--text-muted);
+      max-width: 620px; margin: 0 auto 38px;
     }
-    .hero-sub { font-size: 18px; line-height: 1.6; color: var(--ink-500); max-width: 480px; margin-bottom: 30px; }
-    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
-    .hero-trust { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-500); }
-    .hero-trust span { display: inline-flex; align-items: center; gap: 6px; }
-    .hero-trust svg { width: 15px; height: 15px; color: var(--success); }
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+    .hero-trust { display: flex; gap: 26px; justify-content: center; flex-wrap: wrap; font-size: 14.5px; color: var(--text-muted); }
+    .hero-trust span { display: inline-flex; align-items: center; gap: 8px; }
+    .hero-trust svg { width: 17px; height: 17px; color: var(--teal); }
 
-    /* ── Hero mockup ── */
+    .scroll-down {
+      position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
+      z-index: 2; color: var(--text-muted); display: flex; flex-direction: column;
+      align-items: center; gap: 8px; font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase;
+    }
+    .scroll-down svg { width: 22px; height: 22px; animation: bounce 2s ease-in-out infinite; }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+
+    /* ═══ Product showcase ═══ */
+    .showcase { padding: 0 24px 120px; position: relative; }
     .mock {
-      border-radius: 14px; background: var(--surface); overflow: hidden;
-      box-shadow: var(--sh-lg); border: 1px solid var(--border);
-      animation: floatIn .7s cubic-bezier(.16,1,.3,1) both;
+      max-width: 940px; margin: 0 auto; border-radius: var(--r-lg); overflow: hidden;
+      background: var(--surface); color: var(--ink-900);
+      box-shadow: 0 40px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(247,247,242,.09);
     }
-    @keyframes floatIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-    .mock-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--border); background: var(--bg-soft); }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .mock-url { margin-left: 10px; font-size: 12px; color: var(--ink-400); font-family: var(--mono); }
-    .mock-body { display: grid; grid-template-columns: 1fr 1.12fr; min-height: 316px; }
-    .mock-l { padding: 18px; border-right: 1px solid var(--border); }
-    .mock-r { padding: 18px; background: linear-gradient(180deg, #fff, var(--bg)); }
-    .mock-label { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-400); margin-bottom: 12px; }
-    .mock-company { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-    .mock-logo { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, var(--navy-700), var(--accent-500)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0; }
-    .mock-cn { font-size: 14px; font-weight: 600; }
-    .mock-cp { font-size: 12.5px; color: var(--ink-500); }
-    .sk { height: 8px; background: var(--bg-soft); border-radius: 4px; margin-bottom: 8px; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+    .mock-bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; background: #e8ecf5; border-bottom: 1px solid var(--border); }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .mock-url { margin-left: 12px; font-size: 12.5px; color: var(--ink-500); font-family: ui-monospace, monospace; }
+    .mock-body { display: grid; grid-template-columns: 1fr 1.15fr; min-height: 340px; }
+    .mock-l { padding: 22px; border-right: 1px solid var(--border); }
+    .mock-r { padding: 22px; background: linear-gradient(180deg, #fff, var(--light-bg)); }
+    .mock-label { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-500); margin-bottom: 14px; }
+    .mock-co { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+    .mock-logo { width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(135deg, var(--navy), var(--teal-2)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .mock-cn { font-size: 15px; font-weight: 700; }
+    .mock-cp { font-size: 13px; color: var(--ink-500); }
+    .sk { height: 9px; background: #e8ecf5; border-radius: 5px; margin-bottom: 9px; }
     .mock-gen {
-      width: 100%; height: 40px; margin-top: 6px; border: none; border-radius: var(--r);
-      background: var(--navy-700); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600;
-      display: flex; align-items: center; justify-content: center; gap: 7px; cursor: default;
+      width: 100%; height: 44px; margin-top: 18px; border-radius: var(--r);
+      background: var(--navy); color: #fff; font-size: 14px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .mock-gen svg { width: 15px; height: 15px; }
-    .mock-ai { display: flex; align-items: center; gap: 7px; margin-bottom: 13px; }
-    .mock-ai .pd { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-500); animation: pd 1.5s ease-in-out infinite; }
-    @keyframes pd { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.75); } }
-    .mock-ai span { font-size: 12px; font-weight: 600; color: var(--accent-600); }
-    .mock-quote { margin-top: 15px; font-size: 13px; line-height: 1.65; color: var(--ink-700); }
-    .mock-quote mark { background: var(--accent-50); color: var(--accent-600); padding: 1px 4px; border-radius: 4px; }
-    .sk-r { height: 9px; background: var(--bg-soft); border-radius: 4px; margin-bottom: 9px; animation: pulse 2s infinite; }
+    .mock-gen svg { width: 16px; height: 16px; }
+    .mock-status { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+    .mock-status .pd { width: 9px; height: 9px; border-radius: 50%; background: var(--teal-2); animation: pdp 1.5s ease-in-out infinite; }
+    @keyframes pdp { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.72); } }
+    .mock-status span { font-size: 12.5px; font-weight: 700; color: var(--cyan-700); }
+    .mock-quote { margin-top: 17px; font-size: 13.5px; line-height: 1.7; color: var(--ink-700); }
+    .mock-quote mark { background: #ecfeff; color: var(--cyan-700); padding: 1px 5px; border-radius: 4px; }
 
-    /* ── Section shell ── */
-    section { padding: 84px 0; }
-    .sec-head { text-align: center; max-width: 640px; margin: 0 auto 52px; }
-    .eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-600); margin-bottom: 12px; }
-    .sec-head h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 700; letter-spacing: -.025em; line-height: 1.15; margin-bottom: 14px; }
-    .sec-head p { font-size: 17px; color: var(--ink-500); line-height: 1.6; }
+    /* ═══ Light sections ═══ */
+    .light { background: var(--light-bg); color: var(--ink-900); padding: 120px 24px; }
+    .light.alt { background: var(--surface); }
+    .sec-head { text-align: center; max-width: 660px; margin: 0 auto 60px; }
+    .sec-head .eyebrow { color: var(--cyan-700); }
+    .sec-head h2 {
+      font-size: clamp(30px, 4.6vw, 52px); font-weight: 800; letter-spacing: -.035em;
+      line-height: 1.1; margin: 14px 0 16px;
+    }
+    .sec-head p { font-size: 18px; color: var(--ink-500); line-height: 1.62; }
 
-    /* ── Feature grid ── */
-    .features { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .fcard {
-      padding: 26px 24px; border-radius: var(--r-lg); background: var(--bg);
-      border: 1px solid var(--border); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    }
-    .fcard:hover { transform: translateY(-3px); box-shadow: var(--sh-md); border-color: var(--border-strong); }
-    .ficon {
-      width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
-      background: var(--navy-50); color: var(--navy-700); margin-bottom: 16px;
-    }
-    .ficon svg { width: 22px; height: 22px; }
-    .fcard h3 { font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 7px; }
-    .fcard p { font-size: 14.5px; color: var(--ink-500); line-height: 1.6; }
-
-    /* ── Steps ── */
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; counter-reset: step; }
-    .step { position: relative; padding-top: 8px; }
-    .step-num {
-      width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-      background: var(--navy-700); color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 18px;
-    }
-    .step h3 { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 8px; }
-    .step p { font-size: 15px; color: var(--ink-500); line-height: 1.6; }
-    .step:not(:last-child)::after {
-      content: ''; position: absolute; top: 29px; left: 58px; right: -14px; height: 2px;
-      background: repeating-linear-gradient(90deg, var(--border-strong) 0 6px, transparent 6px 12px);
-    }
-    @media (max-width: 780px) { .step:not(:last-child)::after { display: none; } }
-
-    /* ── Pricing ── */
-    .pricing { background: var(--surface); border-top: 1px solid var(--border); }
-    .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 22px; justify-content: center; }
-    .pcard { padding: 30px 28px; border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; }
-    .pcard.featured { border-color: var(--navy-700); box-shadow: var(--sh-md); position: relative; }
-    .pcard.featured .pill {
-      position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
-      text-transform: uppercase; color: var(--accent-600); background: var(--accent-50); padding: 4px 10px; border-radius: var(--r-full);
-    }
-    .pname { font-size: 15px; font-weight: 650; color: var(--ink-700); margin-bottom: 8px; }
-    .pprice { font-size: 40px; font-weight: 720; letter-spacing: -.03em; line-height: 1; }
-    .pprice small { font-size: 15px; font-weight: 500; color: var(--ink-500); letter-spacing: 0; }
-    .pdesc { font-size: 14px; color: var(--ink-500); margin: 10px 0 20px; }
-    .plist { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; flex: 1; }
-    .plist li { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; color: var(--ink-700); }
-    .plist svg { width: 17px; height: 17px; color: var(--success); flex-shrink: 0; margin-top: 1px; }
-
-    /* ── CTA band ── */
-    .cta-band { background: var(--navy-900); color: #fff; position: relative; overflow: hidden; }
-    .cta-band::before {
+    /* ═══ Section 2: FEATURES ═══ */
+    .features { background: var(--navy-mid); color: var(--off-white); padding: 120px 24px; position: relative; overflow: hidden; }
+    .features::before {
       content: ''; position: absolute; inset: 0; pointer-events: none;
-      background: radial-gradient(50% 70% at 75% 0%, rgba(6,182,212,.2), transparent 60%);
+      background: radial-gradient(60% 50% at 50% 0%, rgba(34,211,238,.09), transparent 65%);
     }
-    .cta-inner { position: relative; text-align: center; padding: 80px 24px; }
-    .cta-inner h2 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 720; letter-spacing: -.03em; margin-bottom: 14px; }
-    .cta-inner p { font-size: 17px; color: rgba(255,255,255,.66); max-width: 460px; margin: 0 auto 30px; line-height: 1.6; }
+    .features .container { position: relative; z-index: 1; }
+    .features .sec-head .eyebrow { color: var(--teal); }
+    .features .sec-head p { color: var(--text-muted); }
+    .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .feature-card {
+      padding: 30px 26px; border-radius: var(--r-lg);
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      transition: transform .3s ease, border-color .3s ease, background .3s ease;
+    }
+    .feature-card:hover { transform: translateY(-6px); border-color: var(--teal); background: rgba(34,211,238,.1); }
+    .feature-card svg { width: 28px; height: 28px; stroke: var(--teal); fill: none; margin-bottom: 18px; }
+    .feature-card h3 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 10px; }
+    .feature-card p { font-size: 16px; color: var(--text-muted); line-height: 1.62; }
 
-    /* ── Footer ── */
-    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 40px 0; }
-    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-    .footer-links { display: flex; gap: 22px; font-size: 14px; color: var(--ink-500); flex-wrap: wrap; }
-    .footer-links a:hover { color: var(--ink-900); }
-    .footer-copy { font-size: 13.5px; color: var(--ink-400); }
+    /* ═══ Steps ═══ */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+    .step { position: relative; }
+    .step-num {
+      width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      background: var(--navy); color: var(--teal); font-size: 20px; font-weight: 800; margin-bottom: 20px;
+    }
+    .step h3 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 10px; }
+    .step p { font-size: 16px; color: var(--ink-500); line-height: 1.62; }
+    .step:not(:last-child)::after {
+      content: ''; position: absolute; top: 23px; left: 64px; right: -18px; height: 2px;
+      background: repeating-linear-gradient(90deg, var(--border-2) 0 6px, transparent 6px 13px);
+    }
 
-    /* ── Responsive ── */
+    /* ═══ Pricing ═══ */
+    .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 360px)); gap: 24px; justify-content: center; }
+    .pcard {
+      padding: 34px 30px; border-radius: var(--r-lg); border: 1px solid var(--border);
+      background: var(--light-bg); display: flex; flex-direction: column; position: relative;
+    }
+    .pcard.featured { border: 2px solid var(--navy); background: var(--surface); box-shadow: 0 18px 44px rgba(14,34,70,.13); }
+    .pcard.soon { opacity: .82; }
+    .pill {
+      position: absolute; top: -12px; left: 30px; font-size: 11.5px; font-weight: 800;
+      letter-spacing: .08em; text-transform: uppercase; padding: 5px 12px; border-radius: var(--r-full);
+    }
+    .pill.rec  { background: var(--navy); color: var(--teal); }
+    .pill.wip  { background: #e8ecf5; color: var(--ink-500); }
+    .pname { font-size: 16px; font-weight: 700; color: var(--ink-700); margin-bottom: 10px; }
+    .pprice { font-size: 44px; font-weight: 800; letter-spacing: -.035em; line-height: 1; }
+    .pprice small { font-size: 16px; font-weight: 500; color: var(--ink-500); letter-spacing: 0; }
+    .pdesc { font-size: 15px; color: var(--ink-500); margin: 12px 0 22px; line-height: 1.55; }
+    .plist { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 26px; flex: 1; }
+    .plist li { display: flex; align-items: flex-start; gap: 11px; font-size: 15.5px; color: var(--ink-700); }
+    .plist svg { width: 18px; height: 18px; stroke: var(--green); fill: none; flex-shrink: 0; margin-top: 2px; }
+    .pnote { text-align: center; font-size: 15px; font-weight: 600; color: var(--ink-500); padding: 15px 0; }
+
+    /* ═══ Section 3: CLOSING CTA ═══ */
+    .closing-cta {
+      background: var(--navy-mid); color: var(--off-white);
+      padding: 120px 24px; text-align: center; position: relative; overflow: hidden;
+    }
+    .closing-cta h2 {
+      font-size: clamp(30px, 4.8vw, 56px); font-weight: 800; letter-spacing: -.04em;
+      line-height: 1.06; margin-bottom: 18px;
+    }
+    .closing-cta p { font-size: 18px; color: var(--text-muted); max-width: 520px; margin: 0 auto 38px; line-height: 1.62; }
+    .cta-glow { position: relative; display: inline-block; }
+    .cta-glow::before {
+      content: ''; position: absolute; inset: -70px; z-index: 0; pointer-events: none;
+      background: radial-gradient(circle, var(--teal-glow) 0%, transparent 70%);
+    }
+    .cta-glow .btn { position: relative; z-index: 1; }
+
+    /* ═══ Footer ═══ */
+    .footer { background: var(--navy-deep); padding: 46px 24px; border-top: 1px solid rgba(247,247,242,.08); }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 22px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 24px; font-size: 15px; color: var(--text-muted); flex-wrap: wrap; }
+    .footer-links a:hover { color: var(--teal); }
+    .footer-copy { font-size: 14px; color: var(--text-muted); }
+
+    /* ═══ Responsive — skill breakpoints 900 / 580 ═══ */
     @media (max-width: 900px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 40px; padding: 56px 24px 56px; }
-      .fgrid, .steps { grid-template-columns: 1fr; }
-      section { padding: 64px 0; }
-    }
-    @media (max-width: 620px) {
+      .nav-links { display: none; }
+      .fgrid { grid-template-columns: repeat(2, 1fr); }
+      .steps { grid-template-columns: 1fr; gap: 26px; }
+      .step:not(:last-child)::after { display: none; }
       .mock-body { grid-template-columns: 1fr; }
       .mock-l { border-right: none; border-bottom: 1px solid var(--border); }
-      .hero-ctas .btn { flex: 1; }
+      .light, .features, .closing-cta { padding: 84px 24px; }
+      .showcase { padding-bottom: 84px; }
+    }
+    @media (max-width: 580px) {
+      .fgrid { grid-template-columns: 1fr; }
       .pgrid { grid-template-columns: 1fr; }
+      .hero { padding: 110px 20px 90px; }
+      .hero-actions .btn { width: 100%; }
+      .hero-trust { gap: 12px; flex-direction: column; align-items: center; }
+      .light, .features, .closing-cta { padding: 68px 20px; }
+    }
+
+    /* ═══ Reduced motion ═══ */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ══ NAV ══ -->
+  <a href="#main" class="skip">Zum Inhalt springen</a>
+
+  <!-- ══════════ NAV ══════════ -->
   <header class="nav">
-    <div class="wrap nav-inner">
+    <div class="container nav-inner">
       <a href="{{ url_for('landing') }}" class="brand">
-        <span class="brand-mark">B</span>
-        <span class="brand-text">Bewerbungs<b>KI</b></span>
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span class="brand-text">BewerbungsKI</span>
       </a>
-      <nav class="nav-links">
-        <a href="#features" class="nav-link">Funktionen</a>
-        <a href="#how" class="nav-link">So funktioniert's</a>
-        <a href="#pricing" class="nav-link">Preise</a>
+      <nav class="nav-links" aria-label="Hauptnavigation">
+        <a href="#features">Funktionen</a>
+        <a href="#how">So funktioniert's</a>
+        <a href="#pricing">Preise</a>
       </nav>
       <div class="nav-cta">
-        <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hide-sm">Anmelden</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm">Anmelden</a>
         <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm">Kostenlos starten</a>
       </div>
     </div>
   </header>
 
-  <!-- ══ HERO ══ -->
-  <section class="hero">
-    <div class="wrap hero-inner">
-      <div>
-        <span class="badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/>
-          </svg>
-          KI für den deutschen Arbeitsmarkt
-        </span>
-        <h1>Schluss mit dem<br><span class="grad">leeren Blatt.</span></h1>
-        <p class="hero-sub">
-          BewerbungsKI schreibt individuelle Anschreiben, die zur Stelle passen –
-          und hält deinen gesamten Bewerbungsprozess organisiert. Von der ersten Idee bis zur Zusage.
-        </p>
-        <div class="hero-ctas">
-          <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
-            Kostenlos starten
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-          </a>
-          <a href="#how" class="btn btn-secondary btn-lg">So funktioniert's</a>
-        </div>
-        <div class="hero-trust">
-          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Keine Kreditkarte nötig</span>
-          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> DSGVO-konform, Daten in der EU</span>
-        </div>
-      </div>
+  <main id="main">
 
-      <!-- Product mockup -->
-      <div class="mock">
-        <div class="mock-bar">
-          <span class="dot" style="background:#f87171;"></span>
-          <span class="dot" style="background:#fbbf24;"></span>
-          <span class="dot" style="background:#34d399;"></span>
-          <span class="mock-url">bewerbungski.de/bewerbung/neu</span>
+  <!-- ══════════ SECTION 1: HERO ══════════ -->
+  <section class="hero">
+    <div class="hero-shapes-back" aria-hidden="true">
+      <span class="shape shape-a"></span>
+      <span class="shape shape-b"></span>
+    </div>
+    <div class="hero-shapes-mid" aria-hidden="true">
+      <span class="shape shape-c"></span>
+      <span class="shape shape-d"></span>
+    </div>
+
+    <div class="container">
+      <div class="eyebrow">Für den deutschen Bewerbungsstandard</div>
+      <h1>Schluss mit dem<br><span class="accent">leeren Blatt.</span></h1>
+      <p class="subtitle">
+        Individuelle Anschreiben, die wirklich zur Stelle passen – und ein Tracker,
+        der deine Bewerbungen von der ersten Idee bis zur Zusage organisiert hält.
+      </p>
+      <div class="hero-actions">
+        <a href="{{ url_for('register') }}" class="btn btn-primary">
+          Kostenlos starten
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#how" class="btn btn-outline">So funktioniert's</a>
+      </div>
+      <div class="hero-trust">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Keine Kreditkarte nötig</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> DSGVO-konform, Daten in der EU</span>
+      </div>
+    </div>
+
+    <div class="scroll-down" aria-hidden="true">
+      Mehr entdecken
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+    </div>
+  </section>
+
+  <!-- ══════════ PRODUCT SHOWCASE ══════════ -->
+  <section class="showcase">
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar">
+        <span class="dot" style="background:#f87171;"></span>
+        <span class="dot" style="background:#fbbf24;"></span>
+        <span class="dot" style="background:#34d399;"></span>
+        <span class="mock-url">bewerbungski.de/bewerbung/neu</span>
+      </div>
+      <div class="mock-body">
+        <div class="mock-l">
+          <div class="mock-label">Stelle</div>
+          <div class="mock-co">
+            <div class="mock-logo">SA</div>
+            <div><div class="mock-cn">SAP SE</div><div class="mock-cp">Frontend Developer</div></div>
+          </div>
+          <div class="sk"></div>
+          <div class="sk" style="width:88%;"></div>
+          <div class="sk" style="width:72%;"></div>
+          <div class="mock-gen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            Anschreiben erstellen
+          </div>
         </div>
-        <div class="mock-body">
-          <div class="mock-l">
-            <div class="mock-label">Stelle</div>
-            <div class="mock-company">
-              <div class="mock-logo">SA</div>
-              <div><div class="mock-cn">SAP SE</div><div class="mock-cp">Frontend Developer</div></div>
-            </div>
-            <div class="sk"></div><div class="sk" style="width:88%;"></div><div class="sk" style="width:72%;margin-bottom:16px;"></div>
-            <div class="mock-gen">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/></svg>
-              Anschreiben generieren
-            </div>
-          </div>
-          <div class="mock-r">
-            <div class="mock-ai"><span class="pd"></span><span>KI schreibt …</span></div>
-            <div class="sk-r"></div><div class="sk-r" style="width:94%;"></div><div class="sk-r" style="width:88%;"></div>
-            <div class="sk-r" style="width:97%;"></div><div class="sk-r" style="width:70%;"></div>
-            <div class="mock-quote">„… sehe ich in Ihrem Team die <mark>ideale Gelegenheit</mark>, meine Expertise gezielt einzubringen."</div>
-          </div>
+        <div class="mock-r">
+          <div class="mock-status"><span class="pd"></span><span>Wird geschrieben …</span></div>
+          <div class="sk"></div>
+          <div class="sk" style="width:94%;"></div>
+          <div class="sk" style="width:88%;"></div>
+          <div class="sk" style="width:97%;"></div>
+          <div class="sk" style="width:70%;"></div>
+          <div class="mock-quote">„… sehe ich in Ihrem Team die <mark>ideale Gelegenheit</mark>, meine Expertise gezielt einzubringen."</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ══ FEATURES ══ -->
+  <!-- ══════════ SECTION 2: FEATURES ══════════ -->
   <section id="features" class="features">
-    <div class="wrap">
+    <div class="container">
       <div class="sec-head">
         <div class="eyebrow">Funktionen</div>
         <h2>Alles für deine Bewerbung. An einem Ort.</h2>
         <p>Von der Stellenanzeige zum fertigen Anschreiben – und lückenlos organisiert bis zur Zusage.</p>
       </div>
       <div class="fgrid">
-        <div class="fcard">
-          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/><path d="M19 14l.7 2 2 .7-2 .7L19 20l-.7-1.9-2-.7 2-.7z"/></svg></div>
-          <h3>Anschreiben in Sekunden</h3>
-          <p>Stellenanzeige einfügen, und die KI erstellt ein individuelles Anschreiben – zugeschnitten auf Stelle und deinen Lebenslauf.</p>
-        </div>
-        <div class="fcard">
-          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <h3>Verfeinern per Chat</h3>
-          <p>Kürzer, formeller, neuer Absatz oder anderer Ton – sag der KI, was du willst, und dein Anschreiben passt sich sofort an.</p>
-        </div>
-        <div class="fcard">
-          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <article class="feature-card">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          <h3>Anschreiben in Minuten</h3>
+          <p>Stellenanzeige einfügen, fertiges Anschreiben erhalten – abgestimmt auf die Position und deinen Lebenslauf.</p>
+        </article>
+        <article class="feature-card">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <h3>Feinschliff im Dialog</h3>
+          <p>Kürzer, formeller oder ein neuer Absatz: Sag im Chat, was anders soll, und der Text passt sich sofort an.</p>
+        </article>
+        <article class="feature-card">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <h3>Bewerbungs-Tracker</h3>
-          <p>Von Entwurf über Gespräch bis Zusage – behalte jeden Status im Blick und verliere keine Bewerbung mehr aus den Augen.</p>
-        </div>
-        <div class="fcard">
-          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
+          <p>Von Entwurf über Gespräch bis Zusage: jeder Status auf einen Blick, keine Bewerbung geht verloren.</p>
+        </article>
+        <article class="feature-card">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
           <h3>Lebenslauf-Builder</h3>
-          <p>Erstelle einen sauberen, modernen Lebenslauf in mehreren Vorlagen – mit Live-Vorschau und PDF-Export.</p>
-        </div>
-        <div class="fcard">
-          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <p>Mehrere Vorlagen, Live-Vorschau und sauberer PDF-Export. Ganz ohne Layout-Gefrickel in Word.</p>
+        </article>
+        <article class="feature-card">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <h3>Integrierte Jobsuche</h3>
-          <p>Finde passende Stellen direkt in der App und übernimm sie mit einem Klick in eine neue Bewerbung.</p>
-        </div>
-        <div class="fcard">
-          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <p>Passende Stellen direkt in der App finden und mit einem Klick in eine neue Bewerbung übernehmen.</p>
+        </article>
+        <article class="feature-card">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <h3>DSGVO-konform</h3>
-          <p>Deine Bewerbungsdaten bleiben in der EU. Datenschutz nach europäischem Standard, ohne Weitergabe an Dritte.</p>
-        </div>
+          <p>Deine Bewerbungsdaten bleiben in der EU. Kein Weiterverkauf, keine Weitergabe an Dritte.</p>
+        </article>
       </div>
     </div>
   </section>
 
-  <!-- ══ HOW IT WORKS ══ -->
-  <section id="how">
-    <div class="wrap">
+  <!-- ══════════ HOW IT WORKS ══════════ -->
+  <section id="how" class="light">
+    <div class="container">
       <div class="sec-head">
         <div class="eyebrow">So funktioniert's</div>
         <h2>In drei Schritten zur fertigen Bewerbung</h2>
-        <p>Kein leeres Blatt, kein Formulierungsstress. Du gibst den Kontext, die KI übernimmt den Rest.</p>
+        <p>Kein leeres Blatt, kein Formulierungsstress. Du lieferst den Kontext, den Rest übernimmt die App.</p>
       </div>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <h3>Profil & Lebenslauf</h3>
-          <p>Lade deinen Lebenslauf hoch oder erstelle ihn direkt in der App. Die KI kennt so deinen Hintergrund.</p>
+          <h3>Profil &amp; Lebenslauf</h3>
+          <p>Lade deinen Lebenslauf hoch oder erstelle ihn direkt in der App. Dein Hintergrund fließt danach in jedes Anschreiben ein.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <h3>Stelle einfügen</h3>
-          <p>Füge die Stellenanzeige oder einen Link ein. Die KI schreibt ein individuelles, passendes Anschreiben.</p>
+          <p>Stellenanzeige oder Link einfügen. Daraus entsteht ein individuelles Anschreiben, das zur Position passt.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <h3>Verfeinern & tracken</h3>
-          <p>Passe den Text per Chat an, exportiere als PDF und verfolge den Status jeder Bewerbung.</p>
+          <h3>Verfeinern &amp; tracken</h3>
+          <p>Text im Chat anpassen, als PDF exportieren und den Status jeder Bewerbung im Blick behalten.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ══ PRICING ══ -->
-  <section id="pricing" class="pricing">
-    <div class="wrap">
+  <!-- ══════════ PRICING ══════════ -->
+  <section id="pricing" class="light alt">
+    <div class="container">
       <div class="sec-head">
         <div class="eyebrow">Preise</div>
         <h2>Fair und transparent</h2>
-        <p>Starte kostenlos. Kein Risiko, keine Kreditkarte.</p>
+        <p>Starte kostenlos. Kein Risiko, keine Kreditkarte, keine versteckten Kosten.</p>
       </div>
       <div class="pgrid">
-        <div class="pcard">
+        <div class="pcard featured">
+          <span class="pill rec">Empfohlen</span>
           <div class="pname">Kostenlos</div>
           <div class="pprice">0 €<small> / für immer</small></div>
-          <div class="pdesc">Ideal, um loszulegen und deine ersten Bewerbungen zu schreiben.</div>
+          <div class="pdesc">Alles, was du brauchst, um sofort loszulegen.</div>
           <ul class="plist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 5 KI-Anschreiben pro Monat</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Bewerbungs-Tracker</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Lebenslauf-Builder & PDF-Export</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Integrierte Jobsuche</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> 5 Anschreiben pro Monat</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Bewerbungs-Tracker</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Lebenslauf-Builder &amp; PDF-Export</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Integrierte Jobsuche</li>
           </ul>
-          <a href="{{ url_for('register') }}" class="btn btn-secondary btn-lg" style="width:100%;">Kostenlos starten</a>
+          <a href="{{ url_for('register') }}" class="btn btn-dark" style="width:100%;">Kostenlos starten</a>
         </div>
-        <div class="pcard featured">
-          <span class="pill">Bald verfügbar</span>
+        <div class="pcard soon">
+          <span class="pill wip">In Arbeit</span>
           <div class="pname">Pro</div>
           <div class="pprice">Bald</div>
-          <div class="pdesc">Für alle, die aktiv suchen und maximale Trefferquote wollen.</div>
+          <div class="pdesc">Für alle, die aktiv suchen und mehr Volumen brauchen.</div>
           <ul class="plist">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Unbegrenzte KI-Anschreiben</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Erweiterte Chat-Verfeinerung</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Mehrere Lebenslauf-Versionen</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Priorisierter Support</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Unbegrenzte Anschreiben</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Erweiterter Feinschliff</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Mehrere Lebenslauf-Versionen</li>
+            <li><svg viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Priorisierter Support</li>
           </ul>
-          <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg" style="width:100%;">Jetzt kostenlos beginnen</a>
+          <div class="pnote">Verfügbar in Kürze</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ══ CTA BAND ══ -->
-  <section class="cta-band">
-    <div class="wrap cta-inner">
-      <h2>Bereit für deine nächste Bewerbung?</h2>
-      <p>Schreib dein erstes KI-Anschreiben in wenigen Minuten – völlig kostenlos.</p>
-      <a href="{{ url_for('register') }}" class="btn btn-white btn-lg">
-        Jetzt kostenlos starten
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
+  <!-- ══════════ SECTION 3: CLOSING CTA ══════════ -->
+  <section class="closing-cta">
+    <div class="container">
+      <h2>Deine nächste Bewerbung<br>beginnt jetzt.</h2>
+      <p>In wenigen Minuten steht dein erstes Anschreiben – kostenlos und ohne Kreditkarte.</p>
+      <div class="cta-glow">
+        <a href="{{ url_for('register') }}" class="btn btn-primary">
+          Jetzt kostenlos starten
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </div>
     </div>
   </section>
 
-  <!-- ══ FOOTER ══ -->
+  </main>
+
+  <!-- ══════════ FOOTER ══════════ -->
   <footer class="footer">
-    <div class="wrap footer-inner">
+    <div class="container footer-inner">
       <a href="{{ url_for('landing') }}" class="brand">
-        <span class="brand-mark">B</span>
-        <span class="brand-text">Bewerbungs<b>KI</b></span>
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span class="brand-text">BewerbungsKI</span>
       </a>
       <div class="footer-links">
         <a href="#features">Funktionen</a>
@@ -441,13 +545,84 @@
     </div>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-      a.addEventListener('click', function (e) {
-        const t = document.querySelector(this.getAttribute('href'));
-        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+    (function () {
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Graceful degradation: ohne GSAP oder bei reduzierter Bewegung
+      // bleibt der Inhalt sichtbar (keine CSS-Startzustaende mit opacity:0).
+      if (typeof gsap === 'undefined' || reduced) return;
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      // ── 1. Hero-Entrance: gsap.set() ZUERST (verhindert FOUC) ──
+      gsap.set(['.hero .eyebrow', '.hero h1', '.hero .subtitle', '.hero-actions', '.hero-trust', '.scroll-down'], {
+        opacity: 0, y: 30
       });
-    });
+      gsap.set('.mock', { opacity: 0, y: 60 });
+
+      var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      tl.to('.hero .eyebrow',  { opacity: 1, y: 0, duration: 0.6 })
+        .to('.hero h1',        { opacity: 1, y: 0, duration: 0.8 }, '-=0.3')
+        .to('.hero .subtitle', { opacity: 1, y: 0, duration: 0.6 }, '-=0.5')
+        .to('.hero-actions',   { opacity: 1, y: 0, duration: 0.5 }, '-=0.3')
+        .to('.hero-trust',     { opacity: 1, y: 0, duration: 0.5 }, '-=0.35')
+        .to('.scroll-down',    { opacity: 1, y: 0, duration: 0.4 }, '-=0.2');
+
+      // ── 2. Maus-Parallax (Tiefenebenen) ──
+      var hero = document.querySelector('.hero');
+      if (hero && window.matchMedia('(pointer: fine)').matches) {
+        hero.addEventListener('mousemove', function (e) {
+          var x = (e.clientX / window.innerWidth  - 0.5) * 2;
+          var y = (e.clientY / window.innerHeight - 0.5) * 2;
+          gsap.to('.hero-shapes-back', { x: x * 45, y: y * 22, duration: 0.8 });
+          gsap.to('.hero-shapes-mid',  { x: x * 22, y: y * 11, duration: 0.8 });
+          gsap.to('.hero .container',  { x: x * 8,  y: y * 5,  duration: 0.8 });
+        });
+      }
+
+      // ── 3. Scroll-getriggerte Reveals ──
+      gsap.to('.mock', {
+        opacity: 1, y: 0, duration: 0.9, ease: 'power2.out',
+        scrollTrigger: { trigger: '.showcase', start: 'top 85%' }
+      });
+
+      gsap.set('.feature-card', { opacity: 0, y: 55, rotateX: 18 });
+      ScrollTrigger.batch('.feature-card', {
+        start: 'top 82%',
+        onEnter: function (batch) {
+          gsap.to(batch, { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.11, ease: 'power2.out' });
+        }
+      });
+
+      gsap.set('.step', { opacity: 0, y: 45 });
+      ScrollTrigger.batch('.step', {
+        start: 'top 85%',
+        onEnter: function (batch) {
+          gsap.to(batch, { opacity: 1, y: 0, duration: 0.7, stagger: 0.14, ease: 'power2.out' });
+        }
+      });
+
+      gsap.set('.pcard', { opacity: 0, y: 45 });
+      ScrollTrigger.batch('.pcard', {
+        start: 'top 85%',
+        onEnter: function (batch) {
+          gsap.to(batch, { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power2.out' });
+        }
+      });
+
+      gsap.set(['.closing-cta h2', '.closing-cta p', '.cta-glow'], { opacity: 0, y: 38 });
+      ScrollTrigger.create({
+        trigger: '.closing-cta', start: 'top 78%', once: true,
+        onEnter: function () {
+          gsap.to(['.closing-cta h2', '.closing-cta p', '.cta-glow'], {
+            opacity: 1, y: 0, duration: 0.7, stagger: 0.13, ease: 'power3.out'
+          });
+        }
+      });
+    })();
   </script>
 </body>
 </html>
