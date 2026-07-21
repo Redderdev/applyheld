@@ -38,13 +38,30 @@ def index():
         (current_user.id,)
     ).fetchall()
     conn.close()
+
+    # Zählung pro Status (alle 7 Status aus STATUS_OPTIONS)
+    counts = {s: 0 for s in STATUS_OPTIONS}
+    for b in bewerbungen:
+        if b['status'] in counts:
+            counts[b['status']] += 1
+
+    total      = len(bewerbungen)
+    entwurf    = counts['Entwurf']
+    versendet  = total - entwurf                       # tatsächlich rausgeschickt
+    aktiv      = (counts['Gesendet'] + counts['Telefoninterview']
+                  + counts['Vorstellungsgespräch'] + counts['Angebot erhalten'])
+    responded  = versendet - counts['Gesendet']        # über "Gesendet" hinausgekommen
+    antwortquote = round(responded / versendet * 100) if versendet else 0
+
     stats = {
-        'total':      len(bewerbungen),
-        'entwurf':    sum(1 for b in bewerbungen if b['status'] == 'Entwurf'),
-        'gesendet':   sum(1 for b in bewerbungen if b['status'] in (
-            'Gesendet', 'Telefoninterview', 'Vorstellungsgespräch', 'Angebot erhalten')),
-        'angenommen': sum(1 for b in bewerbungen if b['status'] == 'Angenommen'),
-        'abgelehnt':  sum(1 for b in bewerbungen if b['status'] == 'Abgelehnt'),
+        'total':        total,
+        'entwurf':      entwurf,
+        'gesendet':     aktiv,                          # "Im Prozess" (Chip nutzt diesen Key)
+        'angenommen':   counts['Angenommen'],
+        'abgelehnt':    counts['Abgelehnt'],
+        'versendet':    versendet,
+        'antwortquote': antwortquote,
+        'counts':       counts,
     }
     resp = make_response(render_template('index.html', bewerbungen=bewerbungen, stats=stats))
     resp.headers['Cache-Control'] = 'no-store'

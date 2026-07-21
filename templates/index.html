@@ -18,18 +18,12 @@
 </div>
 
 <!-- Stats Grid -->
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;">
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px;">
 
   <div class="card stat-card">
     <div class="stat-accent" style="background: var(--navy-700);"></div>
     <div class="stat-val">{{ stats.total }}</div>
-    <div class="stat-lbl">Gesamt</div>
-  </div>
-
-  <div class="card stat-card">
-    <div class="stat-accent" style="background: #94a3b8;"></div>
-    <div class="stat-val">{{ stats.entwurf }}</div>
-    <div class="stat-lbl">Entwürfe</div>
+    <div class="stat-lbl">Gesamt · {{ stats.versendet }} versendet</div>
   </div>
 
   <div class="card stat-card">
@@ -44,6 +38,48 @@
     <div class="stat-lbl">Angenommen</div>
   </div>
 
+  <div class="card stat-card">
+    <div class="stat-accent" style="background: #dc2626;"></div>
+    <div class="stat-val">{{ stats.abgelehnt }}</div>
+    <div class="stat-lbl">Abgelehnt</div>
+  </div>
+
+</div>
+
+<!-- Pipeline / Status-Verteilung -->
+<div class="card" style="padding: 20px 22px; margin-bottom: 28px;">
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px;">
+    <div>
+      <div class="card-title">Pipeline</div>
+      <div style="font-size:12.5px; color:var(--ink-500); margin-top:2px;">Aktuelle Verteilung aller Bewerbungen nach Status</div>
+    </div>
+    {% if stats.versendet > 0 %}
+    <div style="text-align:right; flex-shrink:0;">
+      <div style="font-size:24px; font-weight:720; letter-spacing:-.03em; line-height:1; font-variant-numeric:tabular-nums;">{{ stats.antwortquote }}%</div>
+      <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-400); font-weight:600; margin-top:4px;">Antwortquote</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if stats.total == 0 %}
+    <div style="color:var(--ink-400); font-size:14px; padding:6px 0;">Noch keine Daten — erstelle deine erste Bewerbung, um deine Pipeline zu sehen.</div>
+  {% else %}
+  <div style="display:flex; flex-direction:column; gap:11px;">
+    {% for st in status_options %}
+    {% set c = stats.counts[st] %}
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="width:172px; flex-shrink:0; display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink-700);">
+        <span style="width:9px; height:9px; border-radius:50%; background:var(--status-{{ status_css[st] }}-dot); flex-shrink:0;"></span>
+        {{ st }}
+      </div>
+      <div style="flex:1; height:8px; background:var(--bg-soft); border-radius:999px; overflow:hidden;">
+        <div style="height:100%; border-radius:999px; background:var(--status-{{ status_css[st] }}-dot); width:{{ (c / stats.total * 100) | round(1) }}%; transition:width .45s cubic-bezier(.4,0,.2,1);"></div>
+      </div>
+      <div style="width:32px; text-align:right; font-size:13.5px; font-weight:650; font-variant-numeric:tabular-nums; color:{{ 'var(--ink-900)' if c else 'var(--ink-300)' }};">{{ c }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
 <!-- Toolbar -->
