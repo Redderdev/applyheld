@@ -185,6 +185,16 @@ def init_db():
             cv_template TEXT DEFAULT 'klassisch',
             updated_at TEXT DEFAULT (datetime('now'))
         )''')
+    # Fehlgeschlagene Logins (Brute-Force-Bremse). Unix-Timestamp als INTEGER,
+    # damit SQLite und Postgres identisch behandelt werden koennen.
+    conn.execute('''CREATE TABLE IF NOT EXISTS login_versuche (
+        email TEXT NOT NULL,
+        ip TEXT NOT NULL,
+        ts INTEGER NOT NULL
+    )''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_login_versuche_ts ON login_versuche (ts)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_login_versuche_email ON login_versuche (email, ts)')
+
     conn.execute('''
         INSERT INTO cv_versions (user_id, name, cv_json, cv_template, updated_at)
         SELECT user_id, 'Lebenslauf', data, template, updated_at

@@ -80,7 +80,8 @@ def extract_url():
 
         return jsonify({'success': True, 'text': raw[:6000], 'title': title_text})
     except Exception as e:
-        return jsonify({'error': f'Seite konnte nicht geladen werden: {str(e)}'}), 500
+        app.logger.warning('extract-url: %s', e)
+        return jsonify({'error': 'Die Seite konnte nicht geladen werden.'}), 502
 
 
 # ── Bewerbungen CRUD ───────────────────────────────────────────────────────────

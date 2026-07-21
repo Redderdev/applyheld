@@ -65,7 +65,8 @@ Gib NUR den Brieftext zurück (von Anrede bis Unterschrift), ohne Absenderblock 
     except anthropic.AuthenticationError:
         return jsonify({'error': 'Ungültiger API-Key. Bitte in den Einstellungen prüfen.'}), 400
     except Exception as e:
-        return jsonify({'error': f'Fehler: {str(e)}'}), 500
+        app.logger.error('generate: %s', e)
+        return jsonify({'error': 'Anschreiben konnte nicht erstellt werden. Bitte erneut versuchen.'}), 500
 
 
 @app.route('/api/chat/<int:bid>', methods=['POST'])
@@ -77,10 +78,7 @@ def chat(bid):
     if not message:
         return jsonify({'error': 'Nachricht fehlt'}), 400
 
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
-    if not api_key:
-        return jsonify({'error': 'Anthropic API-Key nicht konfiguriert (Server-Fehler).'}), 500
-
+    # Besitz zuerst pruefen: Fremde sollen nichts ueber den Serverzustand erfahren.
     conn = get_db()
     b    = conn.execute(
         'SELECT * FROM bewerbungen WHERE id = ? AND user_id = ?', (bid, current_user.id)
@@ -88,6 +86,11 @@ def chat(bid):
     conn.close()
     if not b:
         return jsonify({'error': 'Bewerbung nicht gefunden'}), 404
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        app.logger.error('ANTHROPIC_API_KEY fehlt')
+        return jsonify({'error': 'Der Dienst ist derzeit nicht verfügbar.'}), 503
 
     cv_text     = get_setting('cv_text', '')
     anschreiben = b['anschreiben'] or ''
@@ -158,4 +161,5 @@ Wenn der Nutzer eine Frage stellt oder nur Feedback gibt, antworte kurz ohne die
     except anthropic.AuthenticationError:
         return jsonify({'error': 'Ungültiger API-Key'}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error('chat: %s', e)
+        return jsonify({'error': 'Die Anfrage konnte nicht verarbeitet werden.'}), 500

@@ -9,6 +9,7 @@ from flask_login import login_required, current_user
 from app import app
 from db import get_setting
 from constants import COMMON_JOB_TITLES
+from services.sanitize import clean_html, has_markup
 
 try:
     import requests as http_requests
@@ -19,6 +20,19 @@ except ImportError:
 _BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
 _BA_DETAIL_URL = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/{}'
 _BA_HEADERS    = {'X-API-Key': 'jobboerse-jobsuche', 'User-Agent': 'ApplyHeld/1.0'}
+
+
+def _safe_url(url):
+    """Nur http(s) durchlassen. Verhindert javascript:/data:-Links, die aus
+    arbeitgeber-gelieferten Feldern (BA externeUrl) stammen koennen."""
+    u = (url or '').strip()
+    if not u:
+        return ''
+    try:
+        scheme = urllib.parse.urlparse(u).scheme.lower()
+    except ValueError:
+        return ''
+    return u if scheme in ('http', 'https') else ''
 
 
 def _format_job_age(iso_str):
@@ -92,7 +106,8 @@ def jobs_search():
         resp.raise_for_status()
         raw = resp.json()
     except Exception as e:
-        return jsonify({'error': f'Adzuna API-Fehler: {str(e)}'}), 502
+        app.logger.error('Adzuna: %s', e)
+        return jsonify({'error': 'Die Jobsuche ist gerade nicht erreichbar.'}), 502
 
     jobs_out = []
     for r in raw.get('results', []):
@@ -117,7 +132,7 @@ def jobs_search():
             'title':       r.get('title', ''),
             'company':     r.get('company', {}).get('display_name', ''),
             'location':    r.get('location', {}).get('display_name', ''),
-            'url':         r.get('redirect_url', ''),
+            'url':         _safe_url(r.get('redirect_url', '')),
             'age':         age,
             'age_days':    age_days,
             'description': desc,
@@ -172,11 +187,11 @@ def jobs_search_ba():
         if not resp.ok:
             body = resp.text[:400]
             app.logger.error('BA API %s: %s', resp.status_code, body)
-            return jsonify({'error': f'BA API {resp.status_code}: {body}'}), 502
+            return jsonify({'error': 'Die Jobsuche ist gerade nicht erreichbar.'}), 502
         raw = resp.json()
     except Exception as e:
         app.logger.error('BA API request error: %s', e)
-        return jsonify({'error': f'BA API nicht erreichbar: {str(e)}'}), 502
+        return jsonify({'error': 'Die Jobsuche ist gerade nicht erreichbar.'}), 502
 
     items = raw.get('stellenangebote') or raw.get('stellenAngebote') or []
     if not items:
@@ -198,6 +213,7 @@ def jobs_search_ba():
         externe_url = r.get('externeUrl', '')
         encoded_ref = base64.b64encode(ref_nr.encode()).decode() if ref_nr else ''
 
+        externe_url = _safe_url(externe_url)
         if externe_url:
             portal_url   = externe_url
             portal_label = 'Original öffnen'
@@ -258,20 +274,18 @@ def job_detail_ba(hash_id):
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
-        return jsonify({'error': f'Detail konnte nicht geladen werden: {str(e)}'}), 502
+        app.logger.warning('BA detail: %s', e)
+        return jsonify({'error': 'Die Stellenbeschreibung konnte nicht geladen werden.'}), 502
 
     raw_desc = (data.get('stellenangebotsBeschreibung')
                 or data.get('stellenbeschreibung')
                 or '')
 
-    desc = re.sub(r'<script[^>]*>.*?</script>', '', raw_desc, flags=re.DOTALL | re.IGNORECASE)
-    desc = re.sub(r'<style[^>]*>.*?</style>',   '', desc,    flags=re.DOTALL | re.IGNORECASE)
-    desc = re.sub(r'<iframe[^>]*>.*?</iframe>',  '', desc,    flags=re.DOTALL | re.IGNORECASE)
-    desc = re.sub(r'\s+on\w+\s*=\s*(?:"[^"]*"|\'[^\']*\'|\S+)', '', desc, flags=re.IGNORECASE)
-    desc = re.sub(r'(href\s*=\s*["\'])javascript:[^"\']*', r'\1#', desc, flags=re.IGNORECASE)
+    # Allowlist-Sanitisierung per Parser. Fremde Inhalte (von Arbeitgebern
+    # eingestellte Anzeigen) landen im Client per innerHTML — Regex-Filterung
+    # war umgehbar, siehe services/sanitize.py.
+    desc = clean_html(raw_desc)
 
-    is_html  = bool(re.search(r'<(p|ul|ol|li|br|h[1-6]|div|strong|b)\b', desc, re.IGNORECASE))
-    verguetung = data.get('verguetung', '') or ''
-
-    return jsonify({'success': True, 'description': desc.strip(),
-                    'is_html': is_html, 'salary': verguetung})
+    return jsonify({'success': True, 'description': desc,
+                    'is_html': has_markup(desc),
+                    'salary': str(data.get('verguetung', '') or '')[:200]})

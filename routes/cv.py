@@ -271,7 +271,8 @@ def upload_cv():
         set_setting('cv_filename', file.filename)
         return jsonify({'success': True, 'filename': file.filename, 'chars': len(text)})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error('upload-cv: %s', e)
+        return jsonify({'error': 'Die Datei konnte nicht gelesen werden.'}), 400
 
 
 @app.route('/api/delete-cv', methods=['POST'])
@@ -345,11 +346,14 @@ Regeln:
         return jsonify({'success': True, 'data': parsed})
 
     except json.JSONDecodeError as e:
-        return jsonify({'error': f'KI hat ungültiges JSON zurückgegeben: {str(e)}'}), 500
+        app.logger.error('parse-cv JSON: %s', e)
+        return jsonify({'error': 'Der Lebenslauf konnte nicht ausgewertet werden.'}), 502
     except anthropic.AuthenticationError:
-        return jsonify({'error': 'Ungültiger API-Key.'}), 400
+        app.logger.error('parse-cv: ungueltiger API-Key')
+        return jsonify({'error': 'Der Dienst ist derzeit nicht verfügbar.'}), 503
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error('parse-cv: %s', e)
+        return jsonify({'error': 'Der Lebenslauf konnte nicht ausgewertet werden.'}), 500
 
 
 @app.route('/api/cv-data', methods=['GET', 'POST'])
