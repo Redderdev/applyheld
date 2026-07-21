@@ -205,21 +205,108 @@ body.nav-collapsed .sidebar {
   flex-shrink: 0;
 }
 
-/* User Chip */
+/* Account menu (bottom of sidebar) */
+.sidebar-account {
+  position: relative;
+  margin: 0 12px 14px;
+}
+
 .sidebar-user-chip {
   display: flex;
   align-items: center;
   gap: 11px;
+  width: 100%;
   padding: 10px;
-  margin: 0 12px 14px;
   border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--bg-soft);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: border-color var(--trans-fast), background var(--trans-fast);
 }
 
 .sidebar-user-chip:hover {
   border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.user-chip-caret {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ink-400);
+  transition: transform var(--trans-fast);
+}
+
+.sidebar-user-chip[aria-expanded="true"] .user-chip-caret {
+  transform: rotate(180deg);
+}
+
+/* Popup menu — opens upward above the chip */
+.user-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-lg);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 200;
+  animation: userMenuIn .14s var(--ease-in-out);
+}
+
+.user-menu[hidden] {
+  display: none;
+}
+
+@keyframes userMenuIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  color: var(--ink-700);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--trans-fast), color var(--trans-fast);
+}
+
+.user-menu-item svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--ink-400);
+}
+
+.user-menu-item:hover {
+  background: var(--bg-soft);
+  color: var(--ink-900);
+}
+
+.user-menu-item:hover svg {
+  color: var(--ink-700);
+}
+
+.user-menu-item.danger:hover {
+  background: var(--status-rejected-bg);
+  color: var(--danger);
+}
+
+.user-menu-item.danger:hover svg {
+  color: var(--danger);
 }
 
 .user-info {
@@ -251,22 +338,6 @@ body.nav-collapsed .sidebar {
   flex-shrink: 0;
 }
 
-.user-chip-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: var(--r-sm);
-  color: var(--ink-400);
-  transition: background var(--trans-fast), color var(--trans-fast);
-}
-
-.user-chip-action:hover {
-  background: var(--surface);
-  color: var(--danger);
-}
 
 /* ─── TOPBAR ─────────────────────────────────────────────────── */
 
