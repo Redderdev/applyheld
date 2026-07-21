@@ -366,12 +366,20 @@ def cv_data_api():
     return jsonify({'success': True})
 
 
+def _clean_cv_data(data):
+    if 'certifications' in data:
+        data['certifications'] = [c for c in data['certifications'] if (c.get('name') or '').strip()]
+    if 'projects' in data:
+        data['projects'] = [p for p in data['projects'] if (p.get('name') or '').strip()]
+    return data
+
+
 @app.route('/api/cv/neu', methods=['POST'])
 @login_required
 def cv_create():
     body     = request.get_json()
     name     = (body.get('name') or 'Lebenslauf').strip() or 'Lebenslauf'
-    data     = body.get('data', {})
+    data     = _clean_cv_data(body.get('data', {}))
     template = body.get('template', 'klassisch')
     if template not in _CV_TEMPLATES:
         template = 'klassisch'
@@ -384,7 +392,7 @@ def cv_create():
 def cv_save(cv_id):
     body     = request.get_json()
     name     = (body.get('name') or 'Lebenslauf').strip() or 'Lebenslauf'
-    data     = body.get('data', {})
+    data     = _clean_cv_data(body.get('data', {}))
     template = body.get('template', 'klassisch')
     if template not in _CV_TEMPLATES:
         template = 'klassisch'

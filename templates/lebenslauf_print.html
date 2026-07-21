@@ -100,7 +100,7 @@ function tplKlassisch(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'
   if(expHtml) main+=mainSection('Berufserfahrung',expHtml);
   const projHtml=(cv.projects||[]).filter(pr=>pr.name).map(pr=>`<div style="margin-bottom:10pt;"><strong style="font-size:10pt;">${esc(pr.name)}</strong><br>${pr.description?`<span style="font-size:9pt;color:#374151;line-height:1.55;">${esc(pr.description)}</span>`:''}</div>`).join('');
   if(projHtml) main+=mainSection('Projekte',projHtml);
-  const certHtml=(cv.certifications||[]).filter(c=>c.name).map(c=>`${esc(c.name)}${c.issuer?' · '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}`).join('<br>');
+  const certHtml=(cv.certifications||[]).filter(c=>(c.name||'').trim()).map(c=>`${esc(c.name.trim())}${c.issuer?' · '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}`).join('<br>');
   if(certHtml) main+=mainSection('Zertifikate &amp; Kurse',`<p style="font-size:9.5pt;">${certHtml}</p>`);
   main+='</div>';
   return `<div style="display:flex;min-height:297mm;overflow:hidden;background:linear-gradient(to right,${NAVY} 57mm,#ffffff 57mm);">${sidebar}${main}</div>`;
@@ -117,7 +117,7 @@ function tplModern(cv){ const p=cv.personal||{}; const NAVY=cv.accentColor||'#1e
   if(contacts.length) sideSection('Kontakt',contacts.map(([v,i])=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">${i} ${esc(v)}</div>`).join(''));
   if((cv.skills||[]).length) sideSection('Fähigkeiten',cv.skills.filter(Boolean).map(s=>`<div style="background:rgba(255,255,255,.15);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:3px;display:inline-block;margin-right:3px;color:#fff;">${esc(s)}</div>`).join(''));
   if((cv.languages||[]).filter(l=>l.lang).length) sideSection('Sprachen',(cv.languages||[]).filter(l=>l.lang).map(l=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">${esc(l.lang)}<span style="color:rgba(255,255,255,.55);"> · ${esc(l.level||'')}</span></div>`).join(''));
-  if((cv.certifications||[]).filter(c=>c.name).length) sideSection('Zertifikate',(cv.certifications||[]).filter(c=>c.name).map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
+  if((cv.certifications||[]).filter(c=>(c.name||'').trim()).length) sideSection('Zertifikate',(cv.certifications||[]).filter(c=>(c.name||'').trim()).map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:3px;">${esc(c.name.trim())}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
   const modernHobbys=(cv.hobbys||[]).filter(Boolean);
   if(modernHobbys.length) sideSection('Hobbys',modernHobbys.map(h=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">▪ ${esc(h)}</div>`).join(''));
   lines.push('</div>');
@@ -149,8 +149,8 @@ function tplMinimal(cv){ const p=cv.personal||{}; const ACC=cv.accentColor||'#08
   if(skills.length) section('Kenntnisse',skills.map(s=>`<span style="background:#f1f5f9;border-radius:3px;padding:2px 8px;font-size:9pt;margin-right:4px;margin-bottom:4px;display:inline-block;">${esc(s)}</span>`).join(''));
   const langs=(cv.languages||[]).filter(l=>l.lang);
   if(langs.length) section('Sprachen',`<p style="font-size:9.5pt;">${langs.map(l=>`${esc(l.lang)} <span style="color:#64748b;">(${esc(l.level||'')})</span>`).join(' · ')}</p>`);
-  const certs=(cv.certifications||[]).filter(c=>c.name);
-  if(certs.length) section('Zertifikate',certs.map(c=>`<p style="font-size:9.5pt;margin-bottom:3px;">${esc(c.name)}${c.issuer?' – '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}</p>`).join(''));
+  const certs=(cv.certifications||[]).filter(c=>(c.name||'').trim());
+  if(certs.length) section('Zertifikate',certs.map(c=>`<p style="font-size:9.5pt;margin-bottom:3px;">${esc(c.name.trim())}${c.issuer?' – '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}</p>`).join(''));
   const minProj=(cv.projects||[]).filter(pr=>pr.name);
   if(minProj.length) section('Projekte',minProj.map(pr=>`<div style="margin-bottom:10px;"><strong style="font-size:10pt;">${esc(pr.name)}</strong><br>${pr.description?`<span style="font-size:9pt;color:#374151;line-height:1.55;">${esc(pr.description)}</span>`:''}</div>`).join(''));
   const minHobbys=(cv.hobbys||[]).filter(Boolean);

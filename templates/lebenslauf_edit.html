@@ -824,7 +824,7 @@ function tplKlassisch(cv) {
   if (expHtml) main += mainSection('Berufserfahrung', expHtml);
   const projHtml = (cv.projects||[]).filter(pr=>pr.name).map(pr=>`<div style="margin-bottom:10pt;"><strong style="font-size:10pt;">${esc(pr.name)}</strong><br>${pr.description?`<span style="font-size:9pt;color:#374151;line-height:1.55;">${esc(pr.description)}</span>`:''}</div>`).join('');
   if (projHtml) main += mainSection('Projekte', projHtml);
-  const certHtml = (cv.certifications||[]).filter(c=>c.name).map(c=>`${esc(c.name)}${c.issuer?' · '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}`).join('<br>');
+  const certHtml = (cv.certifications||[]).filter(c=>(c.name||'').trim()).map(c=>`${esc(c.name.trim())}${c.issuer?' · '+esc(c.issuer):''}${c.year?' ('+esc(c.year)+')':''}`).join('<br>');
   if (certHtml) main += mainSection('Zertifikate &amp; Kurse', `<p style="font-size:9.5pt;">${certHtml}</p>`);
   main += '</div>';
   return `<div style="display:flex;min-height:918px;overflow:hidden;">${sidebar}${main}</div>`;
@@ -846,8 +846,8 @@ function tplModern(cv) {
   if (skills.length) sidebar += sideBlock('Fähigkeiten', skills.map(s=>`<div style="background:rgba(255,255,255,.15);border-radius:3px;padding:2px 7px;font-size:8pt;margin-bottom:4px;display:inline-block;margin-right:3px;color:#fff;">${esc(s)}</div>`).join(''));
   const langs = (cv.languages||[]).filter(l=>l.lang);
   if (langs.length) sidebar += sideBlock('Sprachen', langs.map(l=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">${esc(l.lang)} <span style="color:rgba(255,255,255,.55);">· ${esc(l.level||'')}</span></div>`).join(''));
-  const certs = (cv.certifications||[]).filter(c=>c.name);
-  if (certs.length) sidebar += sideBlock('Zertifikate', certs.map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:3px;">${esc(c.name)}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
+  const certs = (cv.certifications||[]).filter(c=>(c.name||'').trim());
+  if (certs.length) sidebar += sideBlock('Zertifikate', certs.map(c=>`<div style="font-size:8pt;color:rgba(255,255,255,.85);margin-bottom:3px;">${esc(c.name.trim())}${c.year?' ('+esc(c.year)+')':''}</div>`).join(''));
   const hobbys = (cv.hobbys||[]).filter(Boolean);
   if (hobbys.length) sidebar += sideBlock('Hobbys', hobbys.map(h=>`<div style="font-size:8.5pt;color:rgba(255,255,255,.9);margin-bottom:3px;">▪ ${esc(h)}</div>`).join(''));
   sidebar += '</div>';
