@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ cv_name or 'Lebenslauf' }} — BewerbungsKI{% endblock %}
 {% block page_title %}
-  <a href="{{ url_for('lebenslauf') }}" style="color:var(--ink-400);text-decoration:none;font-weight:400;">Lebensläufe</a>
-  <span style="color:var(--ink-300);margin:0 6px;">›</span>
-  <span id="cv-title-display">{{ cv_name or 'Neuer Lebenslauf' }}</span>
+  <span class="editor-head">
+    <a href="{{ url_for('lebenslauf') }}" class="editor-back" title="Zurück zu allen Lebensläufen" aria-label="Zurück zu allen Lebensläufen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <span class="editor-doc">
+      <span class="editor-crumb">Lebenslauf</span>
+      <span id="cv-title-display" class="editor-title">{{ cv_name or 'Neuer Lebenslauf' }}</span>
+    </span>
+  </span>
 {% endblock %}
 
 {% block topbar_actions %}
@@ -21,6 +27,28 @@
 <style>
 .page { max-width: none !important; }
 .main { padding: 0 !important; overflow: hidden !important; }
+
+/* ── Editor document header (topbar) ── */
+.page-title { font-size: 16px !important; font-weight: 400 !important; }
+.editor-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.editor-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: var(--r); color: var(--ink-500);
+  border: 1px solid var(--border); background: var(--surface);
+  transition: background .14s, color .14s, border-color .14s;
+}
+.editor-back:hover { background: var(--bg-soft); color: var(--ink-900); border-color: var(--border-strong); }
+.editor-back svg { width: 18px; height: 18px; }
+.editor-doc { display: flex; flex-direction: column; justify-content: center; min-width: 0; line-height: 1.2; }
+.editor-crumb {
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--ink-400);
+}
+.editor-title {
+  font-size: 16px; font-weight: 650; color: var(--ink-900); letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw;
+}
 
 /* ── Builder layout ── */
 #cv-builder {
