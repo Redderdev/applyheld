@@ -30,8 +30,10 @@ def landing():
 
 
 @app.route('/')
-@login_required
 def index():
+    # Nicht eingeloggte Besucher sehen die Landing Page (statt direkt Login)
+    if not current_user.is_authenticated:
+        return redirect(url_for('landing'))
     conn        = get_db()
     bewerbungen = conn.execute(
         'SELECT * FROM bewerbungen WHERE user_id = ? ORDER BY datum_erstellt DESC',

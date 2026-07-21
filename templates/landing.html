@@ -3,835 +3,449 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BewerbungsKI — KI-gestütztes Bewerbungsmanagement</title>
-  <link rel="stylesheet" href="/static/design-tokens.css">
+  <title>BewerbungsKI — Anschreiben mit KI & Bewerbungs-Tracker</title>
+  <meta name="description" content="BewerbungsKI schreibt individuelle Anschreiben, die zur Stelle passen – und hält deinen gesamten Bewerbungsprozess organisiert. Kostenlos starten.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='design-tokens.css') }}?v=9">
   <style>
-    /* Landing Page Specific Styles */
-    
-    /* Sticky Navigation */
-    .landing-nav {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(248, 250, 252, 0.82);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .landing-nav-container {
-      max-width: 1160px;
-      margin: 0 auto;
-      padding: 0 24px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .logo-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .logo-mark {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      background: var(--navy-700);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 18px;
-      letter-spacing: -0.04em;
-    }
-
-    .logo-text {
-      font-size: 18.6px;
-      font-weight: 680;
-      letter-spacing: -0.02em;
-      color: var(--navy-900);
-    }
-
-    .logo-text .accent {
-      color: var(--accent-600);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      flex: 1;
-      justify-content: center;
-    }
-
-    .nav-link {
-      display: inline-block;
-      padding: 0 12px;
-      height: 34px;
-      background: transparent;
-      border: 1px solid transparent;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--ink-700);
-      border-radius: var(--r);
-      cursor: pointer;
-      transition: all var(--trans-fast) var(--ease-in-out);
-      text-decoration: none;
-    }
-
-    .nav-link:hover {
-      background: var(--bg-soft);
-      transform: translateY(-1px);
-    }
-
-    .nav-buttons {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    @media (max-width: 880px) {
-      .nav-links {
-        display: none;
-      }
-
-      .nav-buttons {
-        gap: 8px;
-      }
-
-      .btn-ghost.desktop-only {
-        display: none;
-      }
-    }
-
-    /* Hero Section */
-    .hero-section {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero-background {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(60% 70% at 70% 0%, rgba(6, 182, 212, 0.1), transparent 60%),
-                  radial-gradient(50% 60% at 15% 10%, rgba(30, 58, 95, 0.06), transparent 55%);
-      pointer-events: none;
-    }
-
-    .hero-container {
-      max-width: 1160px;
-      margin: 0 auto;
-      padding: 72px 24px 80px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.05fr;
-      gap: 56px;
-      align-items: center;
-      margin-bottom: 64px;
-    }
-
-    .hero-left {
-      animation: fadeIn 0.6s var(--ease-in-out);
-    }
-
-    .hero-right {
-      animation: fadeIn 0.6s var(--ease-in-out) 0.1s both;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .chip-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: var(--r-full);
-      background: var(--accent-50);
-      color: var(--accent-600);
-      font-size: var(--eyebrow-size);
-      font-weight: var(--eyebrow-weight);
-      letter-spacing: var(--eyebrow-letter-spacing);
-      text-transform: uppercase;
-      margin-bottom: 22px;
-      border: 1px solid var(--accent-500);
-      width: fit-content;
-    }
-
-    .chip-icon {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-    }
-
-    .hero-h1 {
-      font-size: var(--display-size);
-      font-weight: var(--display-weight);
-      letter-spacing: var(--display-letter-spacing);
-      line-height: 1.1;
-      margin-bottom: 20px;
-      color: var(--navy-700);
-    }
-
-    .hero-h1 .navy {
-      color: var(--navy-700);
-    }
-
-    .highlight-text {
-      position: relative;
-      display: inline-block;
-    }
-
-    .underline-svg {
-      position: absolute;
-      left: 0;
-      bottom: -6px;
-      width: 100%;
-      height: 10px;
-    }
-
-    .hero-subline {
-      font-size: 18.5px;
-      line-height: 1.55;
-      color: var(--ink-500);
-      max-width: 480px;
-      margin-bottom: 30px;
-    }
-
-    .hero-ctas {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 26px;
-      flex-wrap: wrap;
-    }
-
-    .cta-icon {
-      display: inline-block;
-      width: 18px;
-      height: 18px;
-    }
-
-    .hero-trust-points {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      font-size: 13.5px;
-      color: var(--ink-500);
-    }
-
-    .trust-point {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .trust-icon {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      color: var(--success);
-    }
-
-    /* Hero Preview */
-    .hero-preview {
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: var(--sh-lg);
-    }
-
-    .preview-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-soft);
-    }
-
-    .traffic-light {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .traffic-light.red {
-      background: #f87171;
-    }
-
-    .traffic-light.yellow {
-      background: #fbbf24;
-    }
-
-    .traffic-light.green {
-      background: #34d399;
-    }
-
-    .preview-url {
-      margin-left: 8px;
-      font-size: 12px;
-      color: var(--ink-400);
-      font-family: var(--mono);
-    }
-
-    .preview-body {
-      display: grid;
-      grid-template-columns: 1fr 1.15fr;
-      min-height: 320px;
-    }
-
-    .preview-left {
-      padding: 18px;
-      border-right: 1px solid var(--border);
-    }
-
-    .preview-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--ink-400);
-      margin-bottom: 12px;
-    }
-
-    .company-cell {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .company-logo {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--navy-700), var(--accent-500));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 13.6px;
-      flex-shrink: 0;
-    }
-
-    .company-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .company-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink-900);
-    }
-
-    .company-position {
-      font-size: 12.5px;
-      color: var(--ink-500);
-    }
-
-    .skeleton-line {
-      height: 8px;
-      background: var(--bg-soft);
-      border-radius: 4px;
-      margin-bottom: 7px;
-      animation: skeleton-pulse 2s infinite;
-    }
-
-    @keyframes skeleton-pulse {
-      0%,
-      100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-    }
-
-    .skeleton-line:nth-child(4) {
-      width: 85%;
-    }
-
-    .skeleton-line:nth-child(5) {
-      width: 70%;
-      margin-bottom: 18px;
-    }
-
-    .generate-btn {
-      width: 100%;
-      height: 42px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--r);
-      font-size: var(--body-size);
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 0 32px;
-      transition: all var(--trans-fast) var(--ease-in-out);
-      box-shadow: var(--sh-xs);
-      font-family: inherit;
-    }
-
-    .generate-btn:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: var(--sh-sm);
-    }
-
-    .generate-icon {
-      display: inline-block;
-      width: 15px;
-      height: 15px;
-    }
-
-    .preview-right {
-      padding: 18px;
-      background: linear-gradient(180deg, #fff, var(--bg));
-    }
-
-    .ai-indicator {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-
-    .pulse-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-500);
-      animation: pulse-animation 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse-animation {
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      50% {
-        opacity: 0.6;
-        transform: scale(0.8);
-      }
-    }
-
-    .ai-text {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--accent-600);
-    }
-
-    .skeleton-lines {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .skel-line {
-      height: 9px;
-      background: var(--bg-soft);
-      border-radius: 4px;
-      margin-bottom: 9px;
-      animation: skeleton-pulse 2s infinite;
-    }
-
-    .skel-line:nth-child(1) {
-      width: 100%;
-      animation-delay: 0s;
-    }
-
-    .skel-line:nth-child(2) {
-      width: 94%;
-      animation-delay: 0.1s;
-    }
-
-    .skel-line:nth-child(3) {
-      width: 88%;
-      animation-delay: 0.2s;
-    }
-
-    .skel-line:nth-child(4) {
-      width: 97%;
-      animation-delay: 0.3s;
-    }
-
-    .skel-line:nth-child(5) {
-      width: 72%;
-      animation-delay: 0.4s;
-    }
-
-    .skel-line:nth-child(6) {
-      width: 90%;
-      animation-delay: 0.5s;
-    }
-
-    .skel-line:nth-child(7) {
-      width: 40%;
-      margin-bottom: 0;
-      animation-delay: 0.6s;
-    }
-
-    .ai-preview-quote {
-      margin-top: 16px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--ink-700);
-    }
-
-    .quote-highlight {
-      background: var(--accent-50);
-      color: var(--accent-600);
-      padding: 1px 4px;
-      border-radius: 4px;
-    }
-
-    /* Trust Strip */
-    .trust-strip {
-      margin-top: 64px;
-      padding-top: 30px;
-      border-top: 1px solid var(--border);
-      text-align: center;
-    }
-
-    .trust-label {
-      font-size: 13px;
-      color: var(--ink-400);
-      margin-bottom: 18px;
-      font-weight: 500;
-    }
-
-    .company-logos {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 40px;
-      opacity: 0.7;
-    }
-
-    .company-wordmark {
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--ink-400);
-      white-space: nowrap;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 880px) {
-      .hero-grid {
-        grid-template-columns: 1fr;
-        gap: 32px;
-        margin-bottom: 40px;
-      }
-
-      .hero-h1 {
-        font-size: 34px;
-      }
-
-      .hero-ctas {
-        flex-direction: column;
-        width: 100%;
-      }
-
-      .hero-ctas .btn {
-        width: 100%;
-      }
-
-      .preview-body {
-        grid-template-columns: 1fr;
-        min-height: 400px;
-      }
-
-      .preview-left {
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .hero-container {
-        padding: 48px 24px 60px;
-      }
-
-      .trust-strip {
-        margin-top: 40px;
-        padding-top: 24px;
-      }
-
-      .company-logos {
-        gap: 24px;
-      }
-    }
-
-    @media (max-width: 560px) {
-      .hero-h1 {
-        font-size: 28px;
-      }
-
-      .hero-subline {
-        font-size: 16px;
-      }
-
-      .hero-trust-points {
-        font-size: 12.5px;
-        gap: 12px;
-      }
-
-      .preview-body {
-        min-height: 300px;
-      }
-
-      .company-wordmark {
-        font-size: 16px;
-      }
-
-      .company-logos {
-        gap: 16px;
-      }
-    }
-
-    /* Icon Styles (SVG) */
-    .icon-svg {
-      display: inline-block;
-      width: 1em;
-      height: 1em;
-      stroke: currentColor;
-      stroke-width: 1.75;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      fill: none;
-      vertical-align: -0.125em;
-    }
-
-    /* Button Animations */
+    * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Geist', 'Inter', -apple-system, sans-serif;
+      background: var(--bg); color: var(--ink-900);
+      -webkit-font-smoothing: antialiased; line-height: 1.5;
+    }
+    a { text-decoration: none; color: inherit; }
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Buttons ── */
     .btn {
-      cursor: pointer;
-      font-family: inherit;
-      transition: all var(--trans-fast) var(--ease-in-out);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--r);
-      font-weight: 600;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 44px; padding: 0 22px; border-radius: var(--r);
+      font-family: inherit; font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+      cursor: pointer; border: 1px solid transparent; white-space: nowrap;
+      transition: transform .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
     }
+    .btn svg { width: 18px; height: 18px; }
+    .btn-primary { background: var(--navy-700); color: #fff; box-shadow: var(--sh-xs); }
+    .btn-primary:hover { background: var(--navy-800); transform: translateY(-1px); box-shadow: var(--sh-navy); }
+    .btn-secondary { background: var(--surface); color: var(--ink-900); border-color: var(--border-strong); }
+    .btn-secondary:hover { background: var(--bg-soft); border-color: var(--ink-400); transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--ink-700); }
+    .btn-ghost:hover { background: var(--bg-soft); color: var(--ink-900); }
+    .btn-white { background: #fff; color: var(--navy-800); }
+    .btn-white:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(0,0,0,.22); }
+    .btn-sm { height: 38px; padding: 0 16px; font-size: 14px; }
+    .btn-lg { height: 52px; padding: 0 28px; font-size: 16px; }
 
-    /* Link scroll behavior */
-    html {
-      scroll-behavior: smooth;
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(250,250,249,.8); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner { height: 66px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--navy-700);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 18px; letter-spacing: -.04em; position: relative;
+    }
+    .brand-mark::after {
+      content: ''; position: absolute; top: -3px; right: -3px;
+      width: 10px; height: 10px; border-radius: 50%; background: var(--accent-500);
+      box-shadow: 0 0 0 2px var(--bg);
+    }
+    .brand-text { font-size: 18px; font-weight: 680; letter-spacing: -.02em; }
+    .brand-text b { color: var(--accent-600); font-weight: 680; }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-link {
+      padding: 8px 12px; border-radius: var(--r); font-size: 14.5px; font-weight: 500;
+      color: var(--ink-600, var(--ink-700)); transition: background .14s, color .14s;
+    }
+    .nav-link:hover { background: var(--bg-soft); color: var(--ink-900); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; }
+    @media (max-width: 860px) { .nav-links { display: none; } }
+    @media (max-width: 520px) { .nav-cta .hide-sm { display: none; } }
+
+    /* ── Hero ── */
+    .hero { position: relative; overflow: hidden; }
+    .hero::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(55% 60% at 78% -5%, rgba(6,182,212,.13), transparent 60%),
+        radial-gradient(45% 50% at 8% 5%, rgba(30,58,95,.07), transparent 55%);
+    }
+    .hero-inner { position: relative; padding: 80px 24px 72px; display: grid;
+      grid-template-columns: 1fr 1.02fr; gap: 56px; align-items: center; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 13px;
+      border-radius: var(--r-full); background: var(--accent-50); color: var(--accent-600);
+      border: 1px solid rgba(6,182,212,.3);
+      font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .badge svg { width: 14px; height: 14px; }
+    .hero h1 {
+      font-size: clamp(36px, 5.4vw, 58px); font-weight: 720; letter-spacing: -.035em;
+      line-height: 1.06; color: var(--navy-900); margin-bottom: 20px;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(120deg, var(--navy-700), var(--accent-500));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub { font-size: 18px; line-height: 1.6; color: var(--ink-500); max-width: 480px; margin-bottom: 30px; }
+    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+    .hero-trust { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-500); }
+    .hero-trust span { display: inline-flex; align-items: center; gap: 6px; }
+    .hero-trust svg { width: 15px; height: 15px; color: var(--success); }
+
+    /* ── Hero mockup ── */
+    .mock {
+      border-radius: 14px; background: var(--surface); overflow: hidden;
+      box-shadow: var(--sh-lg); border: 1px solid var(--border);
+      animation: floatIn .7s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes floatIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    .mock-bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--border); background: var(--bg-soft); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .mock-url { margin-left: 10px; font-size: 12px; color: var(--ink-400); font-family: var(--mono); }
+    .mock-body { display: grid; grid-template-columns: 1fr 1.12fr; min-height: 316px; }
+    .mock-l { padding: 18px; border-right: 1px solid var(--border); }
+    .mock-r { padding: 18px; background: linear-gradient(180deg, #fff, var(--bg)); }
+    .mock-label { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-400); margin-bottom: 12px; }
+    .mock-company { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .mock-logo { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, var(--navy-700), var(--accent-500)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+    .mock-cn { font-size: 14px; font-weight: 600; }
+    .mock-cp { font-size: 12.5px; color: var(--ink-500); }
+    .sk { height: 8px; background: var(--bg-soft); border-radius: 4px; margin-bottom: 8px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+    .mock-gen {
+      width: 100%; height: 40px; margin-top: 6px; border: none; border-radius: var(--r);
+      background: var(--navy-700); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 7px; cursor: default;
+    }
+    .mock-gen svg { width: 15px; height: 15px; }
+    .mock-ai { display: flex; align-items: center; gap: 7px; margin-bottom: 13px; }
+    .mock-ai .pd { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-500); animation: pd 1.5s ease-in-out infinite; }
+    @keyframes pd { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.75); } }
+    .mock-ai span { font-size: 12px; font-weight: 600; color: var(--accent-600); }
+    .mock-quote { margin-top: 15px; font-size: 13px; line-height: 1.65; color: var(--ink-700); }
+    .mock-quote mark { background: var(--accent-50); color: var(--accent-600); padding: 1px 4px; border-radius: 4px; }
+    .sk-r { height: 9px; background: var(--bg-soft); border-radius: 4px; margin-bottom: 9px; animation: pulse 2s infinite; }
+
+    /* ── Section shell ── */
+    section { padding: 84px 0; }
+    .sec-head { text-align: center; max-width: 640px; margin: 0 auto 52px; }
+    .eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-600); margin-bottom: 12px; }
+    .sec-head h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 700; letter-spacing: -.025em; line-height: 1.15; margin-bottom: 14px; }
+    .sec-head p { font-size: 17px; color: var(--ink-500); line-height: 1.6; }
+
+    /* ── Feature grid ── */
+    .features { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .fcard {
+      padding: 26px 24px; border-radius: var(--r-lg); background: var(--bg);
+      border: 1px solid var(--border); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .fcard:hover { transform: translateY(-3px); box-shadow: var(--sh-md); border-color: var(--border-strong); }
+    .ficon {
+      width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+      background: var(--navy-50); color: var(--navy-700); margin-bottom: 16px;
+    }
+    .ficon svg { width: 22px; height: 22px; }
+    .fcard h3 { font-size: 17px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 7px; }
+    .fcard p { font-size: 14.5px; color: var(--ink-500); line-height: 1.6; }
+
+    /* ── Steps ── */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; counter-reset: step; }
+    .step { position: relative; padding-top: 8px; }
+    .step-num {
+      width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      background: var(--navy-700); color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 18px;
+    }
+    .step h3 { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 8px; }
+    .step p { font-size: 15px; color: var(--ink-500); line-height: 1.6; }
+    .step:not(:last-child)::after {
+      content: ''; position: absolute; top: 29px; left: 58px; right: -14px; height: 2px;
+      background: repeating-linear-gradient(90deg, var(--border-strong) 0 6px, transparent 6px 12px);
+    }
+    @media (max-width: 780px) { .step:not(:last-child)::after { display: none; } }
+
+    /* ── Pricing ── */
+    .pricing { background: var(--surface); border-top: 1px solid var(--border); }
+    .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 22px; justify-content: center; }
+    .pcard { padding: 30px 28px; border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; }
+    .pcard.featured { border-color: var(--navy-700); box-shadow: var(--sh-md); position: relative; }
+    .pcard.featured .pill {
+      position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--accent-600); background: var(--accent-50); padding: 4px 10px; border-radius: var(--r-full);
+    }
+    .pname { font-size: 15px; font-weight: 650; color: var(--ink-700); margin-bottom: 8px; }
+    .pprice { font-size: 40px; font-weight: 720; letter-spacing: -.03em; line-height: 1; }
+    .pprice small { font-size: 15px; font-weight: 500; color: var(--ink-500); letter-spacing: 0; }
+    .pdesc { font-size: 14px; color: var(--ink-500); margin: 10px 0 20px; }
+    .plist { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; flex: 1; }
+    .plist li { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; color: var(--ink-700); }
+    .plist svg { width: 17px; height: 17px; color: var(--success); flex-shrink: 0; margin-top: 1px; }
+
+    /* ── CTA band ── */
+    .cta-band { background: var(--navy-900); color: #fff; position: relative; overflow: hidden; }
+    .cta-band::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(50% 70% at 75% 0%, rgba(6,182,212,.2), transparent 60%);
+    }
+    .cta-inner { position: relative; text-align: center; padding: 80px 24px; }
+    .cta-inner h2 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 720; letter-spacing: -.03em; margin-bottom: 14px; }
+    .cta-inner p { font-size: 17px; color: rgba(255,255,255,.66); max-width: 460px; margin: 0 auto 30px; line-height: 1.6; }
+
+    /* ── Footer ── */
+    .footer { background: var(--surface); border-top: 1px solid var(--border); padding: 40px 0; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 22px; font-size: 14px; color: var(--ink-500); flex-wrap: wrap; }
+    .footer-links a:hover { color: var(--ink-900); }
+    .footer-copy { font-size: 13.5px; color: var(--ink-400); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 40px; padding: 56px 24px 56px; }
+      .fgrid, .steps { grid-template-columns: 1fr; }
+      section { padding: 64px 0; }
+    }
+    @media (max-width: 620px) {
+      .mock-body { grid-template-columns: 1fr; }
+      .mock-l { border-right: none; border-bottom: 1px solid var(--border); }
+      .hero-ctas .btn { flex: 1; }
+      .pgrid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <!-- Sticky Navigation -->
-  <header class="landing-nav">
-    <div class="landing-nav-container">
-      <!-- Logo -->
-      <div class="logo-wrapper">
-        <div class="logo-mark">B</div>
-        <span class="logo-text">Bewerbungs<span class="accent">KI</span></span>
-      </div>
 
-      <!-- Navigation Links -->
+  <!-- ══ NAV ══ -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a href="{{ url_for('landing') }}" class="brand">
+        <span class="brand-mark">B</span>
+        <span class="brand-text">Bewerbungs<b>KI</b></span>
+      </a>
       <nav class="nav-links">
         <a href="#features" class="nav-link">Funktionen</a>
-        <a href="#workflow" class="nav-link">So funktioniert's</a>
+        <a href="#how" class="nav-link">So funktioniert's</a>
         <a href="#pricing" class="nav-link">Preise</a>
       </nav>
-
-      <!-- Right buttons -->
-      <div class="nav-buttons">
-        <button class="btn btn-ghost btn-sm desktop-only">Anmelden</button>
-        <button class="btn btn-primary btn-sm">Kostenlos starten</button>
+      <div class="nav-cta">
+        <a href="{{ url_for('login') }}" class="btn btn-ghost btn-sm hide-sm">Anmelden</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm">Kostenlos starten</a>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero-section">
-    <div class="hero-background"></div>
-    
-    <div class="hero-container">
-      <!-- Hero Grid: Left Content + Right Preview -->
-      <div class="hero-grid">
-        <!-- Left Column -->
-        <div class="hero-left">
-          <!-- Chip Badge -->
-          <div class="chip-badge">
-            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/>
-              <path d="M19 14l.7 2 2 .7-2 .7L19 20l-.7-1.9-2-.7 2-.7z"/>
-              <path d="M5 14l.6 1.7 1.7.6-1.7.6L5 18.6l-.6-1.7L2.7 16l1.7-.6z"/>
-            </svg>
-            KI für den deutschen Arbeitsmarkt
-          </div>
-
-          <!-- Headline with underline -->
-          <h1 class="hero-h1">
-            Bewerbungen schreiben in<br><span class="navy">Minuten</span>, nicht 
-            <span class="highlight-text">
-              Stunden
-              <svg class="underline-svg" viewBox="0 0 200 10" preserveAspectRatio="none">
-                <path d="M2 7 Q 100 1 198 6" stroke="var(--accent-500)" stroke-width="3" fill="none" stroke-linecap="round"/>
-              </svg>
-            </span>
-          </h1>
-
-          <!-- Subline -->
-          <p class="hero-subline">
-            Erstelle überzeugende, individuelle Anschreiben mit KI – und behalte mit dem integrierten Bewerbungs-Tracker jede Bewerbung im Blick.
-          </p>
-
-          <!-- CTAs -->
-          <div class="hero-ctas">
-            <button class="btn btn-primary btn-lg">
-              Kostenlos starten
-              <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12h14M13 5l7 7-7 7"/>
-              </svg>
-            </button>
-            <button class="btn btn-secondary btn-lg">
-              <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              Demo ansehen
-            </button>
-          </div>
-
-          <!-- Trust Points -->
-          <div class="hero-trust-points">
-            <span class="trust-point">
-              <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-              Keine Kreditkarte nötig
-            </span>
-            <span class="trust-point">
-              <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-              5 Bewerbungen / Monat gratis
-            </span>
-          </div>
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div>
+        <span class="badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/>
+          </svg>
+          KI für den deutschen Arbeitsmarkt
+        </span>
+        <h1>Schluss mit dem<br><span class="grad">leeren Blatt.</span></h1>
+        <p class="hero-sub">
+          BewerbungsKI schreibt individuelle Anschreiben, die zur Stelle passen –
+          und hält deinen gesamten Bewerbungsprozess organisiert. Von der ersten Idee bis zur Zusage.
+        </p>
+        <div class="hero-ctas">
+          <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+            Kostenlos starten
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#how" class="btn btn-secondary btn-lg">So funktioniert's</a>
         </div>
-
-        <!-- Right Column: Hero Preview -->
-        <div class="hero-right">
-          <div class="hero-preview card">
-            <!-- Preview Header with Traffic Lights -->
-            <div class="preview-header">
-              <span class="traffic-light red"></span>
-              <span class="traffic-light yellow"></span>
-              <span class="traffic-light green"></span>
-              <span class="preview-url">bewerbungski.de/bewerbung/neu</span>
-            </div>
-
-            <!-- Preview Body -->
-            <div class="preview-body">
-              <!-- Left: Stelle -->
-              <div class="preview-left">
-                <div class="preview-label">Stelle</div>
-                
-                <div class="company-cell">
-                  <div class="company-logo">SA</div>
-                  <div class="company-info">
-                    <div class="company-name">SAP SE</div>
-                    <div class="company-position">Senior Frontend Developer</div>
-                  </div>
-                </div>
-
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line"></div>
-
-                <button class="generate-btn">
-                  <svg class="generate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/>
-                    <path d="M19 14l.7 2 2 .7-2 .7L19 20l-.7-1.9-2-.7 2-.7z"/>
-                    <path d="M5 14l.6 1.7 1.7.6-1.7.6L5 18.6l-.6-1.7L2.7 16l1.7-.6z"/>
-                  </svg>
-                  KI-Anschreiben generieren
-                </button>
-              </div>
-
-              <!-- Right: KI Output -->
-              <div class="preview-right">
-                <div class="ai-indicator">
-                  <span class="pulse-dot"></span>
-                  <span class="ai-text">KI schreibt …</span>
-                </div>
-
-                <div class="skeleton-lines">
-                  <div class="skel-line"></div>
-                  <div class="skel-line"></div>
-                  <div class="skel-line"></div>
-                  <div class="skel-line"></div>
-                  <div class="skel-line"></div>
-                  <div class="skel-line"></div>
-                  <div class="skel-line"></div>
-                </div>
-
-                <div class="ai-preview-quote">
-                  „… sehe ich in Ihrem Team die <span class="quote-highlight">ideale Gelegenheit</span>, meine Expertise einzubringen."
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="hero-trust">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Keine Kreditkarte nötig</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> DSGVO-konform, Daten in der EU</span>
         </div>
       </div>
 
-      <!-- Trust Strip -->
-      <div class="trust-strip">
-        <div class="trust-label">Erfolgreiche Bewerbungen bei Unternehmen wie</div>
-        <div class="company-logos">
-          <span class="company-wordmark">SAP</span>
-          <span class="company-wordmark">Siemens</span>
-          <span class="company-wordmark">Zalando</span>
-          <span class="company-wordmark">N26</span>
-          <span class="company-wordmark">BMW</span>
-          <span class="company-wordmark">Personio</span>
+      <!-- Product mockup -->
+      <div class="mock">
+        <div class="mock-bar">
+          <span class="dot" style="background:#f87171;"></span>
+          <span class="dot" style="background:#fbbf24;"></span>
+          <span class="dot" style="background:#34d399;"></span>
+          <span class="mock-url">bewerbungski.de/bewerbung/neu</span>
+        </div>
+        <div class="mock-body">
+          <div class="mock-l">
+            <div class="mock-label">Stelle</div>
+            <div class="mock-company">
+              <div class="mock-logo">SA</div>
+              <div><div class="mock-cn">SAP SE</div><div class="mock-cp">Frontend Developer</div></div>
+            </div>
+            <div class="sk"></div><div class="sk" style="width:88%;"></div><div class="sk" style="width:72%;margin-bottom:16px;"></div>
+            <div class="mock-gen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/></svg>
+              Anschreiben generieren
+            </div>
+          </div>
+          <div class="mock-r">
+            <div class="mock-ai"><span class="pd"></span><span>KI schreibt …</span></div>
+            <div class="sk-r"></div><div class="sk-r" style="width:94%;"></div><div class="sk-r" style="width:88%;"></div>
+            <div class="sk-r" style="width:97%;"></div><div class="sk-r" style="width:70%;"></div>
+            <div class="mock-quote">„… sehe ich in Ihrem Team die <mark>ideale Gelegenheit</mark>, meine Expertise gezielt einzubringen."</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- ══ FEATURES ══ -->
+  <section id="features" class="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">Funktionen</div>
+        <h2>Alles für deine Bewerbung. An einem Ort.</h2>
+        <p>Von der Stellenanzeige zum fertigen Anschreiben – und lückenlos organisiert bis zur Zusage.</p>
+      </div>
+      <div class="fgrid">
+        <div class="fcard">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z"/><path d="M19 14l.7 2 2 .7-2 .7L19 20l-.7-1.9-2-.7 2-.7z"/></svg></div>
+          <h3>Anschreiben in Sekunden</h3>
+          <p>Stellenanzeige einfügen, und die KI erstellt ein individuelles Anschreiben – zugeschnitten auf Stelle und deinen Lebenslauf.</p>
+        </div>
+        <div class="fcard">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <h3>Verfeinern per Chat</h3>
+          <p>Kürzer, formeller, neuer Absatz oder anderer Ton – sag der KI, was du willst, und dein Anschreiben passt sich sofort an.</p>
+        </div>
+        <div class="fcard">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <h3>Bewerbungs-Tracker</h3>
+          <p>Von Entwurf über Gespräch bis Zusage – behalte jeden Status im Blick und verliere keine Bewerbung mehr aus den Augen.</p>
+        </div>
+        <div class="fcard">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
+          <h3>Lebenslauf-Builder</h3>
+          <p>Erstelle einen sauberen, modernen Lebenslauf in mehreren Vorlagen – mit Live-Vorschau und PDF-Export.</p>
+        </div>
+        <div class="fcard">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <h3>Integrierte Jobsuche</h3>
+          <p>Finde passende Stellen direkt in der App und übernimm sie mit einem Klick in eine neue Bewerbung.</p>
+        </div>
+        <div class="fcard">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3>DSGVO-konform</h3>
+          <p>Deine Bewerbungsdaten bleiben in der EU. Datenschutz nach europäischem Standard, ohne Weitergabe an Dritte.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOW IT WORKS ══ -->
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">So funktioniert's</div>
+        <h2>In drei Schritten zur fertigen Bewerbung</h2>
+        <p>Kein leeres Blatt, kein Formulierungsstress. Du gibst den Kontext, die KI übernimmt den Rest.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Profil & Lebenslauf</h3>
+          <p>Lade deinen Lebenslauf hoch oder erstelle ihn direkt in der App. Die KI kennt so deinen Hintergrund.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Stelle einfügen</h3>
+          <p>Füge die Stellenanzeige oder einen Link ein. Die KI schreibt ein individuelles, passendes Anschreiben.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Verfeinern & tracken</h3>
+          <p>Passe den Text per Chat an, exportiere als PDF und verfolge den Status jeder Bewerbung.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PRICING ══ -->
+  <section id="pricing" class="pricing">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">Preise</div>
+        <h2>Fair und transparent</h2>
+        <p>Starte kostenlos. Kein Risiko, keine Kreditkarte.</p>
+      </div>
+      <div class="pgrid">
+        <div class="pcard">
+          <div class="pname">Kostenlos</div>
+          <div class="pprice">0 €<small> / für immer</small></div>
+          <div class="pdesc">Ideal, um loszulegen und deine ersten Bewerbungen zu schreiben.</div>
+          <ul class="plist">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 5 KI-Anschreiben pro Monat</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Bewerbungs-Tracker</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Lebenslauf-Builder & PDF-Export</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Integrierte Jobsuche</li>
+          </ul>
+          <a href="{{ url_for('register') }}" class="btn btn-secondary btn-lg" style="width:100%;">Kostenlos starten</a>
+        </div>
+        <div class="pcard featured">
+          <span class="pill">Bald verfügbar</span>
+          <div class="pname">Pro</div>
+          <div class="pprice">Bald</div>
+          <div class="pdesc">Für alle, die aktiv suchen und maximale Trefferquote wollen.</div>
+          <ul class="plist">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Unbegrenzte KI-Anschreiben</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Erweiterte Chat-Verfeinerung</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Mehrere Lebenslauf-Versionen</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Priorisierter Support</li>
+          </ul>
+          <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg" style="width:100%;">Jetzt kostenlos beginnen</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA BAND ══ -->
+  <section class="cta-band">
+    <div class="wrap cta-inner">
+      <h2>Bereit für deine nächste Bewerbung?</h2>
+      <p>Schreib dein erstes KI-Anschreiben in wenigen Minuten – völlig kostenlos.</p>
+      <a href="{{ url_for('register') }}" class="btn btn-white btn-lg">
+        Jetzt kostenlos starten
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a href="{{ url_for('landing') }}" class="brand">
+        <span class="brand-mark">B</span>
+        <span class="brand-text">Bewerbungs<b>KI</b></span>
+      </a>
+      <div class="footer-links">
+        <a href="#features">Funktionen</a>
+        <a href="#how">So funktioniert's</a>
+        <a href="#pricing">Preise</a>
+        <a href="{{ url_for('login') }}">Anmelden</a>
+      </div>
+      <div class="footer-copy">© 2026 BewerbungsKI</div>
+    </div>
+  </footer>
+
   <script>
-    // Smooth scroll anchor navigation
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        const href = this.getAttribute('href');
-        if (href !== '#' && document.querySelector(href)) {
-          e.preventDefault();
-          document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
-        }
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', function (e) {
+        const t = document.querySelector(this.getAttribute('href'));
+        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
       });
     });
   </script>
