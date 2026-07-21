@@ -5,6 +5,38 @@
 
 {% block content %}
 
+<style>
+/* Klickbare Pipeline-Zeilen als Statusfilter */
+.pipe-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 6px 8px; margin: 0 -8px;
+  border-radius: 8px; cursor: pointer;
+  transition: background .12s, box-shadow .12s;
+}
+.pipe-row:hover { background: var(--bg-soft); }
+.pipe-row.active { background: var(--navy-50); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.pipe-row.is-empty { cursor: default; opacity: .5; }
+.pipe-row.is-empty:hover { background: transparent; }
+.pipe-label { width: 172px; flex-shrink: 0; display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-700); font-weight: 500; }
+.pipe-track { flex: 1; height: 8px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; }
+.pipe-row.active .pipe-track { background: #fff; }
+.pipe-fill { height: 100%; border-radius: 999px; transition: width .45s cubic-bezier(.4,0,.2,1); }
+.pipe-count { width: 32px; text-align: right; font-size: 13.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* Aktiver-Filter-Hinweis in der Toolbar */
+.filter-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 6px 0 12px; border-radius: 6px;
+  background: var(--navy-700); color: #fff; font-size: 12.5px; font-weight: 550;
+}
+.filter-tag button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: none; border-radius: 4px;
+  background: rgba(255,255,255,.18); color: #fff; cursor: pointer; font-size: 14px; line-height: 1;
+}
+.filter-tag button:hover { background: rgba(255,255,255,.32); }
+</style>
+
 <!-- Begrüßung -->
 <div style="margin-bottom: 28px;">
   <h1 class="h1" style="margin-bottom: 4px;" id="greeting">Willkommen zurück</h1>
@@ -64,30 +96,38 @@
   {% if stats.total == 0 %}
     <div style="color:var(--ink-400); font-size:14px; padding:6px 0;">Noch keine Daten — erstelle deine erste Bewerbung, um deine Pipeline zu sehen.</div>
   {% else %}
-  <div style="display:flex; flex-direction:column; gap:11px;">
+  <div style="display:flex; flex-direction:column; gap:5px;">
     {% for st in status_options %}
     {% set c = stats.counts[st] %}
-    <div style="display:flex; align-items:center; gap:14px;">
-      <div style="width:172px; flex-shrink:0; display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink-700);">
+    <div class="pipe-row{{ ' is-empty' if not c }}"
+         data-status="{{ st|lower }}" data-label="{{ st }}"
+         {% if c %}onclick="filterByStatus('{{ st|lower }}')" title="Nur {{ st }} anzeigen"{% endif %}>
+      <div class="pipe-label">
         <span style="width:9px; height:9px; border-radius:50%; background:var(--status-{{ status_css[st] }}-dot); flex-shrink:0;"></span>
         {{ st }}
       </div>
-      <div style="flex:1; height:8px; background:var(--bg-soft); border-radius:999px; overflow:hidden;">
-        <div style="height:100%; border-radius:999px; background:var(--status-{{ status_css[st] }}-dot); width:{{ (c / stats.total * 100) | round(1) }}%; transition:width .45s cubic-bezier(.4,0,.2,1);"></div>
+      <div class="pipe-track">
+        <div class="pipe-fill" style="background:var(--status-{{ status_css[st] }}-dot); width:{{ (c / stats.total * 100) | round(1) }}%;"></div>
       </div>
-      <div style="width:32px; text-align:right; font-size:13.5px; font-weight:650; font-variant-numeric:tabular-nums; color:{{ 'var(--ink-900)' if c else 'var(--ink-300)' }};">{{ c }}</div>
+      <div class="pipe-count" style="color:{{ 'var(--ink-900)' if c else 'var(--ink-300)' }};">{{ c }}</div>
     </div>
     {% endfor %}
+  </div>
+  <div style="margin-top:14px; font-size:12px; color:var(--ink-400); display:flex; align-items:center; gap:6px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="width:14px;height:14px;flex-shrink:0;"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 16v-4M12 8h.01"/></svg>
+    Klicke auf einen Status, um die Liste darunter zu filtern.
   </div>
   {% endif %}
 </div>
 
 <!-- Toolbar -->
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 16px; flex-wrap: wrap;">
-  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-    <button class="chip active" id="chip-all"    onclick="setFilter('all',   this)">Alle <span style="opacity:.65;">({{ stats.total }})</span></button>
-    <button class="chip"        id="chip-active" onclick="setFilter('active',this)">Aktiv <span style="opacity:.65;">({{ stats.gesendet }})</span></button>
-    <button class="chip"        id="chip-draft"  onclick="setFilter('draft', this)">Entwürfe <span style="opacity:.65;">({{ stats.entwurf }})</span></button>
+  <div style="display: flex; align-items: center; gap: 10px; min-height: 30px;">
+    <span id="active-filter" style="display:none;" class="filter-tag">
+      <span>Gefiltert: <strong id="active-filter-text" style="font-weight:700;"></strong></span>
+      <button onclick="resetStatusFilter()" title="Filter zurücksetzen" aria-label="Filter zurücksetzen">✕</button>
+    </span>
+    <span id="all-label" style="font-size:13.5px; color:var(--ink-500);">Alle Bewerbungen <span style="opacity:.7;">({{ stats.total }})</span></span>
   </div>
   <div style="position: relative; width: 240px;">
     <svg style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--ink-400); pointer-events: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -221,13 +261,38 @@
   if (el) el.textContent = first ? `${greet}, ${first} 👋` : `${greet} 👋`;
 })();
 
-let currentFilter = 'all';
+let currentStatus = '';   // '' = alle anzeigen; sonst exakter Status (lowercase)
 
-function setFilter(filter, btn) {
-  currentFilter = filter;
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  btn.classList.add('active');
+function filterByStatus(status) {
+  currentStatus = (currentStatus === status) ? '' : status;
+  syncFilterUI();
   applyFilter();
+}
+
+function resetStatusFilter() {
+  currentStatus = '';
+  syncFilterUI();
+  applyFilter();
+}
+
+function syncFilterUI() {
+  // Pipeline-Zeile hervorheben
+  document.querySelectorAll('.pipe-row').forEach(r => {
+    r.classList.toggle('active', r.dataset.status === currentStatus);
+  });
+  // Filter-Tag / "Alle"-Label
+  const tag   = document.getElementById('active-filter');
+  const txt   = document.getElementById('active-filter-text');
+  const all   = document.getElementById('all-label');
+  if (currentStatus) {
+    const row = document.querySelector(`.pipe-row[data-status="${currentStatus}"]`);
+    if (txt) txt.textContent = row ? row.dataset.label : currentStatus;
+    if (tag) tag.style.display = '';
+    if (all) all.style.display = 'none';
+  } else {
+    if (tag) tag.style.display = 'none';
+    if (all) all.style.display = '';
+  }
 }
 
 function applyFilter() {
@@ -239,10 +304,8 @@ function applyFilter() {
     const stelle = row.dataset.stelle || '';
     const status = row.dataset.status || '';
     const matchesSearch = !q || firma.includes(q) || stelle.includes(q);
-    const matchesFilter = currentFilter === 'all'
-      || (currentFilter === 'draft'  && status === 'entwurf')
-      || (currentFilter === 'active' && status !== 'entwurf' && status !== 'angenommen' && status !== 'abgelehnt');
-    const show = matchesSearch && matchesFilter;
+    const matchesStatus = !currentStatus || status === currentStatus;
+    const show = matchesSearch && matchesStatus;
     row.style.display = show ? '' : 'none';
     if (show) visible++;
   });
