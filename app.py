@@ -61,5 +61,5 @@ import routes.ai           # noqa: F401, E402
 init_db()
 
 if __name__ == '__main__':
-    print('\n  BewerbungsKI laeuft auf  http://localhost:5000\n')
+    print('\n  ApplyHeld laeuft auf  http://localhost:5000\n')
     app.run(debug=False, port=5000)

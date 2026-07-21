@@ -18,7 +18,7 @@ except ImportError:
 
 _BA_JOBS_URL   = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs'
 _BA_DETAIL_URL = 'https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/{}'
-_BA_HEADERS    = {'X-API-Key': 'jobboerse-jobsuche', 'User-Agent': 'BewerbungsKI/1.0'}
+_BA_HEADERS    = {'X-API-Key': 'jobboerse-jobsuche', 'User-Agent': 'ApplyHeld/1.0'}
 
 
 def _format_job_age(iso_str):
@@ -87,7 +87,7 @@ def jobs_search():
         resp = http_requests.get(
             f'https://api.adzuna.com/v1/api/jobs/de/search/{page}',
             params=params, timeout=12,
-            headers={'User-Agent': 'BewerbungsKI/1.0'}
+            headers={'User-Agent': 'ApplyHeld/1.0'}
         )
         resp.raise_for_status()
         raw = resp.json()

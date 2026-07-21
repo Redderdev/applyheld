@@ -1,0 +1,15 @@
+{
+  "name": "ApplyHeld",
+  "short_name": "ApplyHeld",
+  "description": "Individuelle Anschreiben, die zur Stelle passen – und ein Tracker für deinen gesamten Bewerbungsprozess.",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f2440",
+  "theme_color": "#1e3a5f",
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

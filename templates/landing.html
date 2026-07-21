@@ -3,11 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BewerbungsKI — Anschreiben schreiben & Bewerbungen verwalten</title>
+  <title>ApplyHeld — Anschreiben schreiben & Bewerbungen verwalten</title>
   <meta name="description" content="Individuelle Anschreiben, die zur Stelle passen – und ein Tracker, der deinen Bewerbungsprozess von der ersten Idee bis zur Zusage organisiert hält.">
-  <meta property="og:title" content="BewerbungsKI — Schluss mit dem leeren Blatt">
+  <meta property="og:title" content="ApplyHeld — Schluss mit dem leeren Blatt">
   <meta property="og:description" content="Individuelle Anschreiben, die zur Stelle passen – und ein Tracker für deinen gesamten Bewerbungsprozess.">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="{{ url_for('static', filename='og-image.png', _external=True) }}">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <meta name="theme-color" content="#0f2440">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -96,11 +104,7 @@
     }
     .nav-inner { height: 70px; display: flex; align-items: center; justify-content: space-between; }
     .brand { display: flex; align-items: center; gap: 11px; }
-    .brand-mark {
-      width: 34px; height: 34px; border-radius: 9px; background: var(--teal);
-      display: flex; align-items: center; justify-content: center; position: relative;
-      color: var(--navy); font-weight: 800; font-size: 19px; letter-spacing: -.04em;
-    }
+    .brand-mark { width: 34px; height: 34px; flex-shrink: 0; display: block; }
     .brand-text { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
     .nav-links { display: flex; gap: 6px; }
     .nav-links a {
@@ -311,8 +315,8 @@
   <header class="nav">
     <div class="container nav-inner">
       <a href="{{ url_for('landing') }}" class="brand">
-        <span class="brand-mark" aria-hidden="true">B</span>
-        <span class="brand-text">BewerbungsKI</span>
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--teal)"/><path d="M18 47 L32 17 L46 47" fill="none" stroke="var(--navy)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 37.5 L41 37.5" fill="none" stroke="var(--navy)" stroke-width="6.5" stroke-linecap="round"/></svg>
+        <span class="brand-text">ApplyHeld</span>
       </a>
       <nav class="nav-links" aria-label="Hauptnavigation">
         <a href="#features">Funktionen</a>
@@ -372,7 +376,7 @@
         <span class="dot" style="background:#f87171;"></span>
         <span class="dot" style="background:#fbbf24;"></span>
         <span class="dot" style="background:#34d399;"></span>
-        <span class="mock-url">bewerbungski.de/bewerbung/neu</span>
+        <span class="mock-url">applyheld.de/bewerbung/neu</span>
       </div>
       <div class="mock-body">
         <div class="mock-l">
@@ -532,8 +536,8 @@
   <footer class="footer">
     <div class="container footer-inner">
       <a href="{{ url_for('landing') }}" class="brand">
-        <span class="brand-mark" aria-hidden="true">B</span>
-        <span class="brand-text">BewerbungsKI</span>
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--teal)"/><path d="M18 47 L32 17 L46 47" fill="none" stroke="var(--navy)" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 37.5 L41 37.5" fill="none" stroke="var(--navy)" stroke-width="6.5" stroke-linecap="round"/></svg>
+        <span class="brand-text">ApplyHeld</span>
       </a>
       <div class="footer-links">
         <a href="#features">Funktionen</a>
@@ -541,7 +545,7 @@
         <a href="#pricing">Preise</a>
         <a href="{{ url_for('login') }}">Anmelden</a>
       </div>
-      <div class="footer-copy">© 2026 BewerbungsKI</div>
+      <div class="footer-copy">© 2026 ApplyHeld</div>
     </div>
   </footer>
 
