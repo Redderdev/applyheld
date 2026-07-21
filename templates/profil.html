@@ -16,6 +16,7 @@
   </div>
 
   <form method="POST" class="card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <!-- User Info Header -->
     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
       <div class="avatar avatar-lg">M</div>

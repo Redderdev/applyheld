@@ -49,6 +49,32 @@ def _fehlversuche_loeschen(email):
     conn.close()
 
 
+# ── Registrierungs-Bremse (gegen massenhaftes Durchprobieren von Adressen) ────
+_REG_MARKER  = '__registrierung__'
+_REG_FENSTER = 60 * 60   # 1 Stunde
+_REG_MAX_IP  = 5         # Neuregistrierungen je IP und Stunde
+
+
+def _registrierung_gesperrt():
+    cutoff = int(time.time()) - _REG_FENSTER
+    conn = get_db()
+    try:
+        n = conn.execute(
+            'SELECT COUNT(*) AS n FROM login_versuche WHERE email = ? AND ip = ? AND ts >= ?',
+            (_REG_MARKER, _client_ip(), cutoff)).fetchone()['n']
+    finally:
+        conn.close()
+    return n >= _REG_MAX_IP
+
+
+def _registrierung_merken():
+    conn = get_db()
+    conn.execute('INSERT INTO login_versuche (email, ip, ts) VALUES (?, ?, ?)',
+                 (_REG_MARKER, _client_ip(), int(time.time())))
+    conn.commit()
+    conn.close()
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -92,11 +118,18 @@ def register():
         name     = request.form.get('name', '').strip()
         email    = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
+        if _registrierung_gesperrt():
+            app.logger.warning('Registrierung gesperrt (Rate-Limit): %s', _client_ip())
+            return render_template('register.html', error=(
+                'Zu viele Registrierungsversuche von dieser Verbindung. '
+                'Bitte versuche es später erneut.')), 429
+
         if not name or not email or not password:
             error = 'Bitte alle Felder ausfüllen.'
         elif len(password) < 8:
             error = 'Passwort muss mindestens 8 Zeichen haben.'
         else:
+            _registrierung_merken()
             pw_hash = bcrypt.generate_password_hash(password).decode('utf-8')
             conn = get_db()
             try:
@@ -119,7 +152,9 @@ def register():
             except Exception as e:
                 conn.close()
                 app.logger.warning('Registrierung fehlgeschlagen (%s): %s', email, e)
-                error = 'Diese E-Mail-Adresse ist bereits registriert.'
+                # Bestaetigt bewusst NICHT, dass die Adresse existiert.
+                error = ('Registrierung nicht möglich. Falls du bereits ein Konto '
+                         'hast, melde dich bitte an oder setze dein Passwort zurück.')
     return render_template('register.html', error=error)
 
 

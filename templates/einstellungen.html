@@ -22,6 +22,7 @@
     </div>
 
     <form method="POST" style="display: flex; flex-direction: column; gap: 16px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <p style="font-size: 14px; color: var(--ink-500);">Werden als Absenderadresse im PDF-Anschreiben verwendet.</p>
 
       <!-- Name + Email (Row) -->

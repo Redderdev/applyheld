@@ -1,5 +1,35 @@
 // Gemeinsame Hilfsfunktionen – werden in allen Templates genutzt
 
+// ── CSRF ─────────────────────────────────────────────────────────────────────
+// Haengt das Token automatisch an alle veraendernden fetch()-Aufrufe an, damit
+// nicht jede einzelne Aufrufstelle daran denken muss.
+(function () {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (!meta || !window.fetch) return;
+  const TOKEN = meta.getAttribute('content');
+  const SAFE = /^(GET|HEAD|OPTIONS|TRACE)$/i;
+  const origFetch = window.fetch.bind(window);
+
+  window.fetch = function (input, init) {
+    init = init || {};
+    const method = (init.method || (input instanceof Request ? input.method : 'GET') || 'GET');
+    if (SAFE.test(method)) return origFetch(input, init);
+
+    // Nur an eigene Requests anhaengen — Token niemals an Fremdhosts senden
+    let url = (input instanceof Request) ? input.url : String(input);
+    try {
+      if (new URL(url, location.href).origin !== location.origin) {
+        return origFetch(input, init);
+      }
+    } catch (e) { /* relative URL -> gleiche Origin */ }
+
+    const headers = new Headers(init.headers ||
+      (input instanceof Request ? input.headers : undefined));
+    if (!headers.has('X-CSRFToken')) headers.set('X-CSRFToken', TOKEN);
+    return origFetch(input, Object.assign({}, init, { headers: headers }));
+  };
+})();
+
 // Haupt-Navigation ein-/ausklappen (mehr Platz für Inhalt, z.B. CV-Editor)
 function toggleNav() {
   const collapsed = document.body.classList.toggle('nav-collapsed');
