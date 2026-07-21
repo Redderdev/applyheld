@@ -139,8 +139,8 @@ Wenn der Nutzer eine Frage stellt oder nur Feedback gibt, antworte kurz ohne die
                 display_text = 'Anschreiben wurde aktualisiert.'
 
             conn = get_db()
-            conn.execute('UPDATE bewerbungen SET anschreiben = ? WHERE id = ?',
-                         (updated_anschreiben, bid))
+            conn.execute('UPDATE bewerbungen SET anschreiben = ? WHERE id = ? AND user_id = ?',
+                         (updated_anschreiben, bid, current_user.id))
             conn.commit()
             conn.close()
 

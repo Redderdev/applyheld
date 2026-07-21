@@ -53,7 +53,7 @@ def jobs_search():
     umkreis    = request.args.get('umkreis', '25')
     alter      = request.args.get('alter', '').strip()
     sortierung = request.args.get('sortierung', 'date').strip()
-    page       = max(1, int(request.args.get('page', 1)))
+    page       = max(1, request.args.get('page', 1, type=int) or 1)
 
     if not stelle:
         return jsonify({'error': 'Bitte eine Stelle eingeben.'}), 400
@@ -149,7 +149,7 @@ def jobs_search_ba():
     ort     = request.args.get('ort', '').strip()
     umkreis = request.args.get('umkreis', '25')
     alter   = request.args.get('alter', '')
-    page    = max(1, int(request.args.get('page', 1)))
+    page    = max(1, request.args.get('page', 1, type=int) or 1)
 
     if not stelle:
         return jsonify({'error': 'Bitte eine Stelle eingeben.'}), 400
@@ -246,6 +246,9 @@ def jobs_search_ba():
 def job_detail_ba(hash_id):
     if not _REQUESTS_OK:
         return jsonify({'error': 'requests-Bibliothek fehlt'}), 500
+    # Nur Base64-Zeichen zulassen — hash_id wird in die BA-URL eingesetzt
+    if not re.fullmatch(r'[A-Za-z0-9+/=_-]+', hash_id or ''):
+        return jsonify({'error': 'Ungültige Job-Referenz'}), 400
 
     try:
         resp = http_requests.get(

@@ -1,10 +1,14 @@
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse, urljoin
 
 from flask import request, jsonify, send_file, redirect, url_for
 from flask_login import login_required, current_user
 from app import app
 from db import get_db, get_setting, _PG
 from services.pdf import _build_pdf
+from constants import STATUS_OPTIONS
 
 try:
     import requests as http_requests
@@ -12,6 +16,28 @@ try:
     _SCRAPE_OK = True
 except ImportError:
     _SCRAPE_OK = False
+
+
+def _clean_status(value):
+    """Nur bekannte Status zulassen — sonst 'Entwurf'."""
+    return value if value in STATUS_OPTIONS else 'Entwurf'
+
+
+def _url_is_safe(url):
+    """SSRF-Schutz: nur http(s) auf öffentliche IPs — blockt localhost,
+    private Netze, Link-Local (Cloud-Metadaten 169.254.x.x) etc."""
+    try:
+        p = urlparse(url)
+        if p.scheme not in ('http', 'https') or not p.hostname:
+            return False
+        for info in socket.getaddrinfo(p.hostname, None):
+            ip = ipaddress.ip_address(info[4][0])
+            if (ip.is_private or ip.is_loopback or ip.is_link_local
+                    or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+                return False
+        return True
+    except Exception:
+        return False
 
 
 # ── URL extraction ─────────────────────────────────────────────────────────────
@@ -26,10 +52,20 @@ def extract_url():
         return jsonify({'error': 'URL fehlt'}), 400
     if not _SCRAPE_OK:
         return jsonify({'error': 'URL-Extraktion nicht verfügbar'}), 500
+    if not _url_is_safe(url):
+        return jsonify({'error': 'Diese URL ist nicht erlaubt.'}), 400
 
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        resp    = http_requests.get(url, headers=headers, timeout=12)
+        # Redirects manuell folgen und jedes Ziel erneut prüfen (SSRF via Redirect)
+        resp = http_requests.get(url, headers=headers, timeout=12, allow_redirects=False)
+        hops = 0
+        while resp.is_redirect and hops < 3:
+            nxt = urljoin(resp.url, resp.headers.get('Location', ''))
+            if not _url_is_safe(nxt):
+                return jsonify({'error': 'Diese URL ist nicht erlaubt.'}), 400
+            resp = http_requests.get(nxt, headers=headers, timeout=12, allow_redirects=False)
+            hops += 1
         resp.raise_for_status()
 
         soup = BeautifulSoup(resp.text, 'html.parser')
@@ -57,7 +93,7 @@ def save():
     conn   = get_db()
     params = (uid, data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
               data.get('stellenanzeige', ''), data.get('anschreiben', ''),
-              data.get('status', 'Entwurf'), data.get('notizen', ''),
+              _clean_status(data.get('status', 'Entwurf')), data.get('notizen', ''),
               data.get('datum_gesendet') or None)
     if _PG:
         cur = conn.execute(
@@ -87,7 +123,7 @@ def update(bid):
            WHERE id=? AND user_id=?''',
         (data.get('firma', ''), data.get('stelle', ''), data.get('url', ''),
          data.get('stellenanzeige', ''), data.get('anschreiben', ''),
-         data.get('status', 'Entwurf'), data.get('notizen', ''),
+         _clean_status(data.get('status', 'Entwurf')), data.get('notizen', ''),
          data.get('datum_gesendet') or None, bid, current_user.id)
     )
     conn.commit()
@@ -98,7 +134,6 @@ def update(bid):
 @app.route('/api/update-status/<int:bid>', methods=['POST'])
 @login_required
 def update_status(bid):
-    from constants import STATUS_OPTIONS
     data   = request.get_json()
     status = data.get('status', '')
     if status not in STATUS_OPTIONS:
@@ -137,6 +172,6 @@ def export_pdf(bid):
     b    = dict(row)
     s    = {k: get_setting(k) for k in ['name', 'email', 'telefon', 'strasse', 'plz_ort', 'ort']}
     buf  = _build_pdf(b, s)
-    safe = f"Anschreiben_{b['firma']}_{b['stelle']}".replace(' ', '_').replace('/', '-')
+    safe = re.sub(r'[^\w\-.]', '_', f"Anschreiben_{b['firma']}_{b['stelle']}")
     return send_file(buf, as_attachment=True, download_name=f'{safe}.pdf',
                      mimetype='application/pdf')

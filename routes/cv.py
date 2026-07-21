@@ -250,7 +250,8 @@ def upload_cv():
         return jsonify({'error': 'Nur PDF oder DOCX erlaubt'}), 400
 
     ext      = '.pdf' if fname.endswith('.pdf') else '.docx'
-    filepath = os.path.join(UPLOAD_FOLDER, f'cv{ext}')
+    # Pro User eine eigene Datei — sonst überschreiben sich User gegenseitig
+    filepath = os.path.join(UPLOAD_FOLDER, f'cv_{current_user.id}{ext}')
     file.save(filepath)
 
     try:
@@ -279,7 +280,7 @@ def delete_cv():
     set_setting('cv_text', '')
     set_setting('cv_filename', '')
     for ext in ('.pdf', '.docx'):
-        p = os.path.join(UPLOAD_FOLDER, f'cv{ext}')
+        p = os.path.join(UPLOAD_FOLDER, f'cv_{current_user.id}{ext}')
         if os.path.exists(p):
             os.remove(p)
     return jsonify({'success': True})

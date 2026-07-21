@@ -1,11 +1,39 @@
 from flask import Flask
 import os
+import secrets
 
 from extensions import login_manager, bcrypt
 from db import init_db, get_db, User
 
+
+def _load_secret_key():
+    """SECRET_KEY aus der Umgebung; sonst einmalig generieren und in Datei
+    persistieren (stabil über Worker/Neustarts, kein bekannter Default)."""
+    sk = os.environ.get('SECRET_KEY')
+    if sk:
+        return sk
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.secret_key')
+    try:
+        with open(path, 'x') as f:          # exklusiv: nur ein Prozess erzeugt den Key
+            sk = secrets.token_hex(32)
+            f.write(sk)
+            return sk
+    except FileExistsError:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:                          # Dateisystem read-only o.ä.
+        return secrets.token_hex(32)
+
+
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-change-in-production')
+app.secret_key = _load_secret_key()
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',   # blockt Cross-Site-POSTs (CSRF-Mitigation)
+    REMEMBER_COOKIE_HTTPONLY=True,
+    REMEMBER_COOKIE_SAMESITE='Lax',
+    MAX_CONTENT_LENGTH=10 * 1024 * 1024,   # Upload-Limit 10 MB
+)
 
 login_manager.init_app(app)
 bcrypt.init_app(app)

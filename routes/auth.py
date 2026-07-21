@@ -18,7 +18,11 @@ def login():
         conn.close()
         if row and bcrypt.check_password_hash(row['password_hash'], password):
             login_user(User(row['id'], row['email'], row['name'], row['plan']), remember=True)
-            return redirect(request.args.get('next') or url_for('index'))
+            # Nur relative Pfade erlauben — verhindert Open Redirect auf fremde Seiten
+            nxt = request.args.get('next') or ''
+            if not nxt.startswith('/') or nxt.startswith('//') or '\\' in nxt:
+                nxt = url_for('index')
+            return redirect(nxt)
         error = 'E-Mail oder Passwort falsch.'
     return render_template('login.html', error=error)
 
@@ -56,8 +60,9 @@ def register():
                 conn.close()
                 login_user(User(user_id, email, name), remember=True)
                 return redirect(url_for('index'))
-            except Exception:
+            except Exception as e:
                 conn.close()
+                app.logger.warning('Registrierung fehlgeschlagen (%s): %s', email, e)
                 error = 'Diese E-Mail-Adresse ist bereits registriert.'
     return render_template('register.html', error=error)
 
