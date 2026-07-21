@@ -8,11 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="{{ url_for('static', filename='design-tokens.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='layout.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='design-tokens.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='layout.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
 </head>
 <body>
+  <script>try{if(localStorage.getItem('nav_collapsed')==='1')document.body.classList.add('nav-collapsed');}catch(e){}</script>
   <!-- Sidebar Navigation -->
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -97,6 +98,11 @@
   <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-left">
+      <button class="nav-collapse-btn" onclick="toggleNav()" title="Menü ein-/ausblenden" aria-label="Menü ein-/ausblenden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
       <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
     </div>
     <div class="topbar-right">
@@ -154,6 +160,6 @@
     </a>
   </nav>
 
-  <script src="{{ url_for('static', filename='main.js') }}"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=7"></script>
 </body>
 </html>
