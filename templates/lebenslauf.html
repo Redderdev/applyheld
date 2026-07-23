@@ -342,6 +342,15 @@
         </svg>
       </a>
 
+      <button class="cv-icon-btn"
+              onclick="event.stopPropagation();duplicateCV({{ v.id }}, this)"
+              title="Duplizieren – als Kopie bearbeiten">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="9" y="9" width="12" height="12" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </button>
+
       <button class="cv-icon-btn danger"
               onclick="event.stopPropagation();deleteCV({{ v.id }}, this)"
               title="Löschen">
@@ -377,6 +386,29 @@
 </div>
 
 <script>
+async function duplicateCV(id, btn) {
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  // Kleiner Ladezustand, damit ein Doppelklick keine zwei Kopien erzeugt
+  btn.innerHTML = '<span style="font-size:11px;">…</span>';
+  try {
+    const res = await fetch(`/api/cv/${id}/duplicate`, { method: 'POST' });
+    const d   = await res.json();
+    if (res.ok && d.success && d.id) {
+      // Direkt in die Kopie springen, um sie anzupassen
+      window.location = `/lebenslauf/${d.id}`;
+    } else {
+      alert(d.error || 'Fehler beim Duplizieren');
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  } catch (e) {
+    alert('Fehler beim Duplizieren');
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
 async function deleteCV(id, btn) {
   if (!confirm('Lebenslauf wirklich löschen?')) return;
   btn.disabled = true;

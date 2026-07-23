@@ -413,3 +413,35 @@ def cv_delete(cv_id):
     conn.commit()
     conn.close()
     return jsonify({'success': True})
+
+
+def _kopie_name(basis, vorhandene):
+    """Nicht-kollidierender Kopie-Name: 'X (Kopie)', dann '(Kopie 2)' usw.
+    Ein bereits vorhandenes '(Kopie …)'-Suffix wird zuerst entfernt, damit
+    mehrfaches Duplizieren nicht 'X (Kopie) (Kopie)' erzeugt."""
+    basis = re.sub(r'\s*\(Kopie(?:\s+\d+)?\)\s*$', '', basis or '').strip() or 'Lebenslauf'
+    kandidat = f'{basis} (Kopie)'
+    n = 2
+    while kandidat in vorhandene:
+        kandidat = f'{basis} (Kopie {n})'
+        n += 1
+    return kandidat[:120]
+
+
+@app.route('/api/cv/<int:cv_id>/duplicate', methods=['POST'])
+@login_required
+def cv_duplicate(cv_id):
+    # _get_cv_version ist bereits auf user_id eingeschraenkt -> kein Fremdzugriff.
+    src = _get_cv_version(cv_id)
+    if not src:
+        return jsonify({'error': 'Lebenslauf nicht gefunden'}), 404
+
+    conn = get_db()
+    rows = conn.execute('SELECT name FROM cv_versions WHERE user_id = ?',
+                        (current_user.id,)).fetchall()
+    conn.close()
+    name = _kopie_name(src['name'], {r['name'] for r in rows})
+
+    template = src['template'] if src['template'] in _CV_TEMPLATES else 'klassisch'
+    new_id   = _create_cv_version(name, _clean_cv_data(src['data']), template)
+    return jsonify({'success': True, 'id': new_id, 'name': name})
