@@ -42,17 +42,17 @@ _CV_TEMPLATES = ('klassisch', 'modern', 'minimal')
 
 def _get_cv_json():
     if not current_user.is_authenticated:
-        return {}, 'klassisch'
+        return {}, 'minimal'
     conn = get_db()
     row  = conn.execute('SELECT data, template FROM cv_data WHERE user_id = ?',
                         (current_user.id,)).fetchone()
     conn.close()
     if row:
         try:
-            return json.loads(row['data'] or '{}'), row['template'] or 'klassisch'
+            return json.loads(row['data'] or '{}'), row['template'] or 'minimal'
         except Exception:
             pass
-    return {}, 'klassisch'
+    return {}, 'minimal'
 
 
 def _save_cv_json(data, template):
@@ -162,7 +162,7 @@ def lebenslauf():
 def lebenslauf_neu():
     return render_template('lebenslauf_edit.html',
                            cv_id=None, cv_name='Neuer Lebenslauf',
-                           cv_json={}, cv_template='klassisch',
+                           cv_json={}, cv_template='minimal',
                            cv_text=get_setting('cv_text'),
                            cv_filename=get_setting('cv_filename'))
 
@@ -342,7 +342,7 @@ Regeln:
             raw = re.sub(r'\n?```$', '', raw)
 
         parsed = json.loads(raw)
-        _save_cv_json(parsed, 'klassisch')
+        _save_cv_json(parsed, 'minimal')
         return jsonify({'success': True, 'data': parsed})
 
     except json.JSONDecodeError as e:
@@ -364,9 +364,9 @@ def cv_data_api():
         return jsonify({'success': True, 'data': data, 'template': template})
     body     = request.get_json()
     data     = body.get('data', {})
-    template = body.get('template', 'klassisch')
+    template = body.get('template', 'minimal')
     if template not in _CV_TEMPLATES:
-        template = 'klassisch'
+        template = 'minimal'
     _save_cv_json(data, template)
     return jsonify({'success': True})
 
@@ -385,9 +385,9 @@ def cv_create():
     body     = request.get_json()
     name     = (body.get('name') or 'Lebenslauf').strip() or 'Lebenslauf'
     data     = _clean_cv_data(body.get('data', {}))
-    template = body.get('template', 'klassisch')
+    template = body.get('template', 'minimal')
     if template not in _CV_TEMPLATES:
-        template = 'klassisch'
+        template = 'minimal'
     new_id = _create_cv_version(name, data, template)
     return jsonify({'success': True, 'id': new_id})
 
@@ -398,9 +398,9 @@ def cv_save(cv_id):
     body     = request.get_json()
     name     = (body.get('name') or 'Lebenslauf').strip() or 'Lebenslauf'
     data     = _clean_cv_data(body.get('data', {}))
-    template = body.get('template', 'klassisch')
+    template = body.get('template', 'minimal')
     if template not in _CV_TEMPLATES:
-        template = 'klassisch'
+        template = 'minimal'
     _update_cv_version(cv_id, name, data, template)
     return jsonify({'success': True})
 
@@ -442,6 +442,6 @@ def cv_duplicate(cv_id):
     conn.close()
     name = _kopie_name(src['name'], {r['name'] for r in rows})
 
-    template = src['template'] if src['template'] in _CV_TEMPLATES else 'klassisch'
+    template = src['template'] if src['template'] in _CV_TEMPLATES else 'minimal'
     new_id   = _create_cv_version(name, _clean_cv_data(src['data']), template)
     return jsonify({'success': True, 'id': new_id, 'name': name})
