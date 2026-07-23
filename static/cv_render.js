@@ -36,9 +36,12 @@
     var ACC = cv.accentColor || '#0891b2';
     var html = '';
 
-    // Wrapper = Seiten-Innenrand. 44px oben/unten, 52px seitlich.
+    // Der letzte Block darf keinen Rand nach unten haben, sonst kippt dieser
+    // unsichtbare Leerraum im Druck auf eine (fast leere) zweite Seite.
+    html += '<style>.cv-min > *:last-child { margin-bottom: 0 !important; }</style>';
+    // Wrapper = Seiten-Innenrand. 40px oben, 32px unten, 52px seitlich.
     html += '<div class="cv-min" style="font-family:\'Helvetica Neue\',Arial,sans-serif;'
-          + 'padding:44px 52px;color:#0f172a;font-size:10pt;line-height:1.55;">';
+          + 'padding:40px 52px 32px;color:#0f172a;font-size:10pt;line-height:1.55;">';
 
     // Kopf: Akzentbalken, Name, Kontakt, Profil
     html += '<div style="width:44px;height:3px;background:' + ACC + ';border-radius:2px;margin-bottom:16px;"></div>';

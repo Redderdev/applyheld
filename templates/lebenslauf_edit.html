@@ -451,7 +451,7 @@
 <div id="cv-print-root"><div class="cv-page"></div></div>
 <div id="cv-toast" style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-900);color:#fff;padding:9px 20px;border-radius:var(--r-full);font-size:13px;font-weight:600;z-index:9999;transition:transform .25s;pointer-events:none;">Gespeichert</div>
 
-<script src="{{ url_for('static', filename='cv_render.js') }}?v=10"></script>
+<script src="{{ url_for('static', filename='cv_render.js') }}?v=11"></script>
 <script>
 // ── State ────────────────────────────────────────────────────────────────────
 const CV_EMPTY = {
@@ -961,9 +961,15 @@ function layoutPreview() {
   if (!page || !content || !stage) return;
 
   page.style.width = A4.widthMM + 'mm';
-  // offsetHeight ist die Layout-Höhe (von transform NICHT beeinflusst)
+  // offsetHeight ist die Layout-Höhe (von transform NICHT beeinflusst).
+  // SICHERHEITSPUFFER: Der Druck rendert Text minimal höher als der Bildschirm
+  // (Font-Hinting, Zeilen-Rundung) und ein Sub-Pixel-Überlauf erzeugt sonst
+  // eine fast leere zweite Seite. Deshalb ist die nutzbare Seitenhöhe etwas
+  // kleiner als das echte A4 -> "grün = passt" gilt dann auch im PDF zuverlässig.
+  const SAFETY = 14;                       // ~3,7mm Puffer
+  const usable = A4.heightPx - SAFETY;
   const contentH = content.offsetHeight;
-  const pages    = Math.max(1, Math.ceil((contentH - 3) / A4.heightPx));
+  const pages    = Math.max(1, Math.ceil(contentH / usable));
   const boxH     = pages * A4.heightPx;
   page.style.minHeight = boxH + 'px';
 
@@ -973,9 +979,11 @@ function layoutPreview() {
   scale.style.width  = (A4.widthPx * s) + 'px';
   scale.style.height = (boxH * s) + 'px';
 
+  // Linie an der SICHEREN Grenze (usable), nicht am absoluten Seitenrand —
+  // so bedeutet "Text über der Linie" wirklich "passt ins PDF".
   let bh = '';
   for (let k = 1; k < pages; k++) {
-    bh += '<div class="cv-break-line" style="top:' + (k * A4.heightPx) + 'px;">'
+    bh += '<div class="cv-break-line" style="top:' + (k * usable) + 'px;">'
         + '<span class="cv-break-label">Seite ' + (k + 1) + ' — hier kürzen</span></div>';
   }
   breaks.innerHTML = bh;

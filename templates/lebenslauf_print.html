@@ -73,7 +73,7 @@ body { background: #d1d5db; }
 
 <div class="cv-page" id="cv-page"></div>
 
-<script src="{{ url_for('static', filename='cv_render.js') }}?v=10"></script>
+<script src="{{ url_for('static', filename='cv_render.js') }}?v=11"></script>
 <script>
   const CV = {{ cv_json | tojson if cv_json else '{}' }};
   document.getElementById('cv-page').innerHTML = window.renderCV(CV);
