@@ -162,6 +162,20 @@
 #cv-pageinfo.ok   { color: #059669; }
 #cv-pageinfo.warn { color: #dc2626; }
 
+/* ── Print-in-place: PDF-Export im selben Tab (kein zweiter Tab) ──
+   Beim Drucken wird die ganze App ausgeblendet und nur der Lebenslauf
+   gezeigt. Der Browser-Druckdialog bietet "Als PDF speichern". */
+#cv-print-root { display: none; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; }
+  body { display: block !important; }
+  body > *:not(#cv-print-root) { display: none !important; }
+  #cv-print-root { display: block !important; }
+  #cv-print-root .cv-page { width: 210mm; background: #fff; box-shadow: none; margin: 0; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
 /* ── Template tabs ── */
 #tpl-tabs {
   display: flex; align-items: flex-end; gap: 0;
@@ -434,6 +448,7 @@
 </div><!-- /cv-builder -->
 
 <input type="file" id="cv-upload" style="display:none;" accept=".pdf,.docx" onchange="uploadCV(event)">
+<div id="cv-print-root"><div class="cv-page"></div></div>
 <div id="cv-toast" style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-900);color:#fff;padding:9px 20px;border-radius:var(--r-full);font-size:13px;font-weight:600;z-index:9999;transition:transform .25s;pointer-events:none;">Gespeichert</div>
 
 <script src="{{ url_for('static', filename='cv_render.js') }}?v=10"></script>
@@ -458,6 +473,10 @@ let _saveTimer    = null;
     CV = Object.assign(JSON.parse(JSON.stringify(CV_EMPTY)), serverData);
   renderAll();
   renderPreview();
+  // Druck-Container ans body hängen, damit die @media-print-Regel
+  // (body > *:not(#cv-print-root)) die App-Hülle ausblenden kann.
+  const _pr = document.getElementById('cv-print-root');
+  if (_pr) document.body.appendChild(_pr);
   // Vorschau bei jeder Größenänderung des Panels neu skalieren
   // (z.B. wenn die Haupt-Navigation ein-/ausgeklappt wird)
   if (window.ResizeObserver) {
@@ -885,12 +904,13 @@ async function saveCV(silent = false) {
 }
 
 async function exportPDF() {
-  await saveCV(true);
-  if (CV_ID) {
-    window.open(`/lebenslauf/${CV_ID}/drucken`, '_blank');
-  } else {
-    alert('Bitte zuerst speichern.');
-  }
+  // Im Hintergrund speichern, aber den Druck NICHT davon abhängig machen
+  // (funktioniert auch offline / bei Speicherfehler).
+  saveCV(true).catch(() => {});
+  // Print-in-place: gleicher Tab, kein neues Fenster.
+  const root = document.getElementById('cv-print-root');
+  root.querySelector('.cv-page').innerHTML = window.renderCV(collectCV());
+  window.print();
 }
 
 // ── KI Parse ──────────────────────────────────────────────────────────────────

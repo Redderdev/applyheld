@@ -41,8 +41,8 @@
           + 'padding:44px 52px;color:#0f172a;font-size:10pt;line-height:1.55;">';
 
     // Kopf: Akzentbalken, Name, Kontakt, Profil
-    html += '<div style="width:52px;height:4px;background:' + ACC + ';border-radius:2px;margin-bottom:22px;"></div>';
-    html += '<h1 style="font-size:26pt;font-weight:300;letter-spacing:-.025em;margin:0 0 5px;">'
+    html += '<div style="width:44px;height:3px;background:' + ACC + ';border-radius:2px;margin-bottom:16px;"></div>';
+    html += '<h1 style="font-size:19pt;font-weight:600;letter-spacing:-.02em;margin:0 0 4px;">'
           + esc(p.name || '') + '</h1>';
 
     var contact = [p.email, p.phone, p.city, p.linkedin].filter(Boolean).map(esc).join('  ·  ');
